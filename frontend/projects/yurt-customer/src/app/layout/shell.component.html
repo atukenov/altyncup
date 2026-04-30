@@ -1,0 +1,110 @@
+<div class="min-h-screen flex flex-col bg-stone-50 pb-20">
+  <main class="flex-1">
+    <router-outlet />
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav
+    class="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 z-40"
+    style="box-shadow: 0 -1px 12px rgba(0, 0, 0, 0.06)"
+  >
+    <div class="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
+      <a
+        routerLink="/menu"
+        routerLinkActive
+        #menuLink="routerLinkActive"
+        [routerLinkActiveOptions]="{ exact: false }"
+        [class.text-amber-500]="menuLink.isActive"
+        [class.text-stone-400]="!menuLink.isActive"
+        class="flex flex-col items-center gap-0.5 hover:text-amber-500 transition-colors min-w-[56px] py-1"
+        aria-label="Menu"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12h6M9 16h4"
+          />
+        </svg>
+        <span class="text-[10px] font-semibold">Menu</span>
+      </a>
+
+      <a
+        routerLink="/cart"
+        routerLinkActive
+        #cartLink="routerLinkActive"
+        [class.text-amber-500]="cartLink.isActive"
+        [class.text-stone-400]="!cartLink.isActive"
+        class="flex flex-col items-center gap-0.5 hover:text-amber-500 transition-colors min-w-[56px] py-1"
+        aria-label="Cart"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6h13M10 21a1 1 0 100-2 1 1 0 000 2zm7 0a1 1 0 100-2 1 1 0 000 2z"
+          />
+        </svg>
+        <span class="text-[10px] font-semibold">Cart</span>
+      </a>
+
+      <a
+        routerLink="/orders"
+        routerLinkActive
+        #ordersLink="routerLinkActive"
+        [routerLinkActiveOptions]="{ exact: false }"
+        [class.text-amber-500]="ordersLink.isActive"
+        [class.text-stone-400]="!ordersLink.isActive"
+        class="flex flex-col items-center gap-0.5 hover:text-amber-500 transition-colors min-w-[56px] py-1"
+        aria-label="Orders"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9 12l2 2 4-4M7 4h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"
+          />
+        </svg>
+        <span class="text-[10px] font-semibold">Orders</span>
+      </a>
+
+      <a
+        routerLink="/favorites"
+        routerLinkActive
+        #favLink="routerLinkActive"
+        [class.text-amber-500]="favLink.isActive"
+        [class.text-stone-400]="!favLink.isActive"
+        class="flex flex-col items-center gap-0.5 hover:text-amber-500 transition-colors min-w-[56px] py-1"
+        aria-label="Favorites"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"
+          />
+        </svg>
+        <span class="text-[10px] font-semibold">Saved</span>
+      </a>
+
+      <a
+        routerLink="/profile"
+        routerLinkActive
+        #profileLink="routerLinkActive"
+        [class.text-amber-500]="profileLink.isActive"
+        [class.text-stone-400]="!profileLink.isActive"
+        class="flex flex-col items-center gap-0.5 hover:text-amber-500 transition-colors min-w-[56px] py-1"
+        aria-label="Profile"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+          />
+        </svg>
+        <span class="text-[10px] font-semibold">Profile</span>
+      </a>
+    </div>
+  </nav>
+</div>

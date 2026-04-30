@@ -1,0 +1,86 @@
+<div class="min-h-screen bg-stone-50">
+  <div class="bg-white border-b border-stone-100 px-4 py-4 sticky top-0 z-10">
+    <h1 class="text-xl font-bold text-stone-800">My Orders</h1>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 px-4 py-3 bg-white border-b border-stone-100">
+    @for (tab of tabs; track tab.id) {
+      <button
+        (click)="activeTab.set(tab.id)"
+        [class]="
+          activeTab() === tab.id
+            ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
+            : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+        "
+        class="flex-1 py-2 text-sm font-semibold rounded-xl transition-all"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <div class="p-4 max-w-lg mx-auto space-y-3 pb-8">
+    @if (loading()) {
+      @for (i of [1, 2, 3]; track i) {
+        <div class="bg-white rounded-2xl border border-stone-100 p-4 animate-pulse">
+          <div class="h-4 bg-stone-200 rounded w-1/2 mb-2"></div>
+          <div class="h-3 bg-stone-200 rounded w-3/4 mb-3"></div>
+          <div class="h-8 bg-stone-200 rounded-xl"></div>
+        </div>
+      }
+    } @else {
+      @for (order of visibleOrders(); track order.id) {
+        <a
+          [routerLink]="['/orders', order.id]"
+          class="block bg-white rounded-2xl border border-stone-100 p-4 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+        >
+          <div class="flex items-start justify-between mb-2">
+            <div>
+              <p class="font-bold text-stone-800 text-sm">
+                Order #{{ order.id.slice(-6).toUpperCase() }}
+              </p>
+              <p class="text-xs text-stone-400 mt-0.5">
+                {{ order.createdAt | date: 'MMM d · h:mm a' }}
+              </p>
+              <p class="text-xs text-stone-500 mt-0.5 font-medium">📍 {{ order.locationName }}</p>
+            </div>
+            <yurt-badge [variant]="order.status | orderStatusColor">
+              {{ order.status | orderStatusLabel }}
+            </yurt-badge>
+          </div>
+
+          <div class="text-xs text-stone-500 mb-2">
+            {{ order.items.length }} item{{ order.items.length > 1 ? 's' : '' }}
+            @for (item of order.items.slice(0, 2); track item.id) {
+              · {{ item.menuItemName }}
+            }
+            @if (order.items.length > 2) {
+              <span class="text-stone-400">+{{ order.items.length - 2 }} more</span>
+            }
+          </div>
+
+          @if (order.declineReason) {
+            <p class="text-xs text-red-600 bg-red-50 rounded-xl p-2 mb-2">
+              ✕ {{ order.declineReason }}
+            </p>
+          }
+          <div class="flex justify-between items-center pt-2 border-t border-stone-50">
+            <span class="text-xs text-stone-400">Total</span>
+            <span class="font-bold text-amber-600 text-base">{{ order.total | currency2 }}</span>
+          </div>
+        </a>
+      }
+
+      @if (!visibleOrders().length) {
+        <div class="text-center py-20">
+          <div class="text-5xl mb-3">📋</div>
+          <p class="text-stone-600 font-medium">
+            No {{ tabs[activeTab()].label.toLowerCase() }} orders
+          </p>
+          <p class="text-stone-400 text-sm mt-1">Your orders will appear here</p>
+        </div>
+      }
+    }
+  </div>
+</div>

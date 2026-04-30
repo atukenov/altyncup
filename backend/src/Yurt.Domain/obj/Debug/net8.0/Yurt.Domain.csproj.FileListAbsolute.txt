@@ -1,0 +1,11 @@
+C:\Users\aqte\dev\yurt\backend\src\Yurt.Domain\bin\Debug\net8.0\Yurt.Domain.deps.json
+C:\Users\aqte\dev\yurt\backend\src\Yurt.Domain\bin\Debug\net8.0\Yurt.Domain.dll
+C:\Users\aqte\dev\yurt\backend\src\Yurt.Domain\bin\Debug\net8.0\Yurt.Domain.pdb
+C:\Users\aqte\dev\yurt\backend\src\Yurt.Domain\obj\Debug\net8.0\Yurt.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\aqte\dev\yurt\backend\src\Yurt.Domain\obj\Debug\net8.0\Yurt.Domain.AssemblyInfoInputs.cache
+C:\Users\aqte\dev\yurt\backend\src\Yurt.Domain\obj\Debug\net8.0\Yurt.Domain.AssemblyInfo.cs
+C:\Users\aqte\dev\yurt\backend\src\Yurt.Domain\obj\Debug\net8.0\Yurt.Domain.csproj.CoreCompileInputs.cache
+C:\Users\aqte\dev\yurt\backend\src\Yurt.Domain\obj\Debug\net8.0\Yurt.Domain.dll
+C:\Users\aqte\dev\yurt\backend\src\Yurt.Domain\obj\Debug\net8.0\refint\Yurt.Domain.dll
+C:\Users\aqte\dev\yurt\backend\src\Yurt.Domain\obj\Debug\net8.0\Yurt.Domain.pdb
+C:\Users\aqte\dev\yurt\backend\src\Yurt.Domain\obj\Debug\net8.0\ref\Yurt.Domain.dll

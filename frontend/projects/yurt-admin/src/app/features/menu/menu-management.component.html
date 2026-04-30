@@ -1,0 +1,237 @@
+<div class="flex h-screen overflow-hidden">
+  <!-- Category sidebar -->
+  <div class="w-56 bg-white border-r border-slate-100 flex flex-col flex-shrink-0">
+    <div class="px-4 py-4 border-b border-slate-100">
+      <h3 class="font-semibold text-slate-700 text-sm">Categories</h3>
+    </div>
+    <div class="flex-1 overflow-y-auto py-2">
+      <button
+        (click)="selectedCategoryId.set('')"
+        [class]="
+          selectedCategoryId() === ''
+            ? 'bg-amber-50 text-amber-700 font-semibold'
+            : 'text-slate-600 hover:bg-slate-50'
+        "
+        class="w-full text-left px-4 py-2 text-sm transition-colors"
+      >
+        All Items
+      </button>
+      @for (cat of categories(); track cat.id) {
+        <button
+          (click)="selectedCategoryId.set(cat.id)"
+          [class]="
+            selectedCategoryId() === cat.id
+              ? 'bg-amber-50 text-amber-700 font-semibold'
+              : 'text-slate-600 hover:bg-slate-50'
+          "
+          class="w-full text-left px-4 py-2 text-sm transition-colors"
+        >
+          {{ cat.name }}
+        </button>
+      }
+    </div>
+    <div class="p-3 border-t border-slate-100 space-y-2">
+      <button
+        (click)="showCatDialog.set(true); catInput.set({ name: '' })"
+        class="w-full text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl px-3 py-2 transition-colors"
+      >
+        + Add Category
+      </button>
+    </div>
+  </div>
+
+  <!-- Items table -->
+  <div class="flex-1 overflow-y-auto">
+    <div
+      class="px-6 py-4 sticky top-0 bg-white border-b border-slate-100 flex items-center justify-between z-10"
+    >
+      <h2 class="text-lg font-bold text-slate-800">Menu Items</h2>
+      <button
+        (click)="openItemDialog()"
+        class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors shadow-sm"
+      >
+        <span class="text-base leading-none font-bold">+</span> Add Item
+      </button>
+    </div>
+
+    @if (loading()) {
+      <div class="p-8 text-center text-slate-400 animate-pulse">Loading…</div>
+    } @else {
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+          <tr>
+            <th class="text-left px-6 py-3">Name</th>
+            <th class="text-left px-6 py-3">Category</th>
+            <th class="text-right px-6 py-3">Price</th>
+            <th class="text-center px-6 py-3">Available</th>
+            <th class="px-6 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-slate-50">
+          @for (item of filteredItems(); track item.id) {
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="px-6 py-3 font-medium text-slate-800">{{ item.name }}</td>
+              <td class="px-6 py-3 text-slate-500">{{ categoryName(item.categoryId) }}</td>
+              <td class="px-6 py-3 text-right font-semibold text-amber-600">
+                {{ item.price | currency2 }}
+              </td>
+              <td class="px-6 py-3 text-center">
+                <span
+                  [class]="
+                    item.isAvailable ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                  "
+                  class="text-xs px-2 py-0.5 rounded-full"
+                  >{{ item.isAvailable ? 'Yes' : 'No' }}</span
+                >
+              </td>
+              <td class="px-6 py-3 text-right">
+                <div class="flex justify-end gap-2">
+                  <button
+                    (click)="openItemDialog(item)"
+                    class="text-xs text-slate-600 hover:text-amber-600 px-2 py-1 rounded hover:bg-amber-50 transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    (click)="deleteItem(item)"
+                    class="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (!filteredItems().length) {
+        <div class="py-12 text-center text-slate-400 text-sm">No items in this category</div>
+      }
+    }
+  </div>
+</div>
+
+<!-- Item dialog -->
+@if (showItemDialog()) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+      <h3 class="text-lg font-bold text-slate-800 mb-4">
+        {{ itemForm().id ? 'Edit' : 'Add' }} Menu Item
+      </h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Name *</label>
+          <input
+            type="text"
+            [ngModel]="itemForm().name"
+            (ngModelChange)="patchItemForm('name', $event)"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Description</label>
+          <textarea
+            [ngModel]="itemForm().description"
+            (ngModelChange)="patchItemForm('description', $event)"
+            rows="2"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none resize-none"
+          ></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Price *</label>
+            <input
+              type="number"
+              [ngModel]="itemForm().price"
+              (ngModelChange)="patchItemForm('price', $event)"
+              min="0"
+              step="0.01"
+              class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Category</label>
+            <select
+              [ngModel]="itemForm().categoryId"
+              (ngModelChange)="patchItemForm('categoryId', $event)"
+              class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+            >
+              @for (cat of categories(); track cat.id) {
+                <option [value]="cat.id">{{ cat.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Image URL</label>
+          <input
+            type="text"
+            [ngModel]="itemForm().imageUrl"
+            (ngModelChange)="patchItemForm('imageUrl', $event)"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="isAvailable"
+            [ngModel]="itemForm().isAvailable"
+            (ngModelChange)="patchItemForm('isAvailable', $event)"
+            class="rounded border-slate-300 text-amber-500 focus:ring-amber-400"
+          />
+          <label for="isAvailable" class="text-sm text-slate-700">Available</label>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-5">
+        <yurt-button
+          variant="ghost"
+          size="md"
+          [fullWidth]="true"
+          (clicked)="showItemDialog.set(false)"
+          >Cancel</yurt-button
+        >
+        <yurt-button
+          variant="primary"
+          size="md"
+          [fullWidth]="true"
+          [loading]="saving()"
+          (clicked)="saveItem()"
+          >Save</yurt-button
+        >
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Category dialog -->
+@if (showCatDialog()) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <h3 class="text-lg font-bold text-slate-800 mb-4">Add Category</h3>
+      <input
+        type="text"
+        [ngModel]="catInput().name"
+        (ngModelChange)="catInput.set({ name: $event })"
+        placeholder="Category name"
+        class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+      />
+      <div class="flex gap-3 mt-4">
+        <yurt-button
+          variant="ghost"
+          size="md"
+          [fullWidth]="true"
+          (clicked)="showCatDialog.set(false)"
+          >Cancel</yurt-button
+        >
+        <yurt-button
+          variant="primary"
+          size="md"
+          [fullWidth]="true"
+          [loading]="saving()"
+          (clicked)="saveCat()"
+          >Save</yurt-button
+        >
+      </div>
+    </div>
+  </div>
+}

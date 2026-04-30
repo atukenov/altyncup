@@ -1,0 +1,101 @@
+<div class="min-h-screen bg-stone-50">
+  <div class="bg-white border-b border-stone-100 px-4 py-4 sticky top-0 z-10">
+    <h1 class="text-xl font-bold text-stone-800">Your Cart</h1>
+    @if (locationName) {
+      <p class="text-xs text-stone-500 mt-0.5">📍 {{ locationName }}</p>
+    }
+  </div>
+
+  @if (!cart.items().length) {
+    <div class="text-center py-24 px-6">
+      <div
+        class="w-24 h-24 bg-stone-100 rounded-full flex items-center justify-center text-5xl mx-auto mb-5"
+      >
+        🛒
+      </div>
+      <h2 class="text-xl font-bold text-stone-700">Your cart is empty</h2>
+      <p class="text-stone-400 text-sm mt-2">Add items from the menu to get started</p>
+      <button
+        (click)="goToMenu()"
+        class="mt-7 bg-amber-500 text-white font-bold rounded-2xl px-8 py-3.5 hover:bg-amber-600 active:scale-[0.98] transition-all shadow-lg shadow-amber-200"
+      >
+        Browse Menu
+      </button>
+    </div>
+  } @else {
+    <div class="p-4 space-y-3 max-w-lg mx-auto mb-44">
+      @for (item of cart.items(); track item.menuItemId) {
+        <div
+          class="bg-white rounded-2xl border border-stone-100 p-4 flex items-center gap-3 shadow-sm"
+        >
+          @if (item.imageUrl) {
+            <img
+              [src]="item.imageUrl"
+              [alt]="item.name"
+              class="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+            />
+          } @else {
+            <div
+              class="w-16 h-16 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center text-2xl flex-shrink-0"
+            >
+              ☕
+            </div>
+          }
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-stone-800 truncate">{{ item.name }}</h3>
+            <p class="text-amber-600 font-semibold text-sm mt-0.5">{{ item.price | currency2 }}</p>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <button
+              (click)="cart.updateQty(item.menuItemId, item.quantity - 1)"
+              class="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 active:scale-95 flex items-center justify-center text-base font-bold transition-all"
+              aria-label="Decrease"
+            >
+              −
+            </button>
+            <span class="w-6 text-center font-bold text-stone-800">{{ item.quantity }}</span>
+            <button
+              (click)="cart.updateQty(item.menuItemId, item.quantity + 1)"
+              class="w-8 h-8 rounded-full bg-amber-100 hover:bg-amber-200 active:scale-95 flex items-center justify-center text-base font-bold text-amber-700 transition-all"
+              aria-label="Increase"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Summary -->
+      <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+        <div class="flex justify-between text-stone-500 text-sm mb-2">
+          <span
+            >Subtotal ({{ cart.items().length }} item{{ cart.items().length > 1 ? 's' : '' }})</span
+          >
+          <span>{{ cart.total() | currency2 }}</span>
+        </div>
+        <div
+          class="flex justify-between font-bold text-stone-800 text-base border-t border-stone-100 pt-3 mt-1"
+        >
+          <span>Total</span>
+          <span class="text-amber-600 text-lg">{{ cart.total() | currency2 }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky checkout -->
+    <div
+      class="fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-stone-100 max-w-lg mx-auto"
+      style="box-shadow: 0 -1px 12px rgba(0, 0, 0, 0.06)"
+    >
+      <yurt-button
+        variant="primary"
+        size="lg"
+        [fullWidth]="true"
+        [loading]="loading()"
+        (clicked)="checkout()"
+      >
+        Place Order · {{ cart.total() | currency2 }}
+      </yurt-button>
+    </div>
+  }
+</div>

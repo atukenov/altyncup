@@ -1,0 +1,35 @@
+using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
+using Yurt.Application.Common.Models;
+
+namespace Yurt.WebApi.Common;
+
+public abstract class ApiControllerBase : ControllerBase
+{
+    protected IActionResult ToResult<T>(Result<T> result)
+    {
+        if (result.Succeeded)
+        {
+            return result.StatusCode switch
+            {
+                201 => StatusCode(201, result.Data),
+                204 => NoContent(),
+                _ => Ok(result.Data)
+            };
+        }
+
+        return result.StatusCode switch
+        {
+            401 => Unauthorized(new ProblemDetails { Title = result.Error }),
+            403 => StatusCode(403, new ProblemDetails { Title = result.Error }),
+            404 => NotFound(new ProblemDetails { Title = result.Error }),
+            409 => Conflict(new ProblemDetails { Title = result.Error }),
+            422 => UnprocessableEntity(new ProblemDetails { Title = result.Error }),
+            423 => StatusCode(423, new ProblemDetails { Title = result.Error }),
+            _ => BadRequest(new ProblemDetails { Title = result.Error })
+        };
+    }
+
+    protected IActionResult ValidationError(string message)
+        => BadRequest(new ProblemDetails { Title = "Validation Error", Detail = message });
+}
