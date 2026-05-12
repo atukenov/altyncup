@@ -107,3 +107,14 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
             .HasForeignKey(e => e.MenuItemId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+public class PromotionConfiguration : IEntityTypeConfiguration<Promotion>
+{
+    public void Configure(EntityTypeBuilder<Promotion> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Title).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.Description).HasMaxLength(2000);
+        builder.Property(e => e.ImageUrl).HasMaxLength(500);
+    }
+}

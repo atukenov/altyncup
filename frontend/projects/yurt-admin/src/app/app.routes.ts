@@ -33,6 +33,18 @@ export const routes: Routes = [
             (m) => m.LocationsManagementComponent,
           ),
       },
+      {
+        path: 'analytics',
+        loadComponent: () =>
+          import('./features/analytics/analytics.component').then((m) => m.AnalyticsComponent),
+      },
+      {
+        path: 'promotions',
+        loadComponent: () =>
+          import('./features/promotions/promotions-management.component').then(
+            (m) => m.PromotionsManagementComponent,
+          ),
+      },
       { path: '', redirectTo: 'orders', pathMatch: 'full' },
     ],
   },

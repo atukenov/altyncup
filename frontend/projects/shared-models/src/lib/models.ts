@@ -139,3 +139,71 @@ export interface UpdatePaymentRequest {
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
 }
+
+// ── Analytics ────────────────────────────────────────────────────────────────
+
+export interface AnalyticsResponse {
+  kpis: KpiSummary;
+  revenueOverTime: RevenueDataPoint[];
+  topItems: TopItemDto[];
+  locationPerformance: LocationPerformanceDto[];
+  hourlyDistribution: HourlyDistributionDto[];
+  paymentBreakdown: PaymentBreakdownDto[];
+  statusBreakdown: OrderStatusBreakdownDto[];
+}
+
+export interface KpiSummary {
+  totalRevenue: number;
+  totalOrders: number;
+  avgOrderValue: number;
+  completedOrders: number;
+  declinedOrders: number;
+  avgPrepTimeMinutes: number;
+  uniqueCustomers: number;
+}
+
+export interface RevenueDataPoint {
+  label: string;
+  revenue: number;
+  orders: number;
+}
+
+export interface TopItemDto {
+  name: string;
+  quantitySold: number;
+  revenue: number;
+}
+
+export interface LocationPerformanceDto {
+  locationName: string;
+  revenue: number;
+  orders: number;
+}
+
+export interface HourlyDistributionDto {
+  hour: number;
+  orders: number;
+}
+
+export interface PaymentBreakdownDto {
+  method: string;
+  count: number;
+  total: number;
+}
+
+export interface OrderStatusBreakdownDto {
+  status: string;
+  count: number;
+}
+
+// ── Promotions ───────────────────────────────────────────────────────────────
+
+export interface Promotion {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  isActive: boolean;
+  expiresAt?: string;
+  createdAt: string;
+}

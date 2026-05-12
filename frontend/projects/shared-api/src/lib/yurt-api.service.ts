@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  AnalyticsResponse,
   AuthResponse,
   CustomerProfile,
   Location,
@@ -14,6 +15,7 @@ import {
   UpdateStatusRequest,
   UpdatePaymentRequest,
   OrderStatus,
+  Promotion,
 } from 'shared-models';
 
 @Injectable({ providedIn: 'root' })
@@ -181,5 +183,32 @@ export class YurtApiService {
 
   updateOrderPayment(id: string, req: UpdatePaymentRequest): Observable<Order> {
     return this.http.post<Order>(`${this.baseUrl}/api/admin/orders/${id}/payment`, req);
+  }
+
+  // ── Analytics ───────────────────────────────────────────────────────────────
+  getAnalytics(period: string): Observable<AnalyticsResponse> {
+    const params = new HttpParams().set('period', period);
+    return this.http.get<AnalyticsResponse>(`${this.baseUrl}/api/admin/analytics`, { params });
+  }
+
+  // ── Promotions ──────────────────────────────────────────────────────────────
+  getActivePromotions(): Observable<Promotion[]> {
+    return this.http.get<Promotion[]>(`${this.baseUrl}/api/promotions/active`);
+  }
+
+  getAdminPromotions(): Observable<Promotion[]> {
+    return this.http.get<Promotion[]>(`${this.baseUrl}/api/admin/promotions`);
+  }
+
+  createPromotion(data: Partial<Promotion>): Observable<Promotion> {
+    return this.http.post<Promotion>(`${this.baseUrl}/api/admin/promotions`, data);
+  }
+
+  updatePromotion(id: string, data: Partial<Promotion>): Observable<Promotion> {
+    return this.http.put<Promotion>(`${this.baseUrl}/api/admin/promotions/${id}`, data);
+  }
+
+  deletePromotion(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/api/admin/promotions/${id}`);
   }
 }

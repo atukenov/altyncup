@@ -10,7 +10,9 @@ using Yurt.Application.Features.Auth.Services;
 using Yurt.Application.Features.Favorites.Services;
 using Yurt.Application.Features.Locations.Services;
 using Yurt.Application.Features.Menu.Services;
+using Yurt.Application.Features.Analytics.Services;
 using Yurt.Application.Features.Orders.Services;
+using Yurt.Application.Features.Promotions.Services;
 using Yurt.Infrastructure.Hubs;
 using Yurt.Infrastructure.Persistence;
 using Yurt.Infrastructure.Services;
@@ -41,10 +43,12 @@ public static class DependencyInjection
         services.AddScoped<IOrdersHubService, OrdersHubService>();
 
         // Application services
+        services.AddScoped<AnalyticsService>();
         services.AddScoped<AuthService>();
         services.AddScoped<LocationService>();
         services.AddScoped<MenuService>();
         services.AddScoped<OrderService>();
+        services.AddScoped<PromotionService>();
         services.AddScoped<FavoriteService>();
 
         // JWT Auth

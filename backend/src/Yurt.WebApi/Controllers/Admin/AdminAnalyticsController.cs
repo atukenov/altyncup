@@ -1,0 +1,23 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Yurt.Application.Features.Analytics.Services;
+
+namespace Yurt.WebApi.Controllers.Admin;
+
+[ApiController]
+[Route("api/admin/analytics")]
+[Authorize(Policy = "AdminOnly")]
+public class AdminAnalyticsController : ControllerBase
+{
+    private readonly AnalyticsService _analyticsService;
+
+    public AdminAnalyticsController(AnalyticsService analyticsService)
+        => _analyticsService = analyticsService;
+
+    /// <summary>Get analytics data for the specified period.</summary>
+    [HttpGet]
+    public async Task<IActionResult> GetAnalytics(
+        [FromQuery] string period = "month",
+        CancellationToken ct = default)
+        => Ok(await _analyticsService.GetAnalyticsAsync(period, ct));
+}

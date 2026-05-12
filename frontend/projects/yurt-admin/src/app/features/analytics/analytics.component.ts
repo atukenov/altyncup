@@ -1,0 +1,126 @@
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { YurtApiService } from 'shared-api';
+import { AnalyticsResponse } from 'shared-models';
+import { environment } from '../../../environments/environment';
+
+@Component({
+  selector: 'app-analytics',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './analytics.component.html',
+  styleUrl: './analytics.component.css',
+})
+export class AnalyticsComponent implements OnInit {
+  private api = inject(YurtApiService);
+
+  data = signal<AnalyticsResponse | null>(null);
+  loading = signal(true);
+  activePeriod = signal('month');
+
+  readonly periods = [
+    { label: 'Week', value: 'week' },
+    { label: 'Month', value: 'month' },
+    { label: '6 Months', value: '6months' },
+    { label: '1 Year', value: 'year' },
+    { label: 'All Time', value: 'all' },
+  ];
+
+  // ── Computed helpers for charts ──────────────────────────────────────────
+
+  revenueMax = computed(() => {
+    const d = this.data();
+    if (!d || d.revenueOverTime.length === 0) return 1;
+    return Math.max(...d.revenueOverTime.map((r) => r.revenue)) || 1;
+  });
+
+  topItemMax = computed(() => {
+    const d = this.data();
+    if (!d || d.topItems.length === 0) return 1;
+    return d.topItems[0]?.quantitySold || 1;
+  });
+
+  locationMax = computed(() => {
+    const d = this.data();
+    if (!d || d.locationPerformance.length === 0) return 1;
+    return Math.max(...d.locationPerformance.map((l) => l.revenue)) || 1;
+  });
+
+  hourlyMax = computed(() => {
+    const d = this.data();
+    if (!d || d.hourlyDistribution.length === 0) return 1;
+    return Math.max(...d.hourlyDistribution.map((h) => h.orders)) || 1;
+  });
+
+  paymentTotal = computed(() => {
+    const d = this.data();
+    if (!d) return 1;
+    return d.paymentBreakdown.reduce((sum, p) => sum + p.count, 0) || 1;
+  });
+
+  totalStatusCount = computed(() => {
+    const d = this.data();
+    if (!d) return 1;
+    return d.statusBreakdown.reduce((sum, s) => sum + s.count, 0) || 1;
+  });
+
+  ngOnInit(): void {
+    this.api.configure(environment.apiUrl);
+    this.loadData();
+  }
+
+  setPeriod(period: string): void {
+    this.activePeriod.set(period);
+    this.loadData();
+  }
+
+  private loadData(): void {
+    this.loading.set(true);
+    this.api.getAnalytics(this.activePeriod()).subscribe({
+      next: (res) => {
+        this.data.set(res);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false),
+    });
+  }
+
+  barHeight(value: number, max: number): string {
+    if (max === 0) return '0%';
+    return `${Math.max((value / max) * 100, 2)}%`;
+  }
+
+  barWidth(value: number, max: number): string {
+    if (max === 0) return '0%';
+    return `${Math.max((value / max) * 100, 2)}%`;
+  }
+
+  formatHour(hour: number): string {
+    if (hour === 0) return '12a';
+    if (hour < 12) return `${hour}a`;
+    if (hour === 12) return '12p';
+    return `${hour - 12}p`;
+  }
+
+  formatTenge(value: number): string {
+    const rounded = Math.round(value);
+    return '₸' + rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+
+  statusColor(status: string): string {
+    const map: Record<string, string> = {
+      Created: 'bg-amber-100 text-amber-700',
+      Accepted: 'bg-blue-100 text-blue-700',
+      Preparing: 'bg-teal-100 text-teal-700',
+      Ready: 'bg-green-100 text-green-700',
+      Completed: 'bg-emerald-100 text-emerald-700',
+      Declined: 'bg-red-100 text-red-700',
+    };
+    return map[status] ?? 'bg-slate-100 text-slate-700';
+  }
+
+  paymentColor(index: number): string {
+    const colors = ['bg-amber-500', 'bg-blue-500', 'bg-teal-500', 'bg-rose-400'];
+    return colors[index % colors.length];
+  }
+}

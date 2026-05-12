@@ -47,6 +47,8 @@ export class PaymentStatusLabelPipe implements PipeTransform {
 @Pipe({ name: 'currency2', standalone: true })
 export class Currency2Pipe implements PipeTransform {
   transform(value: number): string {
-    return `$${value.toFixed(2)}`;
+    const rounded = Math.round(value);
+    const formatted = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return `₸${formatted}`;
   }
 }

@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Promotion> Promotions => Set<Promotion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

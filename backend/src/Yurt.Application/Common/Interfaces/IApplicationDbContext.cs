@@ -13,6 +13,7 @@ public interface IApplicationDbContext
     DbSet<Favorite> Favorites { get; }
     DbSet<Order> Orders { get; }
     DbSet<OrderItem> OrderItems { get; }
+    DbSet<Promotion> Promotions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

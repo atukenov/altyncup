@@ -1,0 +1,49 @@
+@if (visible() && current) {
+  <div class="promo-overlay" (click)="close()">
+    <div class="promo-card" (click)="$event.stopPropagation()">
+      <!-- Close button -->
+      <button (click)="close()" class="promo-close" aria-label="Close promotion">
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <!-- Image -->
+      @if (current.imageUrl) {
+        <div class="promo-image-wrap">
+          <img [src]="current.imageUrl" [alt]="current.title" class="promo-image" />
+        </div>
+      } @else {
+        <div class="promo-icon-wrap">
+          <span class="promo-icon">☕</span>
+        </div>
+      }
+
+      <!-- Content -->
+      <div class="promo-body">
+        <h2 class="promo-title">{{ current.title }}</h2>
+        @if (current.description) {
+          <p class="promo-desc">{{ current.description }}</p>
+        }
+      </div>
+
+      <!-- Counter -->
+      @if (promotions().length > 1) {
+        <div class="promo-counter">{{ currentIndex() + 1 }} / {{ promotions().length }}</div>
+      }
+
+      <!-- Action -->
+      <div class="promo-action">
+        <button (click)="close()" class="promo-btn">
+          {{ currentIndex() + 1 < promotions().length ? 'Next' : 'Got it!' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
