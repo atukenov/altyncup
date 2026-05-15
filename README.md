@@ -1,6 +1,53 @@
 # YURT — Modern Coffee Ordering System
 
-A full-stack, production-ready coffee ordering system with real-time updates, built with .NET 8 Clean Architecture and Angular 21.
+A full-stack coffee ordering platform with a mobile-first customer experience, a desktop-first admin console, real-time order updates, and a clean .NET 8 / Angular 21 architecture.
+
+## What this app does
+
+Yurt is designed for café operations and customers who want fast pickup ordering. It supports:
+
+- Customer registration and login using mobile number + 4-digit PIN
+- Browsing active café locations and searchable menu categories
+- Adding favorites and building orders with a mobile-friendly checkout flow
+- Real-time order tracking via SignalR updates
+- Admin order management, menu management, location management, promotions, and analytics
+
+## Current capabilities
+
+### Customer app features
+
+- Mobile-first ordering experience
+- Register and login with mobile number + PIN
+- Browse multiple café locations and pick a pickup store
+- Filter the menu by category and search by item name
+- Add menu items to cart and place orders quickly
+- View active orders, past order history, and declined orders
+- Save favorite menu items for repeat ordering
+- Receive real-time order status updates from the backend
+- Customer profile view and order summary access
+
+### Admin app features
+
+- Admin login with username/password
+- Live order dashboard with SignalR-powered updates
+- Accept or decline incoming orders
+- Set order ETA, update status, and mark orders completed
+- Update payment status and payment method flags
+- Manage menu categories and menu items with full CRUD
+- Manage café locations and toggle active availability
+- Create, update, and remove promotions
+- Query analytics data for business insights
+
+### Backend features
+
+- Clean Architecture with separate Domain / Application / Infrastructure / WebApi layers
+- ASP.NET Core 8 API with JWT role-based authentication
+- SQL Server support via EF Core 8 and migrations
+- BCrypt password hashing for admin accounts and secure customer PIN flows
+- SignalR order hub for live order notifications
+- Serilog logging and developer-friendly error handling
+- Swagger/OpenAPI API documentation
+- Data seeding for sample locations, menu items, and admin users
 
 ## Architecture
 
@@ -14,89 +61,97 @@ yurt/
 │       └── Yurt.WebApi/          # ASP.NET Core controllers, middleware
 └── frontend/         # Angular 21 monorepo
     └── projects/
-        ├── yurt-customer/   # Customer mobile-first web app (port 4200)
-        ├── yurt-admin/      # Admin desktop-first web app (port 4300)
+        ├── yurt-customer/   # Customer mobile-first web app
+        ├── yurt-admin/      # Admin desktop-first web app
         ├── shared-models/   # TypeScript interfaces & enums
         ├── shared-api/      # API service, auth state, SignalR service
-        └── shared-ui/       # Button, Badge, Card, Toast, Skeleton, Pipes
+        └── shared-ui/       # UI library components and utilities
 ```
 
-## Prerequisites
+## Getting started
+
+### Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or newer
-- [SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (or SQL Server Express / LocalDB)
+- SQL Server, SQL Server Express, or LocalDB
 - [Node.js 18+](https://nodejs.org/)
-- [Angular CLI 21](https://angular.dev/): `npm install -g @angular/cli`
+- [Angular CLI 21](https://angular.dev/): `npm install -g @angular/cli@21`
 
-## Backend Setup
+### Backend setup
 
-### 1. Configure the database
-
-Edit `backend/src/Yurt.WebApi/appsettings.json`:
+1. Configure the database in `backend/src/Yurt.WebApi/appsettings.json`:
 
 ```json
 {
   "ConnectionStrings": {
-    "YurtDb": "Server=localhost;Database=Yurt;Trusted_Connection=True;TrustServerCertificate=True;"
+    "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=YurtDb;Trusted_Connection=True;TrustServerCertificate=True;"
   },
   "Jwt": {
-    "Secret": "your-super-secret-key-at-least-32-characters-long",
+    "Secret": "CHANGE_THIS_TO_A_STRONG_SECRET_KEY_AT_LEAST_32_CHARS",
     "Issuer": "yurt-api",
-    "Audience": "yurt-client",
-    "ExpiryDays": 30
-  }
+    "Audience": "yurt-clients",
+    "ExpiryDays": "7"
+  },
+  "AllowedOrigins": [
+    "http://localhost:4200",
+    "http://localhost:4300"
+  ]
 }
 ```
 
-### 2. Apply migrations & seed data
+2. Restore packages and apply migrations:
 
 ```bash
 cd backend
-
-# Run EF Core migration (creates DB + all tables)
-dotnet ef database update \
-  --project src/Yurt.Infrastructure \
-  --startup-project src/Yurt.WebApi
-
-# The app seeds data on first start automatically
+dotnet restore
+dotnet ef database update --project src/Yurt.Infrastructure --startup-project src/Yurt.WebApi
 ```
 
-> **Note:** If `dotnet-ef` is not in your PATH, use the full path:
-> `~/.dotnet/tools/dotnet-ef` (Linux/Mac) or `$env:USERPROFILE\.dotnet\tools\dotnet-ef.exe` (Windows)
-
-### 3. Start the API
+3. Run the API:
 
 ```bash
-cd backend
 dotnet run --project src/Yurt.WebApi
-# API runs on http://localhost:5000
-# Swagger UI: http://localhost:5000/swagger
 ```
 
-## Frontend Setup
+The API should be available at `http://localhost:5000` and Swagger at `http://localhost:5000/swagger`.
+
+### Frontend setup
+
+1. Install dependencies:
 
 ```bash
 cd frontend
 npm install
 ```
 
-### Start the customer app
+2. Run the customer app:
 
 ```bash
 ng serve yurt-customer --port 4200
-# Open http://localhost:4200
 ```
 
-### Start the admin app
+3. Run the admin app:
 
 ```bash
 ng serve yurt-admin --port 4300
-# Open http://localhost:4300
 ```
 
-## Default Credentials
+### Build production assets
 
-### Admin accounts (seeded)
+```bash
+# Backend
+cd backend
+dotnet publish src/Yurt.WebApi/Yurt.WebApi.csproj -c Release -o publish
+
+# Frontend
+cd frontend
+ng build yurt-customer --configuration production
+ng build yurt-admin --configuration production
+```
+
+## Default seeded accounts
+
+### Admin accounts
 
 | Username | Password    | Role   |
 | -------- | ----------- | ------ |
@@ -105,69 +160,14 @@ ng serve yurt-admin --port 4300
 
 ### Customer accounts
 
-Register via the customer app using any mobile number + 4-digit PIN.
+- Customers can register in the customer app using a mobile number and a 4-digit PIN.
 
-## Features
+## Additional documentation
 
-### Customer App (mobile-first)
-
-- Register/Login with mobile number + 4-digit PIN
-- Browse locations, select pickup location
-- Browse menu with category filters and search
-- Add items to cart, place orders
-- Real-time order status updates via SignalR
-- View active, history, and declined orders
-- Save favorite menu items
-- Profile page with order history link
-
-### Admin App (desktop-first)
-
-- Secure admin login (username/password)
-- **Live Orders** view with real-time SignalR updates
-  - Accept orders with ETA
-  - Decline orders with reason
-  - Progress orders through: Preparing → Ready → Completed
-  - Update payment method/status
-- **Menu Management**: Add/edit/delete menu items and categories
-- **Locations Management**: Add/edit/delete café locations, toggle active status
-
-## API Endpoints
-
-| Method | Path                           | Auth     | Description                |
-| ------ | ------------------------------ | -------- | -------------------------- |
-| POST   | /api/auth/register             | —        | Register customer          |
-| POST   | /api/auth/login                | —        | Customer login             |
-| GET    | /api/auth/me                   | Customer | Get profile                |
-| POST   | /api/admin/auth/login          | —        | Admin login                |
-| GET    | /api/locations                 | —        | Active locations           |
-| GET    | /api/menu/categories           | —        | Menu categories            |
-| GET    | /api/menu                      | —        | Menu items (filter/search) |
-| POST   | /api/orders                    | Customer | Place an order             |
-| GET    | /api/orders/active             | Customer | Active orders              |
-| GET    | /api/orders/history            | Customer | Order history              |
-| GET    | /api/favorites                 | Customer | Favorites                  |
-| POST   | /api/admin/orders/{id}/accept  | Admin    | Accept order               |
-| POST   | /api/admin/orders/{id}/decline | Admin    | Decline order              |
-| POST   | /api/admin/orders/{id}/status  | Admin    | Update status              |
-| GET    | /api/admin/menu/items          | Admin    | All menu items             |
-| ...    | (full CRUD for menu/locations) | Admin    |                            |
-
-**Swagger UI:** <http://localhost:5000/swagger>
-
-## Real-Time (SignalR)
-
-**Hub URL:** `ws://localhost:5000/hubs/orders`
-
-Events emitted to customers:
-
-- `OrderCreated` — new order placed
-- `OrderUpdated` — status changed
-- `OrderDeclined` — order declined with reason
-- `PaymentUpdated` — payment status/method updated
-
-Events emitted to location groups (for admin):
-
-- All of the above, scoped to the relevant location
+- `docs/setup.md` — local setup instructions
+- `docs/deployment-guide.md` — deployment guidance and hosting strategy
+- `docs/production-deployment.md` — production deployment plan and budget guidance
+- `docs/DEPLOYMENT.md` — existing deployment and conversion guide
 
 ## Tech Stack
 
@@ -175,23 +175,29 @@ Events emitted to location groups (for admin):
 | --------- | ---------------------------------------------- |
 | Backend   | .NET 8, ASP.NET Core, Clean Architecture       |
 | Database  | SQL Server, EF Core 8, Migrations              |
-| Auth      | JWT Bearer, BCrypt (PIN hashing)               |
+| Auth      | JWT Bearer, BCrypt, role-based policies        |
 | Real-time | SignalR                                        |
-| Frontend  | Angular 21, Signals API, Standalone components |
-| Styling   | Tailwind CSS v4                                |
-| Validation| FluentValidation 11                            |
+| Frontend  | Angular 21, Tailwind CSS, Standalone components |
 | Logging   | Serilog                                        |
 | Docs      | Swagger / OpenAPI                              |
 
-## Building for Production
+## Coming soon
 
-```bash
-# Backend
-cd backend
-dotnet publish src/Yurt.WebApi -c Release -o publish/
+These are logical next features for the project:
 
-# Frontend
-cd frontend
-ng build yurt-customer --configuration production
-ng build yurt-admin --configuration production
-```
+- Payment gateway integration (Stripe / PayPal / card payments)
+- iOS native mobile support and App Store publishing
+- Push notifications for customers and staff
+- Delivery driver module and delivery order support
+- Loyalty, rewards, and gift card workflows
+- Multi-location inventory and time-slot scheduling
+- Extended admin role management and permission controls
+- Offline-capable PWA experience for customers
+- Better analytics dashboards and sales reports
+
+## Notes
+
+- The admin frontend is designed for desktop use while the customer app is mobile-first.
+- The backend seeds sample locations, menu items, and admin users automatically.
+- The customer app must point to a reachable backend URL for real-time updates to work.
+- Use HTTPS in production and secure the `Jwt:Secret` setting.
