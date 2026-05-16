@@ -6,6 +6,7 @@ It covers the backend API, the Angular admin frontend, and the Capacitor-based c
 ## 1. Prerequisites
 
 Install the following before deploying:
+
 - .NET 8 SDK / runtime
 - SQL Server, SQL Server Express, or managed SQL Server instance
 - Node.js 18+ and npm 10+
@@ -16,6 +17,7 @@ Install the following before deploying:
 ## 2. Project-specific notes
 
 The repository contains:
+
 - `backend/` — ASP.NET Core 8 API in `src/Yurt.WebApi/`
 - `frontend/` — Angular 21 workspace with `yurt-admin` and `yurt-customer`
 - `frontend/capacitor.config.ts` — Capacitor config pointing at `dist/yurt-customer/browser`
@@ -23,6 +25,7 @@ The repository contains:
 - `frontend/projects/yurt-admin/src/environments/environment.ts` and `frontend/projects/yurt-customer/src/environments/environment.ts`
 
 Important current behavior:
+
 - Both Angular apps use the same `environment.ts` file for `apiUrl`.
 - The Capacitor mobile wrapper is configured to load `dist/yurt-customer/browser`.
 - Backend CORS is driven by `AllowedOrigins` in `appsettings.json`.
@@ -34,6 +37,7 @@ Important current behavior:
 Edit `backend/src/Yurt.WebApi/appsettings.json` or use environment variables for production values.
 
 At minimum, set:
+
 - `ConnectionStrings:DefaultConnection` to your production SQL Server connection string
 - `Jwt:Secret` to a secure random secret
 - `AllowedOrigins` to include your deployed frontend / app origins
@@ -52,15 +56,13 @@ Example:
     "Audience": "yurt-clients",
     "ExpiryDays": "7"
   },
-  "AllowedOrigins": [
-    "https://admin.yourt-domain.com",
-    "capacitor://localhost"
-  ],
+  "AllowedOrigins": ["https://admin.yourt-domain.com", "capacitor://localhost"],
   "AllowedHosts": "*"
 }
 ```
 
 If you prefer environment variables, use the ASP.NET Core convention:
+
 - `ConnectionStrings__DefaultConnection`
 - `Jwt__Secret`
 - `AllowedOrigins__0`, `AllowedOrigins__1`, etc.
@@ -168,6 +170,7 @@ dotnet backend/src/Yurt.WebApi/publish/Yurt.WebApi.dll
 ```
 
 5. Configure Railway environment variables for production values instead of storing them in source:
+
 - `ConnectionStrings__DefaultConnection`
 - `Jwt__Secret`
 - `AllowedOrigins__0`, `AllowedOrigins__1`, etc.
@@ -196,7 +199,7 @@ Example:
 ```ts
 export const environment = {
   production: true,
-  apiUrl: 'https://api.yourt-domain.com'
+  apiUrl: "https://api.yourt-domain.com",
 };
 ```
 
@@ -217,6 +220,7 @@ The output will be in `frontend/dist/yurt-admin`.
 Deploy `frontend/dist/yurt-admin` to Vercel using either a GitHub integration or by manually uploading the static output.
 
 Option A: Deploy from GitHub
+
 1. Create a Vercel project and connect your repository.
 2. Set the root directory to `frontend`.
 3. Set the build command to:
@@ -230,6 +234,7 @@ npm install && npm run build -- --configuration production
 6. Assign your custom domain and enable HTTPS.
 
 Option B: Deploy static files directly
+
 1. Build locally:
 
 ```bash
@@ -271,7 +276,7 @@ Set the customer app backend URL in `frontend/projects/yurt-customer/src/environ
 ```ts
 export const environment = {
   production: true,
-  apiUrl: 'https://api.yourt-domain.com'
+  apiUrl: "https://api.yourt-domain.com",
 };
 ```
 
@@ -302,6 +307,7 @@ npx cap add ios
 ### 5.4 Build Android release
 
 Open Android Studio:
+
 - Open `frontend/android/` or the generated Capacitor Android project
 - Sync project files
 - Select a physical device or emulator
@@ -311,6 +317,7 @@ Open Android Studio:
 ### 5.5 Build iOS release (macOS only)
 
 Open Xcode:
+
 - Open `frontend/ios/App/App.xcworkspace`
 - Choose a device target or archive destination
 - Update signing and provisioning profiles
@@ -319,6 +326,7 @@ Open Xcode:
 ### 5.6 Backend CORS for mobile apps
 
 Add native wrapper origins to backend CORS:
+
 - `capacitor://localhost`
 - `http://localhost` (if local webview origin is needed)
 
