@@ -96,7 +96,14 @@ public class OrderService
     public async Task<List<OrderDto>> GetActiveOrdersAsync(
         Guid customerId, CancellationToken ct = default)
     {
-        var activeStatuses = new[] { OrderStatus.Created, OrderStatus.Accepted, OrderStatus.Preparing, OrderStatus.Ready };
+        var activeStatuses = new List<OrderStatus>
+        {
+            OrderStatus.Created,
+            OrderStatus.Accepted,
+            OrderStatus.Preparing,
+            OrderStatus.Ready
+        };
+
         return await _db.Orders
             .Include(o => o.Location)
             .Include(o => o.Items)
