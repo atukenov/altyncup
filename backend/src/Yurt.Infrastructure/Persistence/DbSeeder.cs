@@ -20,6 +20,7 @@ public static class DbSeeder
 
         await SeedLocationsAsync(db, logger);
         await SeedMenuAsync(db, logger);
+        await SeedToppingsAsync(db, logger);
         await SeedAdminsAsync(db, logger);
     }
 
@@ -90,6 +91,84 @@ public static class DbSeeder
 
         await db.SaveChangesAsync();
         logger.LogInformation("Menu seeded.");
+    }
+
+    private static async Task SeedToppingsAsync(ApplicationDbContext db, ILogger logger)
+    {
+        if (await db.MenuToppings.AnyAsync()) return;
+
+        var catCoffeeId = Guid.Parse("22222222-0000-0000-0000-000000000001");
+        var catColdId   = Guid.Parse("22222222-0000-0000-0000-000000000002");
+        var catFoodId   = Guid.Parse("22222222-0000-0000-0000-000000000003");
+
+        // Shared — Coffee + Cold Drinks
+        var extraShot      = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000001"), Name = "Extra Espresso Shot", Price = 0.75m, IsAvailable = true };
+        var vanillaSyrup   = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000002"), Name = "Vanilla Syrup",       Price = 0.50m, IsAvailable = true };
+        var caramelSyrup   = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000003"), Name = "Caramel Syrup",       Price = 0.50m, IsAvailable = true };
+        var hazelnutSyrup  = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000004"), Name = "Hazelnut Syrup",      Price = 0.50m, IsAvailable = true };
+        var oatMilk        = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000005"), Name = "Oat Milk",            Price = 0.75m, IsAvailable = true };
+        var almondMilk     = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000006"), Name = "Almond Milk",         Price = 0.75m, IsAvailable = true };
+        var soyMilk        = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000007"), Name = "Soy Milk",            Price = 0.75m, IsAvailable = true };
+        var whippedCream   = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000008"), Name = "Whipped Cream",       Price = 0.50m, IsAvailable = true };
+
+        // Coffee only
+        var chocolateDrizzle = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000009"), Name = "Chocolate Drizzle", Price = 0.25m, IsAvailable = true };
+        var cinnamon         = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000010"), Name = "Cinnamon",          Price = 0.00m, IsAvailable = true };
+
+        // Cold Drinks only
+        var extraIce   = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000011"), Name = "Extra Ice",         Price = 0.00m, IsAvailable = true };
+        var brownSugar = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000012"), Name = "Brown Sugar Syrup", Price = 0.50m, IsAvailable = true };
+
+        // Food & Pastries only
+        var extraButter  = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000013"), Name = "Extra Butter",    Price = 0.00m, IsAvailable = true };
+        var strawberryJam = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000014"), Name = "Strawberry Jam", Price = 0.50m, IsAvailable = true };
+        var extraAvocado  = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000015"), Name = "Extra Avocado",  Price = 1.50m, IsAvailable = true };
+        var poachedEgg    = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000016"), Name = "Poached Egg",    Price = 1.50m, IsAvailable = true };
+        var creamCheese   = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000017"), Name = "Cream Cheese",   Price = 0.75m, IsAvailable = true };
+        var honey         = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000018"), Name = "Honey",          Price = 0.50m, IsAvailable = true };
+
+        db.MenuToppings.AddRange(
+            extraShot, vanillaSyrup, caramelSyrup, hazelnutSyrup, oatMilk, almondMilk, soyMilk, whippedCream,
+            chocolateDrizzle, cinnamon,
+            extraIce, brownSugar,
+            extraButter, strawberryJam, extraAvocado, poachedEgg, creamCheese, honey
+        );
+
+        db.MenuToppingCategories.AddRange(
+            // Shared: Coffee + Cold Drinks
+            new MenuToppingCategory { ToppingId = extraShot.Id,     CategoryId = catCoffeeId },
+            new MenuToppingCategory { ToppingId = extraShot.Id,     CategoryId = catColdId },
+            new MenuToppingCategory { ToppingId = vanillaSyrup.Id,  CategoryId = catCoffeeId },
+            new MenuToppingCategory { ToppingId = vanillaSyrup.Id,  CategoryId = catColdId },
+            new MenuToppingCategory { ToppingId = caramelSyrup.Id,  CategoryId = catCoffeeId },
+            new MenuToppingCategory { ToppingId = caramelSyrup.Id,  CategoryId = catColdId },
+            new MenuToppingCategory { ToppingId = hazelnutSyrup.Id, CategoryId = catCoffeeId },
+            new MenuToppingCategory { ToppingId = hazelnutSyrup.Id, CategoryId = catColdId },
+            new MenuToppingCategory { ToppingId = oatMilk.Id,       CategoryId = catCoffeeId },
+            new MenuToppingCategory { ToppingId = oatMilk.Id,       CategoryId = catColdId },
+            new MenuToppingCategory { ToppingId = almondMilk.Id,    CategoryId = catCoffeeId },
+            new MenuToppingCategory { ToppingId = almondMilk.Id,    CategoryId = catColdId },
+            new MenuToppingCategory { ToppingId = soyMilk.Id,       CategoryId = catCoffeeId },
+            new MenuToppingCategory { ToppingId = soyMilk.Id,       CategoryId = catColdId },
+            new MenuToppingCategory { ToppingId = whippedCream.Id,  CategoryId = catCoffeeId },
+            new MenuToppingCategory { ToppingId = whippedCream.Id,  CategoryId = catColdId },
+            // Coffee only
+            new MenuToppingCategory { ToppingId = chocolateDrizzle.Id, CategoryId = catCoffeeId },
+            new MenuToppingCategory { ToppingId = cinnamon.Id,         CategoryId = catCoffeeId },
+            // Cold Drinks only
+            new MenuToppingCategory { ToppingId = extraIce.Id,   CategoryId = catColdId },
+            new MenuToppingCategory { ToppingId = brownSugar.Id, CategoryId = catColdId },
+            // Food & Pastries only
+            new MenuToppingCategory { ToppingId = extraButter.Id,   CategoryId = catFoodId },
+            new MenuToppingCategory { ToppingId = strawberryJam.Id, CategoryId = catFoodId },
+            new MenuToppingCategory { ToppingId = extraAvocado.Id,  CategoryId = catFoodId },
+            new MenuToppingCategory { ToppingId = poachedEgg.Id,    CategoryId = catFoodId },
+            new MenuToppingCategory { ToppingId = creamCheese.Id,   CategoryId = catFoodId },
+            new MenuToppingCategory { ToppingId = honey.Id,         CategoryId = catFoodId }
+        );
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Toppings seeded.");
     }
 
     private static async Task SeedAdminsAsync(ApplicationDbContext db, ILogger logger)
