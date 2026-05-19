@@ -92,10 +92,7 @@ yurt/
     "Audience": "yurt-clients",
     "ExpiryDays": "7"
   },
-  "AllowedOrigins": [
-    "http://localhost:4200",
-    "http://localhost:4300"
-  ]
+  "AllowedOrigins": ["http://localhost:4200", "http://localhost:4300"]
 }
 ```
 
@@ -171,15 +168,15 @@ ng build yurt-admin --configuration production
 
 ## Tech Stack
 
-| Layer     | Technology                                     |
-| --------- | ---------------------------------------------- |
-| Backend   | .NET 8, ASP.NET Core, Clean Architecture       |
-| Database  | SQL Server, EF Core 8, Migrations              |
-| Auth      | JWT Bearer, BCrypt, role-based policies        |
-| Real-time | SignalR                                        |
+| Layer     | Technology                                      |
+| --------- | ----------------------------------------------- |
+| Backend   | .NET 8, ASP.NET Core, Clean Architecture        |
+| Database  | SQL Server, EF Core 8, Migrations               |
+| Auth      | JWT Bearer, BCrypt, role-based policies         |
+| Real-time | SignalR                                         |
 | Frontend  | Angular 21, Tailwind CSS, Standalone components |
-| Logging   | Serilog                                        |
-| Docs      | Swagger / OpenAPI                              |
+| Logging   | Serilog                                         |
+| Docs      | Swagger / OpenAPI                               |
 
 ## Coming soon
 
