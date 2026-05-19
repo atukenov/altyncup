@@ -119,6 +119,40 @@ public class PromotionConfiguration : IEntityTypeConfiguration<Promotion>
     }
 }
 
+public class MenuToppingConfiguration : IEntityTypeConfiguration<MenuTopping>
+{
+    public void Configure(EntityTypeBuilder<MenuTopping> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Name).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.Price).HasPrecision(10, 2);
+    }
+}
+
+public class MenuToppingCategoryConfiguration : IEntityTypeConfiguration<MenuToppingCategory>
+{
+    public void Configure(EntityTypeBuilder<MenuToppingCategory> builder)
+    {
+        builder.HasKey(e => new { e.ToppingId, e.CategoryId });
+        builder.HasOne(e => e.Topping).WithMany(t => t.ToppingCategories)
+            .HasForeignKey(e => e.ToppingId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(e => e.Category).WithMany(c => c.ToppingLinks)
+            .HasForeignKey(e => e.CategoryId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class OrderItemToppingConfiguration : IEntityTypeConfiguration<OrderItemTopping>
+{
+    public void Configure(EntityTypeBuilder<OrderItemTopping> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.ToppingName).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.Price).HasPrecision(10, 2);
+        builder.HasOne(e => e.OrderItem).WithMany(oi => oi.Toppings)
+            .HasForeignKey(e => e.OrderItemId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 {
     public void Configure(EntityTypeBuilder<Payment> builder)

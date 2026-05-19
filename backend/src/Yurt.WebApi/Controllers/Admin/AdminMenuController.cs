@@ -58,4 +58,24 @@ public class AdminMenuController : ApiControllerBase
     [HttpDelete("items/{id:guid}")]
     public async Task<IActionResult> DeleteItem(Guid id, CancellationToken ct)
         => ToResult(await _menuService.DeleteItemAsync(id, ct));
+
+    // ── TOPPINGS ─────────────────────────────────────────────────────────────────
+
+    [HttpGet("toppings")]
+    public async Task<IActionResult> GetToppings(CancellationToken ct)
+        => Ok(await _menuService.GetToppingsAsync(null, ct));
+
+    [HttpPost("toppings")]
+    public async Task<IActionResult> CreateTopping(
+        [FromBody] CreateToppingDto dto, CancellationToken ct)
+        => ToResult(await _menuService.CreateToppingAsync(dto, ct));
+
+    [HttpPut("toppings/{id:guid}")]
+    public async Task<IActionResult> UpdateTopping(
+        Guid id, [FromBody] UpdateToppingDto dto, CancellationToken ct)
+        => ToResult(await _menuService.UpdateToppingAsync(id, dto, ct));
+
+    [HttpDelete("toppings/{id:guid}")]
+    public async Task<IActionResult> DeleteTopping(Guid id, CancellationToken ct)
+        => ToResult(await _menuService.DeleteToppingAsync(id, ct));
 }

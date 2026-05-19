@@ -85,6 +85,14 @@ export interface MenuCategory {
   sortOrder: number;
 }
 
+export interface MenuTopping {
+  id: string;
+  name: string;
+  price: number;
+  isAvailable: boolean;
+  categoryIds: string[];
+}
+
 export interface MenuItem {
   id: string;
   categoryId: string;
@@ -94,13 +102,21 @@ export interface MenuItem {
   price: number;
   isAvailable: boolean;
   imageUrl?: string;
+  availableToppings?: MenuTopping[];
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────
 
+export interface OrderItemToppingInput {
+  toppingId: string;
+  toppingName: string;
+  price: number;
+}
+
 export interface OrderItemInput {
   menuItemId: string;
   quantity: number;
+  toppings?: OrderItemToppingInput[];
 }
 
 export interface CreateOrderRequest {
@@ -143,6 +159,12 @@ export interface PaymentStatusResponse {
   rawResponse?: string;
 }
 
+export interface OrderItemTopping {
+  toppingId: string;
+  toppingName: string;
+  price: number;
+}
+
 export interface OrderItem {
   id: string;
   menuItemId: string;
@@ -150,6 +172,7 @@ export interface OrderItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  toppings: OrderItemTopping[];
 }
 
 export interface Order {
@@ -182,6 +205,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   imageUrl?: string;
+  selectedToppings?: OrderItemToppingInput[];
 }
 
 // ── Admin DTOs ───────────────────────────────────────────────────────────────

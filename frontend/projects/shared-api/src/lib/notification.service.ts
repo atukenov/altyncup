@@ -53,7 +53,7 @@ export class NotificationService {
         title: options.title,
         body: options.body,
         id: Math.floor(Math.random() * 1000000),
-        tag: options.tag || 'order-notification',
+        extra: { tag: options.tag || 'order-notification' },
         largeBody: options.largeBody,
         sound: options.sound || 'default',
       };

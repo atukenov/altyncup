@@ -29,4 +29,10 @@ public class MenuController : ApiControllerBase
     [HttpGet("items/{id:guid}")]
     public async Task<IActionResult> GetItem(Guid id, CancellationToken ct)
         => ToResult(await _menuService.GetItemByIdAsync(id, ct));
+
+    /// <summary>Get available toppings, optionally filtered by category.</summary>
+    [HttpGet("toppings")]
+    public async Task<IActionResult> GetToppings(
+        [FromQuery] Guid? categoryId, CancellationToken ct)
+        => Ok(await _menuService.GetToppingsAsync(categoryId, ct));
 }

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\amakenzi\\\\Desktop\\\\Dev\\\\altyncup\\\\backend\\\\src\" | Select-Object Name, @{Name=\"Type\"; Expression={if\\($_.PSIsContainer\\) {\"Directory\"} else {\"File\"}}})"
+    ]
+  }
+}

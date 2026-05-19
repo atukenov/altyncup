@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
-import { MenuItem, MenuCategory } from 'shared-models';
+import { MenuItem, MenuCategory, MenuTopping, OrderItemToppingInput } from 'shared-models';
 import { SkeletonCardComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
 
@@ -36,6 +36,14 @@ export class MenuListComponent implements OnInit {
     return items;
   });
 
+  // Topping modal state
+  toppingModalItem = signal<MenuItem | null>(null);
+  selectedToppingIds = signal<Set<string>>(new Set());
+
+  get toppingModalToppings(): MenuTopping[] {
+    return this.toppingModalItem()?.availableToppings ?? [];
+  }
+
   ngOnInit(): void {
     this.api.getCategories().subscribe((cats) => this.categories.set(cats));
     this.loadItems();
@@ -65,12 +73,49 @@ export class MenuListComponent implements OnInit {
   }
 
   addToCart(item: MenuItem): void {
+    if (item.availableToppings?.length) {
+      this.toppingModalItem.set(item);
+      this.selectedToppingIds.set(new Set());
+    } else {
+      this.commitAddToCart(item, []);
+    }
+  }
+
+  isToppingSelected(id: string): boolean {
+    return this.selectedToppingIds().has(id);
+  }
+
+  toggleTopping(id: string): void {
+    this.selectedToppingIds.update((set) => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  confirmToppings(): void {
+    const item = this.toppingModalItem();
+    if (!item) return;
+    const toppings = (item.availableToppings ?? [])
+      .filter((t) => this.selectedToppingIds().has(t.id))
+      .map<OrderItemToppingInput>((t) => ({ toppingId: t.id, toppingName: t.name, price: t.price }));
+    this.commitAddToCart(item, toppings);
+    this.toppingModalItem.set(null);
+  }
+
+  dismissToppingModal(): void {
+    this.toppingModalItem.set(null);
+  }
+
+  private commitAddToCart(item: MenuItem, toppings: OrderItemToppingInput[]): void {
     this.cart.addItem({
       menuItemId: item.id,
       name: item.name,
       price: item.price,
       quantity: 1,
       imageUrl: item.imageUrl,
+      selectedToppings: toppings.length ? toppings : undefined,
     });
     this.toast.success(`${item.name} added to cart`);
   }

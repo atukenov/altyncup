@@ -50,16 +50,26 @@ public class OrderService
         var orderItems = dto.Items.Select(i =>
         {
             var menuItem = menuItems.First(m => m.Id == i.MenuItemId);
-            var lineTotal = menuItem.Price * i.Quantity;
-            return new OrderItem
+            var toppingTotal = i.Toppings?.Sum(t => t.Price) ?? 0m;
+            var lineTotal = (menuItem.Price + toppingTotal) * i.Quantity;
+            var orderItem = new OrderItem
             {
                 OrderId = order.Id,
                 MenuItemId = i.MenuItemId,
                 MenuItemName = menuItem.Name,
                 Quantity = i.Quantity,
-                UnitPrice = menuItem.Price,
+                UnitPrice = menuItem.Price + toppingTotal,
                 LineTotal = lineTotal
             };
+            if (i.Toppings is { Count: > 0 })
+                orderItem.Toppings = i.Toppings.Select(t => new OrderItemTopping
+                {
+                    OrderItemId = orderItem.Id,
+                    ToppingId = t.ToppingId,
+                    ToppingName = t.ToppingName,
+                    Price = t.Price
+                }).ToList();
+            return orderItem;
         }).ToList();
 
         order.Items = orderItems;
@@ -106,7 +116,7 @@ public class OrderService
 
         return await _db.Orders
             .Include(o => o.Location)
-            .Include(o => o.Items)
+            .Include(o => o.Items).ThenInclude(i => i.Toppings)
             .Where(o => o.CustomerUserId == customerId && activeStatuses.Contains(o.Status))
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => MapToDto(o))
@@ -117,7 +127,7 @@ public class OrderService
         Guid customerId, CancellationToken ct = default)
         => await _db.Orders
             .Include(o => o.Location)
-            .Include(o => o.Items)
+            .Include(o => o.Items).ThenInclude(i => i.Toppings)
             .Where(o => o.CustomerUserId == customerId && o.Status == OrderStatus.Completed)
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => MapToDto(o))
@@ -127,7 +137,7 @@ public class OrderService
         Guid customerId, CancellationToken ct = default)
         => await _db.Orders
             .Include(o => o.Location)
-            .Include(o => o.Items)
+            .Include(o => o.Items).ThenInclude(i => i.Toppings)
             .Where(o => o.CustomerUserId == customerId && o.Status == OrderStatus.Declined)
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => MapToDto(o))
@@ -138,7 +148,7 @@ public class OrderService
     {
         var query = _db.Orders
             .Include(o => o.Location)
-            .Include(o => o.Items)
+            .Include(o => o.Items).ThenInclude(i => i.Toppings)
             .AsQueryable();
 
         if (status.HasValue) query = query.Where(o => o.Status == status.Value);
@@ -231,7 +241,7 @@ public class OrderService
     private async Task<Order?> LoadOrderAsync(Guid id, CancellationToken ct)
         => await _db.Orders
             .Include(o => o.Location)
-            .Include(o => o.Items)
+            .Include(o => o.Items).ThenInclude(i => i.Toppings)
             .FirstOrDefaultAsync(o => o.Id == id, ct);
 
     public static OrderDto MapToDto(Order o)
@@ -251,6 +261,7 @@ public class OrderService
             o.Subtotal,
             o.Total,
             o.Items.Select(i => new OrderItemDto(
-                i.Id, i.MenuItemId, i.MenuItemName, i.Quantity, i.UnitPrice, i.LineTotal
+                i.Id, i.MenuItemId, i.MenuItemName, i.Quantity, i.UnitPrice, i.LineTotal,
+                i.Toppings.Select(t => new OrderItemToppingDto(t.ToppingId, t.ToppingName, t.Price)).ToList()
             )).ToList());
 }

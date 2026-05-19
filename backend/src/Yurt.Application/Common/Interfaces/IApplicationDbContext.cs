@@ -10,6 +10,9 @@ public interface IApplicationDbContext
     DbSet<Location> Locations { get; }
     DbSet<MenuCategory> MenuCategories { get; }
     DbSet<MenuItem> MenuItems { get; }
+    DbSet<MenuTopping> MenuToppings { get; }
+    DbSet<MenuToppingCategory> MenuToppingCategories { get; }
+    DbSet<OrderItemTopping> OrderItemToppings { get; }
     DbSet<Favorite> Favorites { get; }
     DbSet<Order> Orders { get; }
     DbSet<OrderItem> OrderItems { get; }

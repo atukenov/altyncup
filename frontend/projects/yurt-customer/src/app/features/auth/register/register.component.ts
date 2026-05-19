@@ -21,7 +21,7 @@ export class RegisterComponent {
   readonly pinInputs = viewChildren<ElementRef>('pinInput');
   readonly confirmInputs = viewChildren<ElementRef>('confirmInput');
 
-  mobileNumber = '';
+  phoneDigits = '';
   firstName = '';
   lastName = '';
   pins: string[] = ['', '', '', ''];
@@ -63,8 +63,8 @@ export class RegisterComponent {
       this.error.set('Enter your last name.');
       return;
     }
-    if (!this.mobileNumber.trim()) {
-      this.error.set('Enter your mobile number.');
+    if (!/^\d{10}$/.test(this.phoneDigits)) {
+      this.error.set('Enter your 10-digit mobile number.');
       return;
     }
     if (this.pin4.length !== 4) {
@@ -78,7 +78,7 @@ export class RegisterComponent {
 
     this.loading.set(true);
     this.api
-      .register(this.mobileNumber, this.pin4, this.firstName.trim(), this.lastName.trim())
+      .register('+7' + this.phoneDigits, this.pin4, this.firstName.trim(), this.lastName.trim())
       .subscribe({
         next: (res) => {
           this.auth.setUser({

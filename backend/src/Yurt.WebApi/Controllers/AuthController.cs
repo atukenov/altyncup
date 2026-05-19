@@ -54,6 +54,16 @@ public class AuthController : ApiControllerBase
         return ToResult(result);
     }
 
+    /// <summary>Issue a fresh 7-day token for the current customer (sliding expiration).</summary>
+    [HttpPost("refresh")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> Refresh(CancellationToken ct)
+    {
+        var userId = _currentUser.UserId!.Value;
+        var result = await _authService.RefreshCustomerTokenAsync(userId, ct);
+        return ToResult(result);
+    }
+
     /// <summary>Get current customer profile.</summary>
     [HttpGet("me")]
     [Authorize(Policy = "CustomerOnly")]

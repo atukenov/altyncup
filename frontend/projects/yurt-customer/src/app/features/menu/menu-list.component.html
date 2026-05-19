@@ -118,6 +118,56 @@
     }
   </div>
 
+  <!-- Topping selector bottom sheet -->
+  @if (toppingModalItem()) {
+    <div
+      class="fixed inset-0 bg-black/50 z-50 flex items-end"
+      (click)="dismissToppingModal()"
+    >
+      <div
+        class="bg-white w-full rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-5"></div>
+        <h3 class="font-bold text-stone-800 text-lg mb-1">Customise your order</h3>
+        <p class="text-stone-500 text-sm mb-4">{{ toppingModalItem()!.name }}</p>
+
+        <div class="space-y-2 mb-6">
+          @for (topping of toppingModalToppings; track topping.id) {
+            <label
+              class="flex items-center justify-between py-3 px-4 rounded-2xl border-2 cursor-pointer transition-colors"
+              [class]="
+                isToppingSelected(topping.id)
+                  ? 'border-amber-400 bg-amber-50'
+                  : 'border-stone-100 bg-stone-50'
+              "
+            >
+              <div class="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  [checked]="isToppingSelected(topping.id)"
+                  (change)="toggleTopping(topping.id)"
+                  class="w-4 h-4 rounded text-amber-500 border-stone-300 focus:ring-amber-400"
+                />
+                <span class="text-stone-800 font-medium text-sm">{{ topping.name }}</span>
+              </div>
+              <span class="text-amber-600 font-semibold text-sm">
+                {{ topping.price === 0 ? 'Free' : '+' + (topping.price | currency2) }}
+              </span>
+            </label>
+          }
+        </div>
+
+        <button
+          (click)="confirmToppings()"
+          class="w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold rounded-2xl py-4 transition-colors focus:outline-none"
+        >
+          Add to Cart
+        </button>
+      </div>
+    </div>
+  }
+
   <!-- Sticky cart bar -->
   @if (cartCount() > 0) {
     <div class="fixed bottom-16 left-4 right-4 max-w-lg mx-auto">

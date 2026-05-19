@@ -12,6 +12,7 @@ import {
   Location,
   MenuCategory,
   MenuItem,
+  MenuTopping,
   Order,
   OrderStatus,
   PaymentInvoiceResponse,
@@ -55,6 +56,10 @@ export class YurtApiService {
 
   updateProfile(data: { firstName: string; lastName: string }): Observable<CustomerProfile> {
     return this.http.put<CustomerProfile>(`${this.baseUrl}/api/auth/me`, data);
+  }
+
+  refreshToken(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.baseUrl}/api/auth/refresh`, {});
   }
 
   adminLogin(username: string, password: string): Observable<AuthResponse> {
@@ -128,6 +133,27 @@ export class YurtApiService {
 
   adminDeleteCategory(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/api/admin/menu/categories/${id}`);
+  }
+
+  adminGetToppings(): Observable<MenuTopping[]> {
+    return this.http.get<MenuTopping[]>(`${this.baseUrl}/api/admin/menu/toppings`);
+  }
+
+  adminCreateTopping(data: Partial<MenuTopping>): Observable<MenuTopping> {
+    return this.http.post<MenuTopping>(`${this.baseUrl}/api/admin/menu/toppings`, data);
+  }
+
+  adminUpdateTopping(id: string, data: Partial<MenuTopping>): Observable<MenuTopping> {
+    return this.http.put<MenuTopping>(`${this.baseUrl}/api/admin/menu/toppings/${id}`, data);
+  }
+
+  adminDeleteTopping(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/api/admin/menu/toppings/${id}`);
+  }
+
+  getToppings(categoryId?: string): Observable<MenuTopping[]> {
+    const params = categoryId ? new HttpParams().set('categoryId', categoryId) : undefined;
+    return this.http.get<MenuTopping[]>(`${this.baseUrl}/api/menu/toppings`, { params });
   }
 
   // ── Favorites ──────────────────────────────────────────────────────────────

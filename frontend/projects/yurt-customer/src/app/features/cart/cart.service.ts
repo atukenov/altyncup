@@ -6,7 +6,12 @@ export class CartService {
   private readonly CART_KEY = 'yurt_cart';
   readonly items = signal<CartItem[]>(this.loadCart());
 
-  readonly total = computed(() => this.items().reduce((sum, i) => sum + i.price * i.quantity, 0));
+  readonly total = computed(() =>
+    this.items().reduce((sum, i) => {
+      const toppingsPrice = i.selectedToppings?.reduce((s, t) => s + t.price, 0) ?? 0;
+      return sum + (i.price + toppingsPrice) * i.quantity;
+    }, 0),
+  );
 
   readonly count = computed(() => this.items().reduce((sum, i) => sum + i.quantity, 0));
 

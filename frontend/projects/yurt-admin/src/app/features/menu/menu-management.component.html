@@ -40,60 +40,155 @@
     </div>
   </div>
 
-  <!-- Items table -->
-  <div class="flex-1 overflow-y-auto">
+  <!-- Main content -->
+  <div class="flex-1 overflow-y-auto flex flex-col min-w-0">
+    <!-- Tab bar + action button -->
     <div
       class="px-6 py-4 sticky top-0 bg-white border-b border-slate-100 flex items-center justify-between z-10"
     >
-      <h2 class="text-lg font-bold text-slate-800">Menu Items</h2>
-      <button
-        (click)="openItemDialog()"
-        class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors shadow-sm"
-      >
-        <span class="text-base leading-none font-bold">+</span> Add Item
-      </button>
+      <div class="flex gap-1 bg-slate-100 rounded-xl p-1">
+        <button
+          (click)="activeTab.set('items')"
+          [class]="
+            activeTab() === 'items'
+              ? 'bg-white text-slate-800 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          "
+          class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+        >
+          Items
+        </button>
+        <button
+          (click)="activeTab.set('toppings')"
+          [class]="
+            activeTab() === 'toppings'
+              ? 'bg-white text-slate-800 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          "
+          class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+        >
+          Toppings
+        </button>
+      </div>
+
+      @if (activeTab() === 'items') {
+        <button
+          (click)="openItemDialog()"
+          class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors shadow-sm"
+        >
+          <span class="text-base leading-none font-bold">+</span> Add Item
+        </button>
+      } @else {
+        <button
+          (click)="openToppingDialog()"
+          class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors shadow-sm"
+        >
+          <span class="text-base leading-none font-bold">+</span> Add Topping
+        </button>
+      }
     </div>
 
-    @if (loading()) {
-      <div class="p-8 text-center text-slate-400 animate-pulse">Loading…</div>
-    } @else {
+    <!-- Items table -->
+    @if (activeTab() === 'items') {
+      @if (loading()) {
+        <div class="p-8 text-center text-slate-400 animate-pulse">Loading…</div>
+      } @else {
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+            <tr>
+              <th class="text-left px-6 py-3">Name</th>
+              <th class="text-left px-6 py-3">Category</th>
+              <th class="text-right px-6 py-3">Price</th>
+              <th class="text-center px-6 py-3">Available</th>
+              <th class="px-6 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-slate-50">
+            @for (item of filteredItems(); track item.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-6 py-3 font-medium text-slate-800">{{ item.name }}</td>
+                <td class="px-6 py-3 text-slate-500">{{ categoryName(item.categoryId) }}</td>
+                <td class="px-6 py-3 text-right font-semibold text-amber-600">
+                  {{ item.price | currency2 }}
+                </td>
+                <td class="px-6 py-3 text-center">
+                  <span
+                    [class]="
+                      item.isAvailable ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                    "
+                    class="text-xs px-2 py-0.5 rounded-full"
+                    >{{ item.isAvailable ? 'Yes' : 'No' }}</span
+                  >
+                </td>
+                <td class="px-6 py-3 text-right">
+                  <div class="flex justify-end gap-2">
+                    <button
+                      (click)="openItemDialog(item)"
+                      class="text-xs text-slate-600 hover:text-amber-600 px-2 py-1 rounded hover:bg-amber-50 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      (click)="deleteItem(item)"
+                      class="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        @if (!filteredItems().length) {
+          <div class="py-12 text-center text-slate-400 text-sm">No items in this category</div>
+        }
+      }
+    }
+
+    <!-- Toppings table -->
+    @if (activeTab() === 'toppings') {
       <table class="w-full text-sm">
         <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
           <tr>
             <th class="text-left px-6 py-3">Name</th>
-            <th class="text-left px-6 py-3">Category</th>
+            <th class="text-left px-6 py-3">Categories</th>
             <th class="text-right px-6 py-3">Price</th>
             <th class="text-center px-6 py-3">Available</th>
             <th class="px-6 py-3"></th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-slate-50">
-          @for (item of filteredItems(); track item.id) {
+          @for (topping of toppings(); track topping.id) {
             <tr class="hover:bg-slate-50 transition-colors">
-              <td class="px-6 py-3 font-medium text-slate-800">{{ item.name }}</td>
-              <td class="px-6 py-3 text-slate-500">{{ categoryName(item.categoryId) }}</td>
+              <td class="px-6 py-3 font-medium text-slate-800">{{ topping.name }}</td>
+              <td class="px-6 py-3 text-slate-500 text-xs">
+                {{ toppingCategoryNames(topping.categoryIds) }}
+              </td>
               <td class="px-6 py-3 text-right font-semibold text-amber-600">
-                {{ item.price | currency2 }}
+                {{ topping.price === 0 ? 'Free' : (topping.price | currency2) }}
               </td>
               <td class="px-6 py-3 text-center">
                 <span
                   [class]="
-                    item.isAvailable ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                    topping.isAvailable
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-slate-100 text-slate-500'
                   "
                   class="text-xs px-2 py-0.5 rounded-full"
-                  >{{ item.isAvailable ? 'Yes' : 'No' }}</span
+                  >{{ topping.isAvailable ? 'Yes' : 'No' }}</span
                 >
               </td>
               <td class="px-6 py-3 text-right">
                 <div class="flex justify-end gap-2">
                   <button
-                    (click)="openItemDialog(item)"
+                    (click)="openToppingDialog(topping)"
                     class="text-xs text-slate-600 hover:text-amber-600 px-2 py-1 rounded hover:bg-amber-50 transition-colors"
                   >
                     Edit
                   </button>
                   <button
-                    (click)="deleteItem(item)"
+                    (click)="deleteTopping(topping)"
                     class="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
                   >
                     Delete
@@ -104,8 +199,8 @@
           }
         </tbody>
       </table>
-      @if (!filteredItems().length) {
-        <div class="py-12 text-center text-slate-400 text-sm">No items in this category</div>
+      @if (!toppings().length) {
+        <div class="py-12 text-center text-slate-400 text-sm">No toppings yet</div>
       }
     }
   </div>
@@ -229,6 +324,83 @@
           [fullWidth]="true"
           [loading]="saving()"
           (clicked)="saveCat()"
+          >Save</yurt-button
+        >
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Topping dialog -->
+@if (showToppingDialog()) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+      <h3 class="text-lg font-bold text-slate-800 mb-4">
+        {{ toppingForm().id ? 'Edit' : 'Add' }} Topping
+      </h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Name *</label>
+          <input
+            type="text"
+            [ngModel]="toppingForm().name"
+            (ngModelChange)="patchToppingForm('name', $event)"
+            placeholder="e.g. Oat Milk, Extra Hot"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Price (0 = free)</label>
+          <input
+            type="number"
+            [ngModel]="toppingForm().price"
+            (ngModelChange)="patchToppingForm('price', $event)"
+            min="0"
+            step="0.01"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-2">Show for categories</label>
+          <div class="space-y-2 max-h-40 overflow-y-auto border border-slate-100 rounded-xl p-3">
+            @for (cat of categories(); track cat.id) {
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  [checked]="isToppingCategorySelected(cat.id)"
+                  (change)="toggleToppingCategory(cat.id)"
+                  class="rounded border-slate-300 text-amber-500 focus:ring-amber-400"
+                />
+                <span class="text-sm text-slate-700">{{ cat.name }}</span>
+              </label>
+            }
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="toppingAvailable"
+            [ngModel]="toppingForm().isAvailable"
+            (ngModelChange)="patchToppingForm('isAvailable', $event)"
+            class="rounded border-slate-300 text-amber-500 focus:ring-amber-400"
+          />
+          <label for="toppingAvailable" class="text-sm text-slate-700">Available</label>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-5">
+        <yurt-button
+          variant="ghost"
+          size="md"
+          [fullWidth]="true"
+          (clicked)="showToppingDialog.set(false)"
+          >Cancel</yurt-button
+        >
+        <yurt-button
+          variant="primary"
+          size="md"
+          [fullWidth]="true"
+          [loading]="saving()"
+          (clicked)="saveTopping()"
           >Save</yurt-button
         >
       </div>

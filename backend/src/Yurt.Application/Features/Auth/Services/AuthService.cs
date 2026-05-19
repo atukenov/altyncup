@@ -104,6 +104,21 @@ public class AuthService
             new AuthResponseDto(token, "admin", admin.Id, admin.Username));
     }
 
+    public async Task<Result<AuthResponseDto>> RefreshCustomerTokenAsync(
+        Guid userId, CancellationToken ct = default)
+    {
+        var user = await _db.CustomerUsers.FindAsync([userId], ct);
+        if (user == null)
+            return Result<AuthResponseDto>.NotFound("User not found.");
+
+        var displayName = string.IsNullOrWhiteSpace(user.FirstName)
+            ? user.MobileNumber
+            : $"{user.FirstName} {user.LastName}".Trim();
+        var token = _tokenService.GenerateCustomerToken(user.Id, user.MobileNumber);
+        return Result<AuthResponseDto>.Success(
+            new AuthResponseDto(token, "customer", user.Id, displayName));
+    }
+
     private static string NormalizeMobile(string mobile)
         => mobile.Trim().Replace(" ", "").Replace("-", "");
 

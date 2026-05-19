@@ -8,4 +8,5 @@ public class MenuCategory : BaseEntity
     public int SortOrder { get; set; }
 
     public ICollection<MenuItem> Items { get; set; } = new List<MenuItem>();
+    public ICollection<MenuToppingCategory> ToppingLinks { get; set; } = new List<MenuToppingCategory>();
 }

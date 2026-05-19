@@ -1,6 +1,7 @@
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import {
+  AuthStateService,
   NotificationService,
   OrderNotificationService,
   SignalrService,
@@ -17,6 +18,7 @@ import { environment } from '../environments/environment';
 })
 export class App implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
+  private auth = inject(AuthStateService);
   private signalr = inject(SignalrService);
   private orderNotifications = inject(OrderNotificationService);
   private notifications = inject(NotificationService);
@@ -24,6 +26,20 @@ export class App implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.api.configure(environment.apiUrl);
     this.signalr.configure(environment.apiUrl);
+
+    if (this.auth.isLoggedIn) {
+      this.api.refreshToken().subscribe({
+        next: (res) => {
+          this.auth.setUser({
+            token: res.token,
+            userId: res.userId,
+            displayName: res.displayName,
+            userType: res.userType,
+          });
+        },
+        error: () => this.auth.logout(),
+      });
+    }
     this.notifications.initialize();
 
     // Initialize SignalR connection and order notifications

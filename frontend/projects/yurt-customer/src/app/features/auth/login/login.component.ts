@@ -20,7 +20,7 @@ export class LoginComponent {
 
   readonly pinInputs = viewChildren<ElementRef>('pinInput');
 
-  mobileNumber = '';
+  phoneDigits = '';
   pins: string[] = ['', '', '', ''];
   loading = signal(false);
   error = signal('');
@@ -34,6 +34,9 @@ export class LoginComponent {
     this.pins[index] = val.replace(/\D/g, '').slice(-1);
     if (this.pins[index] && index < 3) {
       this.pinInputs()[index + 1]?.nativeElement.focus();
+    }
+    if (index === 3 && this.pins[3]) {
+      this.onLogin();
     }
   }
 
@@ -51,12 +54,15 @@ export class LoginComponent {
     });
     this.pinInputs()[Math.min(pasted.length, 3)]?.nativeElement.focus();
     event.preventDefault();
+    if (pasted.length === 4) {
+      this.onLogin();
+    }
   }
 
   onLogin(): void {
     this.error.set('');
-    if (!this.mobileNumber.trim()) {
-      this.error.set('Enter your mobile number.');
+    if (!/^\d{10}$/.test(this.phoneDigits)) {
+      this.error.set('Enter your 10-digit mobile number.');
       return;
     }
     if (this.pin4.length !== 4) {
@@ -65,7 +71,7 @@ export class LoginComponent {
     }
 
     this.loading.set(true);
-    this.api.login(this.mobileNumber, this.pin4).subscribe({
+    this.api.login('+7' + this.phoneDigits, this.pin4).subscribe({
       next: (res) => {
         this.auth.setUser({
           token: res.token,

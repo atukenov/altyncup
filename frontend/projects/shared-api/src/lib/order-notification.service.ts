@@ -86,12 +86,11 @@ export class OrderNotificationService {
 
   private getStatusMessage(status: OrderStatus): string {
     const statusMessages: Record<OrderStatus, string> = {
-      [OrderStatus.Pending]: 'Pending',
-      [OrderStatus.Confirmed]: 'Confirmed',
+      [OrderStatus.Created]: 'Order received',
+      [OrderStatus.Accepted]: 'Order accepted',
       [OrderStatus.Preparing]: 'Being Prepared',
       [OrderStatus.Ready]: 'Ready for Pickup',
       [OrderStatus.Completed]: 'Completed',
-      [OrderStatus.Cancelled]: 'Cancelled',
       [OrderStatus.Declined]: 'Declined',
     };
 

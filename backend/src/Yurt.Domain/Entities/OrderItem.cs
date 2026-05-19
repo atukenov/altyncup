@@ -13,4 +13,5 @@ public class OrderItem : BaseEntity
 
     public Order Order { get; set; } = null!;
     public MenuItem MenuItem { get; set; } = null!;
+    public ICollection<OrderItemTopping> Toppings { get; set; } = new List<OrderItemTopping>();
 }

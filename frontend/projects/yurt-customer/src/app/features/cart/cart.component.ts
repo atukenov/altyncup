@@ -40,7 +40,11 @@ export class CartComponent {
     this.loading.set(true);
     const items = this.cart
       .items()
-      .map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity }));
+      .map((i) => ({
+        menuItemId: i.menuItemId,
+        quantity: i.quantity,
+        toppings: i.selectedToppings ?? [],
+      }));
 
     this.api.createOrder({ locationId, items }).subscribe({
       next: (order) => {
