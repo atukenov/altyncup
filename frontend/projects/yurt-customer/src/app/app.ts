@@ -1,6 +1,11 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { YurtApiService } from 'shared-api';
+import {
+  NotificationService,
+  OrderNotificationService,
+  SignalrService,
+  YurtApiService,
+} from 'shared-api';
 import { ToastContainerComponent } from 'shared-ui';
 import { environment } from '../environments/environment';
 
@@ -10,10 +15,32 @@ import { environment } from '../environments/environment';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App implements OnInit {
+export class App implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
+  private signalr = inject(SignalrService);
+  private orderNotifications = inject(OrderNotificationService);
+  private notifications = inject(NotificationService);
 
   ngOnInit(): void {
     this.api.configure(environment.apiUrl);
+    this.signalr.configure(environment.apiUrl);
+    this.notifications.initialize();
+
+    // Initialize SignalR connection and order notifications
+    this.signalr
+      .startConnection()
+      .then(() => {
+        this.orderNotifications.initialize();
+      })
+      .catch((error) => {
+        console.error('Failed to start SignalR connection:', error);
+      });
+
+    // Request web notification permissions if running in browser
+    this.notifications.requestWebNotificationPermission();
+  }
+
+  ngOnDestroy(): void {
+    this.signalr.stopConnection();
   }
 }
