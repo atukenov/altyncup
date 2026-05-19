@@ -140,6 +140,40 @@
           <span class="text-stone-700 font-semibold">{{ o.paymentMethod }}</span>
         </div>
       }
+      @if (canPay(o)) {
+        <div class="mt-4 space-y-3">
+          <button
+            type="button"
+            class="w-full inline-flex justify-center items-center rounded-2xl bg-amber-500 text-white px-4 py-3 text-sm font-semibold shadow-sm hover:bg-amber-600 disabled:opacity-60"
+            [disabled]="paymentLoading()"
+            (click)="startPayment()"
+          >
+            @if (!paymentLoading()) {
+              Pay with Kaspi
+            } @else {
+              Creating invoice...
+            }
+          </button>
+          @if (paymentError()) {
+            <div class="text-red-700 text-sm">{{ paymentError() }}</div>
+          }
+        </div>
+      }
+      @if (payment()) {
+        <div class="mt-5">
+          <app-payment-qr-code
+            [qrCode]="payment()!.qrCode"
+            [amount]="payment()!.amount"
+            label="Scan this QR code with the Kaspi app"
+          ></app-payment-qr-code>
+          <app-payment-status
+            [status]="payment()!.status"
+            [provider]="payment()!.provider"
+            [orderStatus]="o.status"
+            [paymentUrl]="payment()!.paymentUrl"
+          ></app-payment-status>
+        </div>
+      }
     </div>
   }
 </div>

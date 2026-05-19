@@ -1,21 +1,24 @@
-import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  AcceptOrderRequest,
   AnalyticsResponse,
   AuthResponse,
+  CreateOrderRequest,
+  CreatePaymentRequest,
   CustomerProfile,
+  DeclineOrderRequest,
   Location,
   MenuCategory,
   MenuItem,
   Order,
-  CreateOrderRequest,
-  AcceptOrderRequest,
-  DeclineOrderRequest,
-  UpdateStatusRequest,
-  UpdatePaymentRequest,
   OrderStatus,
+  PaymentInvoiceResponse,
+  PaymentStatusResponse,
   Promotion,
+  UpdatePaymentRequest,
+  UpdateStatusRequest,
 } from 'shared-models';
 
 @Injectable({ providedIn: 'root' })
@@ -147,6 +150,14 @@ export class YurtApiService {
 
   getActiveOrders(): Observable<Order[]> {
     return this.http.get<Order[]>(`${this.baseUrl}/api/orders/active`);
+  }
+
+  createPayment(request: CreatePaymentRequest): Observable<PaymentInvoiceResponse> {
+    return this.http.post<PaymentInvoiceResponse>(`${this.baseUrl}/api/payments/create`, request);
+  }
+
+  getPaymentStatus(invoiceId: string): Observable<PaymentStatusResponse> {
+    return this.http.get<PaymentStatusResponse>(`${this.baseUrl}/api/payments/status/${invoiceId}`);
   }
 
   getOrderHistory(): Observable<Order[]> {

@@ -17,6 +17,33 @@ public enum PaymentStatus
     Refunded = 2
 }
 
+public enum PaymentProvider
+{
+    KaspiSandbox = 0,
+    AiPay = 1,
+    PayBot = 2,
+    Halyk = 3,
+    FreedomPay = 4,
+    Stripe = 5,
+    PayPal = 6
+}
+
+public enum Currency
+{
+    KZT = 0,
+    USD = 1,
+    EUR = 2
+}
+
+public enum PaymentRecordStatus
+{
+    Pending = 0,
+    Paid = 1,
+    Failed = 2,
+    Expired = 3,
+    Refunded = 4
+}
+
 public enum PaymentMethod
 {
     Cash = 0,

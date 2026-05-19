@@ -8,4 +8,7 @@ public interface IOrdersHubService
     Task NotifyOrderUpdatedAsync(Order order, CancellationToken cancellationToken = default);
     Task NotifyOrderDeclinedAsync(Order order, CancellationToken cancellationToken = default);
     Task NotifyPaymentUpdatedAsync(Order order, CancellationToken cancellationToken = default);
+    Task NotifyPaymentPendingAsync(Order order, CancellationToken cancellationToken = default);
+    Task NotifyPaymentSucceededAsync(Order order, CancellationToken cancellationToken = default);
+    Task NotifyPaymentFailedAsync(Order order, CancellationToken cancellationToken = default);
 }

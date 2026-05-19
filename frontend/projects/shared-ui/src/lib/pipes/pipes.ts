@@ -37,7 +37,10 @@ export class PaymentStatusLabelPipe implements PipeTransform {
   transform(status: PaymentStatus): string {
     const map: Record<PaymentStatus, string> = {
       [PaymentStatus.Unpaid]: 'Unpaid',
+      [PaymentStatus.Pending]: 'Pending',
       [PaymentStatus.Paid]: 'Paid',
+      [PaymentStatus.Failed]: 'Failed',
+      [PaymentStatus.Expired]: 'Expired',
       [PaymentStatus.Refunded]: 'Refunded',
     };
     return map[status] ?? status;

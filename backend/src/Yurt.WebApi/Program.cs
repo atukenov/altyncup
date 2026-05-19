@@ -4,6 +4,7 @@ using Serilog;
 using Yurt.Infrastructure;
 using Yurt.Infrastructure.Hubs;
 using Yurt.Infrastructure.Persistence;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,6 +61,14 @@ builder.Services.AddProblemDetails();
 
 // ─────────────────────────────────────────────────────────────────────────────
 var app = builder.Build();
+
+// HTTPS / Forwarded Headers
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto
+});
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler(opts =>

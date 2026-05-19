@@ -11,7 +11,10 @@ export enum OrderStatus {
 
 export enum PaymentStatus {
   Unpaid = 'Unpaid',
+  Pending = 'Pending',
   Paid = 'Paid',
+  Failed = 'Failed',
+  Expired = 'Expired',
   Refunded = 'Refunded',
 }
 
@@ -19,6 +22,31 @@ export enum PaymentMethod {
   Cash = 'Cash',
   Card = 'Card',
   Other = 'Other',
+}
+
+export enum PaymentProvider {
+  KaspiSandbox = 'KaspiSandbox',
+  AiPay = 'AiPay',
+  PayBot = 'PayBot',
+  Halyk = 'Halyk',
+  FreedomPay = 'FreedomPay',
+  Stripe = 'Stripe',
+  PayPal = 'PayPal',
+}
+
+export enum Currency {
+  KZT = 'KZT',
+  USD = 'USD',
+  EUR = 'EUR',
+}
+
+export enum SandboxPaymentBehavior {
+  Default = 'Default',
+  Success = 'Success',
+  Failure = 'Failure',
+  Expired = 'Expired',
+  DuplicateWebhook = 'DuplicateWebhook',
+  NetworkFailure = 'NetworkFailure',
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -78,6 +106,41 @@ export interface OrderItemInput {
 export interface CreateOrderRequest {
   locationId: string;
   items: OrderItemInput[];
+}
+
+export interface CreatePaymentRequest {
+  orderId: string;
+  provider: PaymentProvider;
+  sandboxBehavior?: SandboxPaymentBehavior;
+}
+
+export interface PaymentInvoiceResponse {
+  paymentId: string;
+  invoiceId: string;
+  paymentUrl: string;
+  qrCode: string;
+  amount: number;
+  currency: Currency;
+  provider: PaymentProvider;
+  status: PaymentStatus;
+  createdAt: string;
+  expiresAt?: string;
+  rawResponse?: string;
+}
+
+export interface PaymentStatusResponse {
+  invoiceId: string;
+  status: PaymentStatus;
+  orderId: string;
+  orderStatus: string;
+  amount: number;
+  currency: Currency;
+  provider: PaymentProvider;
+  paymentUrl: string;
+  qrCode: string;
+  createdAt: string;
+  updatedAt?: string;
+  rawResponse?: string;
 }
 
 export interface OrderItem {

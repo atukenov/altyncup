@@ -57,4 +57,37 @@ public class OrdersHubService : IOrdersHubService
             .Group($"customer:{order.CustomerUserId}")
             .SendAsync("PaymentUpdated", dto, ct);
     }
+
+    public async Task NotifyPaymentPendingAsync(Order order, CancellationToken ct = default)
+    {
+        var dto = OrderService.MapToDto(order);
+        await _hubContext.Clients
+            .Group("admins")
+            .SendAsync("PaymentPending", dto, ct);
+        await _hubContext.Clients
+            .Group($"customer:{order.CustomerUserId}")
+            .SendAsync("PaymentPending", dto, ct);
+    }
+
+    public async Task NotifyPaymentSucceededAsync(Order order, CancellationToken ct = default)
+    {
+        var dto = OrderService.MapToDto(order);
+        await _hubContext.Clients
+            .Group("admins")
+            .SendAsync("PaymentSucceeded", dto, ct);
+        await _hubContext.Clients
+            .Group($"customer:{order.CustomerUserId}")
+            .SendAsync("PaymentSucceeded", dto, ct);
+    }
+
+    public async Task NotifyPaymentFailedAsync(Order order, CancellationToken ct = default)
+    {
+        var dto = OrderService.MapToDto(order);
+        await _hubContext.Clients
+            .Group("admins")
+            .SendAsync("PaymentFailed", dto, ct);
+        await _hubContext.Clients
+            .Group($"customer:{order.CustomerUserId}")
+            .SendAsync("PaymentFailed", dto, ct);
+    }
 }

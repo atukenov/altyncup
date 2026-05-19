@@ -23,7 +23,7 @@ namespace Yurt.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "8.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            Microsoft.EntityFrameworkCore.NpgsqlModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("Yurt.Domain.Entities.AdminUser", b =>
                 {

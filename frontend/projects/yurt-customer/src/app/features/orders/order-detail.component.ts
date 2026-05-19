@@ -1,17 +1,27 @@
-import { Component, inject, Input, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, inject, Input, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { YurtApiService, SignalrService } from 'shared-api';
-import { Order, OrderStatus } from 'shared-models';
+import { Subscription } from 'rxjs';
+import { SignalrService, YurtApiService } from 'shared-api';
+import {
+  CreatePaymentRequest,
+  Order,
+  OrderStatus,
+  PaymentInvoiceResponse,
+  PaymentProvider,
+  PaymentStatus,
+  SandboxPaymentBehavior,
+} from 'shared-models';
 import {
   BadgeComponent,
-  ToastService,
-  OrderStatusLabelPipe,
-  OrderStatusColorPipe,
   Currency2Pipe,
+  OrderStatusColorPipe,
+  OrderStatusLabelPipe,
+  ToastService,
 } from 'shared-ui';
 import { environment } from '../../../environments/environment';
-import { Subscription } from 'rxjs';
+import { PaymentQrCodeComponent } from './payment-qr-code.component';
+import { PaymentStatusComponent } from './payment-status.component';
 
 @Component({
   selector: 'app-order-detail',
@@ -22,6 +32,8 @@ import { Subscription } from 'rxjs';
     OrderStatusLabelPipe,
     OrderStatusColorPipe,
     Currency2Pipe,
+    PaymentQrCodeComponent,
+    PaymentStatusComponent,
   ],
   templateUrl: './order-detail.component.html',
   styleUrl: './order-detail.component.css',
@@ -35,7 +47,13 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
 
   readonly OrderStatus = OrderStatus;
+  readonly PaymentStatus = PaymentStatus;
+  readonly PaymentProvider = PaymentProvider;
+
   order = signal<Order | null>(null);
+  payment = signal<PaymentInvoiceResponse | null>(null);
+  paymentLoading = signal(false);
+  paymentError = signal<string | null>(null);
   loading = signal(true);
   private subs: Subscription[] = [];
 
@@ -84,8 +102,8 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
         }),
         this.signalr.paymentUpdated$.subscribe((o) => {
           if (o.id === this.id) this.order.set(o);
-        })
-);
+        }),
+      );
     });
   }
 
@@ -108,6 +126,43 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
 
   stepDotClass(current: OrderStatus, step: OrderStatus): string {
     return this.stepIsReached(current, step) ? 'bg-amber-500' : 'bg-stone-200';
+  }
+
+  canPay(order: Order | null): boolean {
+    return (
+      !!order &&
+      order.paymentStatus === PaymentStatus.Unpaid &&
+      order.status === OrderStatus.Created
+    );
+  }
+
+  async startPayment(): Promise<void> {
+    const order = this.order();
+    if (!order) {
+      this.toast.error('Order unavailable.');
+      return;
+    }
+
+    this.paymentLoading.set(true);
+    this.paymentError.set(null);
+
+    const request: CreatePaymentRequest = {
+      orderId: order.id,
+      provider: PaymentProvider.KaspiSandbox,
+      sandboxBehavior: SandboxPaymentBehavior.Default,
+    };
+
+    this.api.createPayment(request).subscribe({
+      next: (payment) => {
+        this.payment.set(payment);
+        this.paymentLoading.set(false);
+        this.toast.success('Kaspi invoice created. Scan the QR code to pay.');
+      },
+      error: (err) => {
+        this.paymentLoading.set(false);
+        this.paymentError.set(err.error?.title ?? 'Failed to create payment.');
+      },
+    });
   }
 
   statusEmoji(status: OrderStatus): string {

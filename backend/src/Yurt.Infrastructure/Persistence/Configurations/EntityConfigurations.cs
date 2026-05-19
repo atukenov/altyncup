@@ -118,3 +118,32 @@ public class PromotionConfiguration : IEntityTypeConfiguration<Promotion>
         builder.Property(e => e.ImageUrl).HasMaxLength(500);
     }
 }
+
+public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
+{
+    public void Configure(EntityTypeBuilder<Payment> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.HasIndex(e => e.InvoiceId).IsUnique();
+        builder.Property(e => e.Provider).HasConversion<string>().HasMaxLength(50);
+        builder.Property(e => e.Currency).HasConversion<string>().HasMaxLength(10);
+        builder.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(e => e.PaymentUrl).HasMaxLength(500).IsRequired();
+        builder.Property(e => e.QrCode).HasMaxLength(2000).IsRequired();
+        builder.Property(e => e.RawResponse).HasMaxLength(4000);
+        builder.Property(e => e.Amount).HasPrecision(10, 2);
+        builder.HasOne(e => e.Order).WithMany().HasForeignKey(e => e.OrderId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class PaymentWebhookLogConfiguration : IEntityTypeConfiguration<PaymentWebhookLog>
+{
+    public void Configure(EntityTypeBuilder<PaymentWebhookLog> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Provider).HasConversion<string>().HasMaxLength(50);
+        builder.Property(e => e.Payload).HasMaxLength(4000).IsRequired();
+        builder.Property(e => e.Headers).HasMaxLength(2000).IsRequired();
+        builder.Property(e => e.Processed).HasDefaultValue(false);
+    }
+}
