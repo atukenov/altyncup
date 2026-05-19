@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\amakenzi\\\\Desktop\\\\Dev\\\\altyncup\\\\backend\\\\src\" | Select-Object Name, @{Name=\"Type\"; Expression={if\\($_.PSIsContainer\\) {\"Directory\"} else {\"File\"}}})"
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\amakenzi\\\\Desktop\\\\Dev\\\\altyncup\\\\backend\\\\src\" | Select-Object Name, @{Name=\"Type\"; Expression={if\\($_.PSIsContainer\\) {\"Directory\"} else {\"File\"}}})",
+      "Bash(npx nx *)",
+      "Bash(node node_modules/@nx/nx-win32-x64-msvc/nx.js build yurt-customer --configuration=development)",
+      "Bash(node \"node_modules/.bin/nx\" build yurt-customer --configuration=development)",
+      "Bash(ls node_modules/.bin/nx*)",
+      "Bash(ls node_modules/nx/bin/)"
     ]
   }
 }

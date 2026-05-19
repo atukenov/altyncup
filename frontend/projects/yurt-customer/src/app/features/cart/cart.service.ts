@@ -15,12 +15,18 @@ export class CartService {
 
   readonly count = computed(() => this.items().reduce((sum, i) => sum + i.quantity, 0));
 
+  itemKey(item: CartItem): string {
+    const toppingIds = (item.selectedToppings ?? []).map((t) => t.toppingId).sort().join(',');
+    return toppingIds ? `${item.menuItemId}:${toppingIds}` : item.menuItemId;
+  }
+
   addItem(item: CartItem): void {
     this.items.update((cart) => {
-      const existing = cart.find((c) => c.menuItemId === item.menuItemId);
+      const key = this.itemKey(item);
+      const existing = cart.find((c) => this.itemKey(c) === key);
       if (existing) {
         return cart.map((c) =>
-          c.menuItemId === item.menuItemId ? { ...c, quantity: c.quantity + item.quantity } : c,
+          this.itemKey(c) === key ? { ...c, quantity: c.quantity + item.quantity } : c,
         );
       }
       return [...cart, item];
@@ -28,18 +34,20 @@ export class CartService {
     this.save();
   }
 
-  removeItem(menuItemId: string): void {
-    this.items.update((cart) => cart.filter((i) => i.menuItemId !== menuItemId));
+  removeItem(item: CartItem): void {
+    const key = this.itemKey(item);
+    this.items.update((cart) => cart.filter((i) => this.itemKey(i) !== key));
     this.save();
   }
 
-  updateQty(menuItemId: string, qty: number): void {
+  updateQty(item: CartItem, qty: number): void {
     if (qty <= 0) {
-      this.removeItem(menuItemId);
+      this.removeItem(item);
       return;
     }
+    const key = this.itemKey(item);
     this.items.update((cart) =>
-      cart.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: qty } : i)),
+      cart.map((i) => (this.itemKey(i) === key ? { ...i, quantity: qty } : i)),
     );
     this.save();
   }
