@@ -103,12 +103,12 @@ public static class DbSeeder
 
         // Shared — Coffee + Cold Drinks
         var extraShot      = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000001"), Name = "Extra Espresso Shot", Price = 0.75m, IsAvailable = true };
-        var vanillaSyrup   = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000002"), Name = "Vanilla Syrup",       Price = 0.50m, IsAvailable = true };
-        var caramelSyrup   = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000003"), Name = "Caramel Syrup",       Price = 0.50m, IsAvailable = true };
-        var hazelnutSyrup  = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000004"), Name = "Hazelnut Syrup",      Price = 0.50m, IsAvailable = true };
-        var oatMilk        = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000005"), Name = "Oat Milk",            Price = 0.75m, IsAvailable = true };
-        var almondMilk     = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000006"), Name = "Almond Milk",         Price = 0.75m, IsAvailable = true };
-        var soyMilk        = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000007"), Name = "Soy Milk",            Price = 0.75m, IsAvailable = true };
+        var vanillaSyrup   = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000002"), Name = "Vanilla Syrup",       Price = 0.50m, IsAvailable = true, Group = "syrup" };
+        var caramelSyrup   = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000003"), Name = "Caramel Syrup",       Price = 0.50m, IsAvailable = true, Group = "syrup" };
+        var hazelnutSyrup  = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000004"), Name = "Hazelnut Syrup",      Price = 0.50m, IsAvailable = true, Group = "syrup" };
+        var oatMilk        = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000005"), Name = "Oat Milk",            Price = 0.75m, IsAvailable = true, Group = "milk" };
+        var almondMilk     = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000006"), Name = "Almond Milk",         Price = 0.75m, IsAvailable = true, Group = "milk" };
+        var soyMilk        = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000007"), Name = "Soy Milk",            Price = 0.75m, IsAvailable = true, Group = "milk" };
         var whippedCream   = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000008"), Name = "Whipped Cream",       Price = 0.50m, IsAvailable = true };
 
         // Coffee only
@@ -117,7 +117,7 @@ public static class DbSeeder
 
         // Cold Drinks only
         var extraIce   = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000011"), Name = "Extra Ice",         Price = 0.00m, IsAvailable = true };
-        var brownSugar = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000012"), Name = "Brown Sugar Syrup", Price = 0.50m, IsAvailable = true };
+        var brownSugar = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000012"), Name = "Brown Sugar Syrup", Price = 0.50m, IsAvailable = true, Group = "syrup" };
 
         // Food & Pastries only
         var extraButter  = new MenuTopping { Id = Guid.Parse("33333333-0000-0000-0000-000000000013"), Name = "Extra Butter",    Price = 0.00m, IsAvailable = true };

@@ -155,10 +155,10 @@ public class MenuService
                 t.ToppingCategories.Any(tc => tc.CategoryId == categoryId.Value));
 
         return await query
-            .OrderBy(t => t.Name)
+            .OrderBy(t => t.Group).ThenBy(t => t.Name)
             .Select(t => new MenuToppingDto(
                 t.Id, t.Name, t.Price, t.IsAvailable,
-                t.ToppingCategories.Select(tc => tc.CategoryId).ToList()))
+                t.ToppingCategories.Select(tc => tc.CategoryId).ToList(), t.Group))
             .ToListAsync(ct);
     }
 
@@ -169,7 +169,8 @@ public class MenuService
         {
             Name = dto.Name,
             Price = dto.Price,
-            IsAvailable = dto.IsAvailable
+            IsAvailable = dto.IsAvailable,
+            Group = string.IsNullOrWhiteSpace(dto.Group) ? null : dto.Group
         };
         _db.MenuToppings.Add(topping);
 
@@ -183,7 +184,7 @@ public class MenuService
         await _db.SaveChangesAsync(ct);
         return Result<MenuToppingDto>.Success(
             new MenuToppingDto(topping.Id, topping.Name, topping.Price, topping.IsAvailable,
-                dto.CategoryIds.Distinct().ToList()), 201);
+                dto.CategoryIds.Distinct().ToList(), topping.Group), 201);
     }
 
     public async Task<Result<MenuToppingDto>> UpdateToppingAsync(
@@ -198,6 +199,7 @@ public class MenuService
         topping.Name = dto.Name;
         topping.Price = dto.Price;
         topping.IsAvailable = dto.IsAvailable;
+        topping.Group = string.IsNullOrWhiteSpace(dto.Group) ? null : dto.Group;
         topping.UpdatedAt = DateTime.UtcNow;
 
         // Replace category assignments
@@ -214,7 +216,7 @@ public class MenuService
         await _db.SaveChangesAsync(ct);
         return Result<MenuToppingDto>.Success(
             new MenuToppingDto(topping.Id, topping.Name, topping.Price, topping.IsAvailable,
-                dto.CategoryIds.Distinct().ToList()));
+                dto.CategoryIds.Distinct().ToList(), topping.Group));
     }
 
     public async Task<Result<bool>> DeleteToppingAsync(Guid id, CancellationToken ct = default)
@@ -247,7 +249,7 @@ public class MenuService
                 .Select(tc => tc.CategoryId).ToList() ?? [link.CategoryId];
             list.Add(new MenuToppingDto(
                 link.Topping.Id, link.Topping.Name, link.Topping.Price,
-                link.Topping.IsAvailable, allCatIds));
+                link.Topping.IsAvailable, allCatIds, link.Topping.Group));
         }
         return result;
     }

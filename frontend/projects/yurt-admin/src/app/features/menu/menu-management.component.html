@@ -152,6 +152,7 @@
         <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
           <tr>
             <th class="text-left px-6 py-3">Name</th>
+            <th class="text-left px-6 py-3">Group</th>
             <th class="text-left px-6 py-3">Categories</th>
             <th class="text-right px-6 py-3">Price</th>
             <th class="text-center px-6 py-3">Available</th>
@@ -162,6 +163,13 @@
           @for (topping of toppings(); track topping.id) {
             <tr class="hover:bg-slate-50 transition-colors">
               <td class="px-6 py-3 font-medium text-slate-800">{{ topping.name }}</td>
+              <td class="px-6 py-3 text-slate-500 text-xs">
+                @if (topping.group) {
+                  <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full capitalize">{{ topping.group }}</span>
+                } @else {
+                  <span class="text-slate-300">—</span>
+                }
+              </td>
               <td class="px-6 py-3 text-slate-500 text-xs">
                 {{ toppingCategoryNames(topping.categoryIds) }}
               </td>
@@ -359,6 +367,18 @@
             step="0.01"
             class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
           />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Selection type</label>
+          <select
+            [ngModel]="toppingForm().group"
+            (ngModelChange)="patchToppingForm('group', $event)"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+          >
+            <option value="">Free pick (checkbox)</option>
+            <option value="milk">Milk — pick one</option>
+            <option value="syrup">Syrup — pick one</option>
+          </select>
         </div>
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-2">Show for categories</label>

@@ -44,6 +44,30 @@ export class MenuListComponent implements OnInit {
     return this.toppingModalItem()?.availableToppings ?? [];
   }
 
+  /** Toppings split into named radio-groups and a free-pick extras list. */
+  get groupedToppings(): { label: string; toppings: MenuTopping[] }[] {
+    const all = this.toppingModalToppings;
+    const groupMap = new Map<string, MenuTopping[]>();
+    const extras: MenuTopping[] = [];
+
+    for (const t of all) {
+      if (t.group) {
+        if (!groupMap.has(t.group)) groupMap.set(t.group, []);
+        groupMap.get(t.group)!.push(t);
+      } else {
+        extras.push(t);
+      }
+    }
+
+    const result: { label: string; toppings: MenuTopping[] }[] = [];
+    const groupLabels: Record<string, string> = { milk: 'Milk', syrup: 'Syrup' };
+    groupMap.forEach((toppings, key) =>
+      result.push({ label: groupLabels[key] ?? key, toppings }),
+    );
+    if (extras.length) result.push({ label: 'Extras', toppings: extras });
+    return result;
+  }
+
   ngOnInit(): void {
     this.api.getCategories().subscribe((cats) => this.categories.set(cats));
     this.loadItems();
@@ -85,11 +109,20 @@ export class MenuListComponent implements OnInit {
     return this.selectedToppingIds().has(id);
   }
 
-  toggleTopping(id: string): void {
+  toggleTopping(topping: MenuTopping): void {
     this.selectedToppingIds.update((set) => {
       const next = new Set(set);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(topping.id)) {
+        next.delete(topping.id);
+      } else {
+        // For grouped toppings: deselect any sibling already selected
+        if (topping.group) {
+          for (const t of this.toppingModalToppings) {
+            if (t.group === topping.group) next.delete(t.id);
+          }
+        }
+        next.add(topping.id);
+      }
       return next;
     });
   }

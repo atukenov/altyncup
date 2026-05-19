@@ -91,6 +91,7 @@ export interface MenuTopping {
   price: number;
   isAvailable: boolean;
   categoryIds: string[];
+  group?: string | null;
 }
 
 export interface MenuItem {

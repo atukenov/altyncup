@@ -21,6 +21,7 @@ interface ToppingForm {
   price: number;
   isAvailable: boolean;
   categoryIds: string[];
+  group: string;
 }
 
 @Component({
@@ -61,6 +62,7 @@ export class MenuManagementComponent implements OnInit {
     price: 0,
     isAvailable: true,
     categoryIds: [],
+    group: '',
   });
 
   filteredItems = computed(() => {
@@ -175,6 +177,7 @@ export class MenuManagementComponent implements OnInit {
       price: topping?.price ?? 0,
       isAvailable: topping?.isAvailable ?? true,
       categoryIds: topping?.categoryIds ? [...topping.categoryIds] : [],
+      group: topping?.group ?? '',
     });
     this.showToppingDialog.set(true);
   }

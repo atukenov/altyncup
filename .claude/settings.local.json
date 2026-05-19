@@ -6,7 +6,10 @@
       "Bash(node node_modules/@nx/nx-win32-x64-msvc/nx.js build yurt-customer --configuration=development)",
       "Bash(node \"node_modules/.bin/nx\" build yurt-customer --configuration=development)",
       "Bash(ls node_modules/.bin/nx*)",
-      "Bash(ls node_modules/nx/bin/)"
+      "Bash(ls node_modules/nx/bin/)",
+      "Bash(dotnet ef *)",
+      "Bash(dotnet build *)",
+      "Bash(node_modules/.bin/ng build *)"
     ]
   }
 }
