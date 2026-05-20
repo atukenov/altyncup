@@ -22,6 +22,7 @@ import {
 import { environment } from '../../../environments/environment';
 import { PaymentQrCodeComponent } from './payment-qr-code.component';
 import { PaymentStatusComponent } from './payment-status.component';
+import { TranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-order-detail',
@@ -34,6 +35,7 @@ import { PaymentStatusComponent } from './payment-status.component';
     Currency2Pipe,
     PaymentQrCodeComponent,
     PaymentStatusComponent,
+    TranslatePipe,
   ],
   templateUrl: './order-detail.component.html',
   styleUrl: './order-detail.component.css',
@@ -60,11 +62,11 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   private subs: Subscription[] = [];
 
   readonly timelineSteps = [
-    { status: OrderStatus.Created, label: 'Order Placed' },
-    { status: OrderStatus.Accepted, label: 'Accepted by café' },
-    { status: OrderStatus.Preparing, label: 'Preparing your order' },
-    { status: OrderStatus.Ready, label: 'Ready for Pickup!' },
-    { status: OrderStatus.Completed, label: 'Completed' },
+    { status: OrderStatus.Created, labelKey: 'timeline.Created' },
+    { status: OrderStatus.Accepted, labelKey: 'timeline.Accepted' },
+    { status: OrderStatus.Preparing, labelKey: 'timeline.Preparing' },
+    { status: OrderStatus.Ready, labelKey: 'timeline.Ready' },
+    { status: OrderStatus.Completed, labelKey: 'timeline.Completed' },
   ];
 
   readonly statusOrder = [

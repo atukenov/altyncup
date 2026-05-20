@@ -9,18 +9,16 @@
       ☕
     </div>
     <h1 class="text-3xl font-bold tracking-tight">Yurt</h1>
-    <p class="text-amber-100 mt-1.5 text-sm font-medium">Your coffee, your way</p>
+    <p class="text-amber-100 mt-1.5 text-sm font-medium">{{ 'auth.tagline' | t }}</p>
   </div>
 
   <div class="flex-1 px-6 pt-8 pb-10 max-w-sm mx-auto w-full">
-    <h2 class="text-2xl font-bold text-stone-800 mb-1">Welcome back</h2>
-    <p class="text-stone-500 text-sm mb-7">Sign in to continue ordering</p>
+    <h2 class="text-2xl font-bold text-stone-800 mb-1">{{ 'auth.welcomeBack' | t }}</h2>
+    <p class="text-stone-500 text-sm mb-7">{{ 'auth.signInSubtitle' | t }}</p>
 
     <!-- Mobile Number -->
     <div class="mb-5">
-      <label class="block text-sm font-semibold text-stone-600 mb-2" for="mobile"
-        >Mobile Number</label
-      >
+      <label class="block text-sm font-semibold text-stone-600 mb-2" for="mobile">{{ 'auth.mobileNumber' | t }}</label>
       <div
         class="flex items-center rounded-2xl border-2 border-stone-200 bg-white focus-within:border-amber-400 focus-within:ring-4 focus-within:ring-amber-100 transition-all"
       >
@@ -41,7 +39,7 @@
 
     <!-- PIN Input -->
     <div class="mb-7">
-      <label class="block text-sm font-semibold text-stone-600 mb-2">4-Digit PIN</label>
+      <label class="block text-sm font-semibold text-stone-600 mb-2">{{ 'auth.pin' | t }}</label>
       <div class="flex gap-3 justify-center" role="group" aria-label="PIN entry">
         @for (i of [0, 1, 2, 3]; track i) {
           <input
@@ -77,12 +75,12 @@
       type="submit"
       (clicked)="onLogin()"
     >
-      Sign In
+      {{ 'auth.signIn' | t }}
     </yurt-button>
 
     <div class="flex items-center gap-3 my-6">
       <div class="flex-1 h-px bg-stone-200"></div>
-      <span class="text-stone-400 text-xs font-medium">New here?</span>
+      <span class="text-stone-400 text-xs font-medium">{{ 'auth.newHere' | t }}</span>
       <div class="flex-1 h-px bg-stone-200"></div>
     </div>
 
@@ -90,7 +88,7 @@
       routerLink="/auth/register"
       class="block w-full text-center py-3.5 rounded-2xl border-2 border-amber-400 text-amber-600 font-semibold text-base hover:bg-amber-50 transition-colors"
     >
-      Create Account
+      {{ 'auth.createAccount' | t }}
     </a>
   </div>
 </div>

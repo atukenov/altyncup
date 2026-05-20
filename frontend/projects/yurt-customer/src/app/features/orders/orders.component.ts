@@ -10,6 +10,7 @@ import {
   OrderStatusColorPipe,
   Currency2Pipe,
 } from 'shared-ui';
+import { TranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-orders',
@@ -21,6 +22,7 @@ import {
     OrderStatusLabelPipe,
     OrderStatusColorPipe,
     Currency2Pipe,
+    TranslatePipe,
   ],
   templateUrl: './orders.component.html',
   styleUrl: './orders.component.css',
@@ -36,9 +38,9 @@ export class OrdersComponent implements OnInit {
   activeTab = signal(0);
 
   readonly tabs = [
-    { id: 0, label: 'Active' },
-    { id: 1, label: 'History' },
-    { id: 2, label: 'Declined' },
+    { id: 0, labelKey: 'orders.tabActive' },
+    { id: 1, labelKey: 'orders.tabHistory' },
+    { id: 2, labelKey: 'orders.tabDeclined' },
   ];
 
   get visibleOrders(): () => Order[] {

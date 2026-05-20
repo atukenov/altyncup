@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
 import { CartService } from './cart.service';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
+import { TranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, Currency2Pipe],
+  imports: [CommonModule, FormsModule, ButtonComponent, Currency2Pipe, TranslatePipe],
   templateUrl: './cart.component.html',
   styleUrl: './cart.component.css',
 })

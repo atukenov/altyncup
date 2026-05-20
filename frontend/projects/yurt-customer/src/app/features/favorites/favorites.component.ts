@@ -5,11 +5,12 @@ import { YurtApiService } from 'shared-api';
 import { MenuItem } from 'shared-models';
 import { ToastService, Currency2Pipe, SkeletonCardComponent } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
+import { TranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-favorites',
   standalone: true,
-  imports: [CommonModule, RouterLink, Currency2Pipe, SkeletonCardComponent],
+  imports: [CommonModule, RouterLink, Currency2Pipe, SkeletonCardComponent, TranslatePipe],
   templateUrl: './favorites.component.html',
   styleUrl: './favorites.component.css',
 })

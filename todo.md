@@ -183,7 +183,7 @@
 
 ### Overall application
 
-- [ ] **Language change**
+- [-] **Language change**
   - Application should on 3 languages (Russian, English and Kazakh).
   - By default language is in English.
   - Customer will be able to change their language in profile page.

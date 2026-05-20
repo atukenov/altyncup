@@ -5,11 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { YurtApiService, AuthStateService, NotificationService } from 'shared-api';
 import { CustomerProfile, CustomerStats } from 'shared-models';
 import { ButtonComponent, ToastService } from 'shared-ui';
+import { LangService, Lang } from '../../core/lang.service';
+import { TranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, TranslatePipe],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })
@@ -19,6 +21,12 @@ export class ProfileComponent implements OnInit {
   private router = inject(Router);
   private toast = inject(ToastService);
   private notifications = inject(NotificationService);
+  readonly langService = inject(LangService);
+  readonly langs: { code: Lang; label: string }[] = [
+    { code: 'en', label: 'EN' },
+    { code: 'ru', label: 'RU' },
+    { code: 'kk', label: 'ҚАЗ' },
+  ];
 
   profile = signal<CustomerProfile | null>(null);
   stats = signal<CustomerStats | null>(null);

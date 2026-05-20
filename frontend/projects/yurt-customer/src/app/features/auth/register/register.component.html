@@ -8,18 +8,16 @@
       ☕
     </div>
     <h1 class="text-3xl font-bold">Yurt</h1>
-    <p class="text-amber-100 mt-1.5 text-sm font-medium">Create your account</p>
+    <p class="text-amber-100 mt-1.5 text-sm font-medium">{{ 'auth.createYourAccount' | t }}</p>
   </div>
 
   <div class="flex-1 px-6 pt-8 pb-10 max-w-sm mx-auto w-full">
-    <h2 class="text-2xl font-bold text-stone-800 mb-1">Get started</h2>
-    <p class="text-stone-500 text-sm mb-7">Set up your account in seconds</p>
+    <h2 class="text-2xl font-bold text-stone-800 mb-1">{{ 'auth.getStarted' | t }}</h2>
+    <p class="text-stone-500 text-sm mb-7">{{ 'auth.setupDesc' | t }}</p>
 
     <div class="grid grid-cols-2 gap-3 mb-5">
       <div>
-        <label class="block text-sm font-semibold text-stone-600 mb-2" for="regFirstName"
-          >First Name</label
-        >
+        <label class="block text-sm font-semibold text-stone-600 mb-2" for="regFirstName">{{ 'auth.firstName' | t }}</label>
         <input
           id="regFirstName"
           type="text"
@@ -30,9 +28,7 @@
         />
       </div>
       <div>
-        <label class="block text-sm font-semibold text-stone-600 mb-2" for="regLastName"
-          >Last Name</label
-        >
+        <label class="block text-sm font-semibold text-stone-600 mb-2" for="regLastName">{{ 'auth.lastName' | t }}</label>
         <input
           id="regLastName"
           type="text"
@@ -45,9 +41,7 @@
     </div>
 
     <div class="mb-5">
-      <label class="block text-sm font-semibold text-stone-600 mb-2" for="regMobile"
-        >Mobile Number</label
-      >
+      <label class="block text-sm font-semibold text-stone-600 mb-2" for="regMobile">{{ 'auth.mobileNumber' | t }}</label>
       <div
         class="flex items-center rounded-2xl border-2 border-stone-200 bg-white focus-within:border-amber-400 focus-within:ring-4 focus-within:ring-amber-100 transition-all"
       >
@@ -66,7 +60,7 @@
     </div>
 
     <div class="mb-5">
-      <label class="block text-sm font-semibold text-stone-600 mb-2">Choose 4-Digit PIN</label>
+      <label class="block text-sm font-semibold text-stone-600 mb-2">{{ 'auth.choosePin' | t }}</label>
       <div class="flex gap-3 justify-center">
         @for (i of [0, 1, 2, 3]; track i) {
           <input
@@ -85,7 +79,7 @@
     </div>
 
     <div class="mb-7">
-      <label class="block text-sm font-semibold text-stone-600 mb-2">Confirm PIN</label>
+      <label class="block text-sm font-semibold text-stone-600 mb-2">{{ 'auth.confirmPin' | t }}</label>
       <div class="flex gap-3 justify-center">
         @for (i of [0, 1, 2, 3]; track i) {
           <input
@@ -117,12 +111,12 @@
       [loading]="loading()"
       (clicked)="onRegister()"
     >
-      Create Account
+      {{ 'auth.createAccount' | t }}
     </yurt-button>
 
     <div class="flex items-center gap-3 my-6">
       <div class="flex-1 h-px bg-stone-200"></div>
-      <span class="text-stone-400 text-xs font-medium">Have an account?</span>
+      <span class="text-stone-400 text-xs font-medium">{{ 'auth.haveAccount' | t }}</span>
       <div class="flex-1 h-px bg-stone-200"></div>
     </div>
 
@@ -130,7 +124,7 @@
       routerLink="/auth/login"
       class="block w-full text-center py-3.5 rounded-2xl border-2 border-amber-400 text-amber-600 font-semibold text-base hover:bg-amber-50 transition-colors"
     >
-      Sign In
+      {{ 'auth.signIn' | t }}
     </a>
   </div>
 </div>

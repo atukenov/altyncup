@@ -4,13 +4,14 @@ import { CommonModule } from '@angular/common';
 import { YurtApiService } from 'shared-api';
 import { Location } from 'shared-models';
 import { SkeletonCardComponent, ToastService } from 'shared-ui';
+import { TranslatePipe } from '../../core/translate.pipe';
 
 const SELECTED_LOCATION_KEY = 'yurt_location_id';
 
 @Component({
   selector: 'app-locations',
   standalone: true,
-  imports: [CommonModule, SkeletonCardComponent],
+  imports: [CommonModule, SkeletonCardComponent, TranslatePipe],
   templateUrl: './locations.component.html',
   styleUrl: './locations.component.css',
 })

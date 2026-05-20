@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { YurtApiService, AuthStateService } from 'shared-api';
 import { ButtonComponent, ToastService } from 'shared-ui';
+import { TranslatePipe } from '../../../core/translate.pipe';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, TranslatePipe],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })

@@ -1,8 +1,8 @@
 <div class="min-h-screen bg-stone-50">
   <!-- Header -->
   <div class="bg-white border-b border-stone-100 px-4 py-4 sticky top-0 z-10">
-    <h1 class="text-xl font-bold text-stone-800">Choose Location</h1>
-    <p class="text-sm text-stone-500 mt-0.5">Where would you like to order from?</p>
+    <h1 class="text-xl font-bold text-stone-800">{{ 'loc.title' | t }}</h1>
+    <p class="text-sm text-stone-500 mt-0.5">{{ 'loc.subtitle' | t }}</p>
   </div>
 
   <div class="p-4 space-y-3 max-w-lg mx-auto pb-28">
@@ -54,8 +54,8 @@
       @if (!locations().length) {
         <div class="text-center py-20">
           <div class="text-5xl mb-4">📍</div>
-          <p class="text-stone-600 font-medium">No locations available</p>
-          <p class="text-stone-400 text-sm mt-1">Please check back later</p>
+          <p class="text-stone-600 font-medium">{{ 'loc.noLocations' | t }}</p>
+          <p class="text-stone-400 text-sm mt-1">{{ 'loc.checkLater' | t }}</p>
         </div>
       }
     }
@@ -70,7 +70,7 @@
         (click)="confirm()"
         class="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white font-bold rounded-2xl py-4 text-base shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
       >
-        Continue to Menu →
+        {{ 'loc.continue' | t }}
       </button>
     </div>
   }

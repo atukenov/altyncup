@@ -6,12 +6,13 @@ import { YurtApiService, AuthStateService } from 'shared-api';
 import { MenuItem, MenuCategory, MenuTopping, Order, OrderItemToppingInput } from 'shared-models';
 import { SkeletonCardComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
-
+import { LangService } from '../../core/lang.service';
+import { TranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-menu-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, SkeletonCardComponent, Currency2Pipe],
+  imports: [CommonModule, FormsModule, RouterLink, SkeletonCardComponent, Currency2Pipe, TranslatePipe],
   templateUrl: './menu-list.component.html',
   styleUrl: './menu-list.component.css',
 })
@@ -20,6 +21,7 @@ export class MenuListComponent implements OnInit {
   private cart = inject(CartService);
   private toast = inject(ToastService);
   private auth = inject(AuthStateService);
+  readonly langService = inject(LangService);
 
   loading = signal(true);
   categories = signal<MenuCategory[]>([]);
@@ -33,7 +35,8 @@ export class MenuListComponent implements OnInit {
   get greeting(): string {
     const name = this.auth.currentUser?.displayName;
     const hour = new Date().getHours();
-    const time = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    const key = hour < 12 ? 'greeting.morning' : hour < 17 ? 'greeting.afternoon' : 'greeting.evening';
+    const time = this.langService.t(key);
     return name ? `${time}, ${name}` : time;
   }
 

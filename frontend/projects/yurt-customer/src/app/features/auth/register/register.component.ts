@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { YurtApiService, AuthStateService } from 'shared-api';
 import { ButtonComponent, ToastService } from 'shared-ui';
+import { TranslatePipe } from '../../../core/translate.pipe';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, TranslatePipe],
   templateUrl: './register.component.html',
   styleUrl: './register.component.css',
 })

@@ -18,7 +18,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
       </svg>
     </button>
-    <h1 class="text-lg font-bold text-stone-800">Item Details</h1>
+    <h1 class="text-lg font-bold text-stone-800">{{ 'item.details' | t }}</h1>
   </div>
 
   @if (loading()) {
@@ -71,7 +71,7 @@
 
       <!-- Quantity selector -->
       <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
-        <p class="text-sm font-semibold text-stone-600 mb-3">Quantity</p>
+        <p class="text-sm font-semibold text-stone-600 mb-3">{{ 'item.quantity' | t }}</p>
         <div class="flex items-center justify-between">
           <button
             (click)="decrementQty()"
@@ -94,7 +94,7 @@
   } @else {
     <div class="text-center py-20">
       <div class="text-5xl mb-3">🔍</div>
-      <p class="text-stone-500 font-medium">Item not found</p>
+      <p class="text-stone-500 font-medium">{{ 'item.notFound' | t }}</p>
     </div>
   }
 
@@ -105,7 +105,7 @@
       style="box-shadow: 0 -1px 12px rgba(0, 0, 0, 0.06)"
     >
       <yurt-button variant="primary" size="lg" [fullWidth]="true" (clicked)="addToCart()">
-        Add {{ quantity() }} to Cart · {{ item()!.price * quantity() | currency2 }}
+        {{ 'item.add' | t }} {{ quantity() }} {{ 'item.toCart' | t }} · {{ item()!.price * quantity() | currency2 }}
       </yurt-button>
     </div>
   }

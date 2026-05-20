@@ -5,11 +5,12 @@ import { YurtApiService, AuthStateService } from 'shared-api';
 import { MenuItem } from 'shared-models';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
+import { TranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-item-detail',
   standalone: true,
-  imports: [CommonModule, ButtonComponent, Currency2Pipe],
+  imports: [CommonModule, ButtonComponent, Currency2Pipe, TranslatePipe],
   templateUrl: './item-detail.component.html',
   styleUrl: './item-detail.component.css',
 })
