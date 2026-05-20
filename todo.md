@@ -108,6 +108,7 @@
 - [ ] **Favorites**
   - Heart icon on each menu item to save it to a Favorites list.
   - Dedicated Favorites tab or section on the home screen for quick reorder.
+  - By saving also saves the pre-chosen toppings.
 
 - [x] **Push notifications**
   - Notify customer when their order status changes (Accepted, Ready, Declined).

@@ -22,7 +22,7 @@
     } @else {
       @for (item of items(); track item.id) {
         <div
-          class="bg-white rounded-2xl border border-stone-100 overflow-hidden shadow-sm active:scale-[0.98] transition-all"
+          class="relative bg-white rounded-2xl border border-stone-100 overflow-hidden shadow-sm active:scale-[0.98] transition-all"
         >
           <a [routerLink]="['/menu/item', item.id]" class="block">
             @if (item.imageUrl) {
@@ -44,6 +44,15 @@
               <p class="text-amber-600 font-bold text-sm mt-1">{{ item.price | currency2 }}</p>
             </div>
           </a>
+          <button
+            (click)="removeFavorite(item)"
+            class="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-sm text-red-400 hover:text-red-600 z-10 transition-all active:scale-95"
+            aria-label="Remove from favorites"
+          >
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z" />
+            </svg>
+          </button>
           <div class="px-3 pb-3">
             <button
               (click)="addToCart(item)"

@@ -7,6 +7,7 @@ import { MenuItem, MenuCategory, MenuTopping, Order, OrderItemToppingInput } fro
 import { SkeletonCardComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
 
+
 @Component({
   selector: 'app-menu-list',
   standalone: true,
@@ -27,6 +28,7 @@ export class MenuListComponent implements OnInit {
   search = '';
   locationName = localStorage.getItem('yurt_location_name') ?? '';
   lastOrder = signal<Order | null>(null);
+  favoritedIds = signal<Set<string>>(new Set());
 
   get greeting(): string {
     const name = this.auth.currentUser?.displayName;
@@ -84,6 +86,30 @@ export class MenuListComponent implements OnInit {
       next: (orders) => { if (orders.length) this.lastOrder.set(orders[0]); },
       error: () => {},
     });
+    this.api.getFavorites().subscribe({
+      next: (favs) => this.favoritedIds.set(new Set(favs.map((f) => f.id))),
+      error: () => {},
+    });
+  }
+
+  isFav(id: string): boolean {
+    return this.favoritedIds().has(id);
+  }
+
+  toggleFav(item: MenuItem, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    if (this.isFav(item.id)) {
+      this.api.removeFavorite(item.id).subscribe(() => {
+        this.favoritedIds.update((s) => { const n = new Set(s); n.delete(item.id); return n; });
+        this.toast.info('Removed from favorites');
+      });
+    } else {
+      this.api.addFavorite(item.id).subscribe(() => {
+        this.favoritedIds.update((s) => { const n = new Set(s); n.add(item.id); return n; });
+        this.toast.success('Added to favorites ♥');
+      });
+    }
   }
 
   orderAgain(order: Order): void {

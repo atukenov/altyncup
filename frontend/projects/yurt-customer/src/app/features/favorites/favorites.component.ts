@@ -44,4 +44,11 @@ export class FavoritesComponent implements OnInit {
     });
     this.toast.success(`${item.name} added to cart`);
   }
+
+  removeFavorite(item: MenuItem): void {
+    this.api.removeFavorite(item.id).subscribe(() => {
+      this.items.update((list) => list.filter((i) => i.id !== item.id));
+      this.toast.info('Removed from favorites');
+    });
+  }
 }
