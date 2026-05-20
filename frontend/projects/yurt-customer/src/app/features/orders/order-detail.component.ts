@@ -55,6 +55,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   paymentLoading = signal(false);
   paymentError = signal<string | null>(null);
   loading = signal(true);
+  showReceipt = signal(false);
   private subs: Subscription[] = [];
 
   readonly timelineSteps = [
