@@ -95,7 +95,25 @@ public static class DbSeeder
 
     private static async Task SeedToppingsAsync(ApplicationDbContext db, ILogger logger)
     {
-        if (await db.MenuToppings.AnyAsync()) return;
+        if (await db.MenuToppings.AnyAsync())
+        {
+            // Backfill Group for toppings seeded before this field was added.
+            string[] milkNames  = ["Oat Milk", "Almond Milk", "Soy Milk"];
+            string[] syrupNames = ["Vanilla Syrup", "Caramel Syrup", "Hazelnut Syrup", "Brown Sugar Syrup"];
+
+            var patched = 0;
+            patched += await db.MenuToppings
+                .Where(t => milkNames.Contains(t.Name) && t.Group == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(t => t.Group, "milk"));
+            patched += await db.MenuToppings
+                .Where(t => syrupNames.Contains(t.Name) && t.Group == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(t => t.Group, "syrup"));
+
+            if (patched > 0)
+                logger.LogInformation("Backfilled Group for {Count} toppings.", patched);
+
+            return;
+        }
 
         var catCoffeeId = Guid.Parse("22222222-0000-0000-0000-000000000001");
         var catColdId   = Guid.Parse("22222222-0000-0000-0000-000000000002");
