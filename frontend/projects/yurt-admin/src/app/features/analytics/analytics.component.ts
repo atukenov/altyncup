@@ -85,6 +85,32 @@ export class AnalyticsComponent implements OnInit {
     });
   }
 
+  exportCsv(): void {
+    const d = this.data();
+    if (!d) return;
+    const rows: string[][] = [
+      ['Section', 'Label', 'Value 1', 'Value 2'],
+      ['KPI', 'Total Revenue', String(d.kpis.totalRevenue), ''],
+      ['KPI', 'Total Orders', String(d.kpis.totalOrders), ''],
+      ['KPI', 'Avg Order Value', String(d.kpis.avgOrderValue), ''],
+      ['KPI', 'Completed Orders', String(d.kpis.completedOrders), ''],
+      ['KPI', 'Declined Orders', String(d.kpis.declinedOrders), ''],
+      ['KPI', 'Unique Customers', String(d.kpis.uniqueCustomers), ''],
+      ['KPI', 'Avg Prep Time (min)', String(d.kpis.avgPrepTimeMinutes), ''],
+      ...d.revenueOverTime.map((r) => ['Revenue', r.label, String(r.revenue), String(r.orders)]),
+      ...d.topItems.map((t) => ['Top Item', t.name, String(t.quantitySold), String(t.revenue)]),
+      ...d.locationPerformance.map((l) => ['Location', l.locationName, String(l.revenue), String(l.orders)]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-${this.activePeriod()}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   barHeight(value: number, max: number): string {
     if (max === 0) return '0%';
     return `${Math.max((value / max) * 100, 2)}%`;

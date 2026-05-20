@@ -17,4 +17,11 @@ public class AdminCustomersController : ApiControllerBase
     [HttpGet]
     public async Task<IActionResult> GetCustomers([FromQuery] string? phone, CancellationToken ct)
         => Ok(await _customers.GetCustomersAsync(phone, ct));
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetCustomer(Guid id, CancellationToken ct)
+    {
+        var detail = await _customers.GetCustomerDetailAsync(id, ct);
+        return detail is null ? NotFound() : Ok(detail);
+    }
 }

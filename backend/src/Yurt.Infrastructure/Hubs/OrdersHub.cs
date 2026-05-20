@@ -41,4 +41,14 @@ public class OrdersHub : Hub
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"location:{locationId}");
     }
+
+    public async Task JoinGroupCart(string groupCartId)
+    {
+        var userType = Context.User?.FindFirstValue("user_type");
+        if (userType != "customer") return;
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"group-{groupCartId}");
+    }
+
+    public async Task LeaveGroupCart(string groupCartId)
+        => await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"group-{groupCartId}");
 }

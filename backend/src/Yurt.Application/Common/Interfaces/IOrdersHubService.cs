@@ -1,3 +1,4 @@
+using Yurt.Application.Features.GroupOrders;
 using Yurt.Domain.Entities;
 
 namespace Yurt.Application.Common.Interfaces;
@@ -11,4 +12,5 @@ public interface IOrdersHubService
     Task NotifyPaymentPendingAsync(Order order, CancellationToken cancellationToken = default);
     Task NotifyPaymentSucceededAsync(Order order, CancellationToken cancellationToken = default);
     Task NotifyPaymentFailedAsync(Order order, CancellationToken cancellationToken = default);
+    Task NotifyGroupCartUpdatedAsync(Guid groupCartId, GroupCartDto dto, CancellationToken cancellationToken = default);
 }

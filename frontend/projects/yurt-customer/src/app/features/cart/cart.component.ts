@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
@@ -10,7 +10,7 @@ import { TranslatePipe } from '../../core/translate.pipe';
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, Currency2Pipe, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, Currency2Pipe, TranslatePipe],
   templateUrl: './cart.component.html',
   styleUrl: './cart.component.css',
 })

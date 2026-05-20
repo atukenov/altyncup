@@ -3,15 +3,18 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   AcceptOrderRequest,
+  AddGroupOrderItemRequest,
   AnalyticsResponse,
   AuthResponse,
   CreateOrderRequest,
   CreatePaymentRequest,
+  CustomerDetail,
   CustomerProfile,
   CustomerStats,
   CustomerSummary,
   DashboardData,
   DeclineOrderRequest,
+  GroupCart,
   Location,
   MenuCategory,
   MenuItem,
@@ -237,6 +240,10 @@ export class YurtApiService {
     return this.http.get<CustomerSummary[]>(`${this.baseUrl}/api/admin/customers`, { params });
   }
 
+  getAdminCustomer(id: string): Observable<CustomerDetail> {
+    return this.http.get<CustomerDetail>(`${this.baseUrl}/api/admin/customers/${id}`);
+  }
+
   // ── Workers ────────────────────────────────────────────────────────────────
   getWorkers(): Observable<WorkerAccount[]> {
     return this.http.get<WorkerAccount[]>(`${this.baseUrl}/api/admin/workers`);
@@ -292,5 +299,30 @@ export class YurtApiService {
 
   deletePromotion(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/api/admin/promotions/${id}`);
+  }
+
+  // ── Group Orders ────────────────────────────────────────────────────────────
+  createGroupOrder(locationId: string): Observable<GroupCart> {
+    return this.http.post<GroupCart>(`${this.baseUrl}/api/group-orders`, { locationId });
+  }
+
+  joinGroupOrder(code: string): Observable<GroupCart> {
+    return this.http.post<GroupCart>(`${this.baseUrl}/api/group-orders/join`, { code });
+  }
+
+  getGroupOrder(id: string): Observable<GroupCart> {
+    return this.http.get<GroupCart>(`${this.baseUrl}/api/group-orders/${id}`);
+  }
+
+  addGroupOrderItem(id: string, req: AddGroupOrderItemRequest): Observable<GroupCart> {
+    return this.http.post<GroupCart>(`${this.baseUrl}/api/group-orders/${id}/items`, req);
+  }
+
+  removeGroupOrderItem(id: string, itemId: string): Observable<GroupCart> {
+    return this.http.delete<GroupCart>(`${this.baseUrl}/api/group-orders/${id}/items/${itemId}`);
+  }
+
+  checkoutGroupOrder(id: string): Observable<Order> {
+    return this.http.post<Order>(`${this.baseUrl}/api/group-orders/${id}/checkout`, {});
   }
 }

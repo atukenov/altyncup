@@ -23,6 +23,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<PaymentWebhookLog> PaymentWebhookLogs => Set<PaymentWebhookLog>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
+    public DbSet<GroupCart> GroupCarts => Set<GroupCart>();
+    public DbSet<GroupCartItem> GroupCartItems => Set<GroupCartItem>();
+    public DbSet<GroupCartMember> GroupCartMembers => Set<GroupCartMember>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

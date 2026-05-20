@@ -19,6 +19,9 @@ public interface IApplicationDbContext
     DbSet<Payment> Payments { get; }
     DbSet<PaymentWebhookLog> PaymentWebhookLogs { get; }
     DbSet<Promotion> Promotions { get; }
+    DbSet<GroupCart> GroupCarts { get; }
+    DbSet<GroupCartItem> GroupCartItems { get; }
+    DbSet<GroupCartMember> GroupCartMembers { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

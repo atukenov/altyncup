@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
-import { Order } from 'shared-models';
+import { GroupCart, Order } from 'shared-models';
 import { AuthStateService } from './auth-state.service';
 import { Subject } from 'rxjs';
 
@@ -13,6 +13,7 @@ export class SignalrService {
   readonly orderCreated$ = new Subject<Order>();
   readonly orderDeclined$ = new Subject<Order>();
   readonly paymentUpdated$ = new Subject<Order>();
+  readonly groupCartUpdated$ = new Subject<GroupCart>();
   readonly connected = signal(false);
 
   private auth = inject(AuthStateService);
@@ -36,6 +37,7 @@ export class SignalrService {
     this.hubConnection.on('OrderUpdated', (order: Order) => this.orderUpdated$.next(order));
     this.hubConnection.on('OrderDeclined', (order: Order) => this.orderDeclined$.next(order));
     this.hubConnection.on('PaymentUpdated', (order: Order) => this.paymentUpdated$.next(order));
+    this.hubConnection.on('GroupCartUpdated', (dto: GroupCart) => this.groupCartUpdated$.next(dto));
 
     this.hubConnection.onclose(() => this.connected.set(false));
     this.hubConnection.onreconnected(() => this.connected.set(true));
@@ -53,6 +55,18 @@ export class SignalrService {
   async unsubscribeFromLocation(locationId: string): Promise<void> {
     if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
       await this.hubConnection.invoke('UnsubscribeFromLocation', locationId);
+    }
+  }
+
+  async joinGroupCartRoom(groupCartId: string): Promise<void> {
+    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
+      await this.hubConnection.invoke('JoinGroupCart', groupCartId);
+    }
+  }
+
+  async leaveGroupCartRoom(groupCartId: string): Promise<void> {
+    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
+      await this.hubConnection.invoke('LeaveGroupCart', groupCartId);
     }
   }
 

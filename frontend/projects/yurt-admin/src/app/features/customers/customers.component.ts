@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { YurtApiService } from 'shared-api';
 import { Currency2Pipe } from 'shared-ui';
 import { CustomerSummary } from 'shared-models';
@@ -8,7 +9,7 @@ import { CustomerSummary } from 'shared-models';
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule, Currency2Pipe],
+  imports: [CommonModule, FormsModule, RouterLink, Currency2Pipe],
   templateUrl: './customers.component.html',
 })
 export class CustomersComponent implements OnInit {

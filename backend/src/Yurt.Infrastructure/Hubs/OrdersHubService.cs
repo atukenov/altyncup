@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Yurt.Application.Common.Interfaces;
+using Yurt.Application.Features.GroupOrders;
 using Yurt.Domain.Entities;
 using Yurt.Application.Features.Orders.Services;
 
@@ -90,4 +91,9 @@ public class OrdersHubService : IOrdersHubService
             .Group($"customer:{order.CustomerUserId}")
             .SendAsync("PaymentFailed", dto, ct);
     }
+
+    public async Task NotifyGroupCartUpdatedAsync(Guid groupCartId, GroupCartDto dto, CancellationToken ct = default)
+        => await _hubContext.Clients
+            .Group($"group-{groupCartId}")
+            .SendAsync("GroupCartUpdated", dto, ct);
 }

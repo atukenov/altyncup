@@ -309,6 +309,72 @@ export interface CustomerSummary {
   totalSpent: number;
 }
 
+export interface CustomerOrderSummary {
+  id: string;
+  createdAt: string;
+  status: OrderStatus;
+  total: number;
+  locationName: string;
+  itemCount: number;
+}
+
+export interface CustomerDetail {
+  id: string;
+  phone: string;
+  displayName?: string;
+  registeredAt: string;
+  isActive: boolean;
+  totalOrders: number;
+  totalSpent: number;
+  recentOrders: CustomerOrderSummary[];
+}
+
+// ── Group Ordering ────────────────────────────────────────────────────────────
+
+export enum GroupCartStatus {
+  Open = 'Open',
+  Finalized = 'Finalized',
+  Expired = 'Expired',
+}
+
+export interface GroupCartMember {
+  customerId: string;
+  displayName: string;
+}
+
+export interface GroupCartItem {
+  id: string;
+  addedByUserId: string;
+  addedByName: string;
+  menuItemId: string;
+  menuItemName: string;
+  unitPrice: number;
+  quantity: number;
+  toppings: OrderItemToppingInput[];
+  notes?: string;
+}
+
+export interface GroupCart {
+  id: string;
+  code: string;
+  locationName: string;
+  locationId: string;
+  status: GroupCartStatus;
+  expiresAt: string;
+  isCreator: boolean;
+  members: GroupCartMember[];
+  items: GroupCartItem[];
+}
+
+export interface AddGroupOrderItemRequest {
+  menuItemId: string;
+  menuItemName: string;
+  unitPrice: number;
+  quantity: number;
+  toppings: OrderItemToppingInput[];
+  notes?: string;
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export interface DashboardData {

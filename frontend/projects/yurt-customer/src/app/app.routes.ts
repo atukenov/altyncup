@@ -43,6 +43,21 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/profile/profile.component').then((m) => m.ProfileComponent),
       },
+      {
+        path: 'group-order/create',
+        loadComponent: () =>
+          import('./features/group-order/group-order-create.component').then((m) => m.GroupOrderCreateComponent),
+      },
+      {
+        path: 'group-order/join',
+        loadComponent: () =>
+          import('./features/group-order/group-order-join.component').then((m) => m.GroupOrderJoinComponent),
+      },
+      {
+        path: 'group-order/:id',
+        loadComponent: () =>
+          import('./features/group-order/group-order-view.component').then((m) => m.GroupOrderViewComponent),
+      },
     ],
   },
   { path: '**', redirectTo: 'auth/login' },

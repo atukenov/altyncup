@@ -30,4 +30,29 @@ public class CustomerService
                 u.Orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.Total)))
             .ToListAsync(ct);
     }
+
+    public async Task<CustomerDetailDto?> GetCustomerDetailAsync(Guid id, CancellationToken ct = default)
+        => await _db.CustomerUsers
+            .Where(c => c.Id == id)
+            .Select(c => new CustomerDetailDto(
+                c.Id,
+                c.MobileNumber,
+                (c.FirstName + " " + c.LastName).Trim(),
+                c.CreatedAt,
+                c.IsActive,
+                c.Orders.Count(o => !o.IsArchived),
+                c.Orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => (decimal?)o.Total) ?? 0,
+                c.Orders
+                    .Where(o => !o.IsArchived)
+                    .OrderByDescending(o => o.CreatedAt)
+                    .Take(50)
+                    .Select(o => new CustomerOrderSummaryDto(
+                        o.Id,
+                        o.CreatedAt,
+                        o.Status,
+                        o.Total,
+                        o.Location.Name,
+                        o.Items.Count))
+                    .ToList()))
+            .FirstOrDefaultAsync(ct);
 }
