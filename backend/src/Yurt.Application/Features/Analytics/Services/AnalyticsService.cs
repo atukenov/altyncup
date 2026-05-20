@@ -182,11 +182,13 @@ public class AnalyticsService
         var revenueToday = completed.Sum(o => o.Total);
         var avgOrderValue = completed.Count > 0 ? revenueToday / completed.Count : 0m;
 
-        var hourlyOrders = todayOrders
+        var hourlyRaw = todayOrders
             .Where(o => o.Status == OrderStatus.Completed)
             .GroupBy(o => o.CreatedAt.Hour)
-            .Select(g => new HourlyOrderCount(g.Key, g.Count()))
-            .OrderBy(h => h.Hour)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var hourlyOrders = Enumerable.Range(0, 24)
+            .Select(h => new HourlyOrderCount(h, hourlyRaw.GetValueOrDefault(h, 0)))
             .ToList();
 
         return new DashboardDto(

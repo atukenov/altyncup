@@ -16,6 +16,7 @@ export class DashboardComponent implements OnInit {
 
   data = signal<DashboardData | null>(null);
   loading = signal(true);
+  error = signal(false);
 
   ngOnInit(): void {
     this.load();
@@ -23,18 +24,20 @@ export class DashboardComponent implements OnInit {
 
   load(): void {
     this.loading.set(true);
+    this.error.set(false);
     this.api.getDashboard().subscribe({
       next: (d) => { this.data.set(d); this.loading.set(false); },
-      error: () => this.loading.set(false),
+      error: () => { this.loading.set(false); this.error.set(true); },
     });
   }
 
-  chartBars(): { hour: string; count: number; pct: number }[] {
+  chartBars(): { hour: string; hourNum: number; count: number; pct: number }[] {
     const d = this.data();
-    if (!d?.hourlyOrders?.length) return [];
+    if (!d?.hourlyOrders) return [];
     const maxCount = Math.max(...d.hourlyOrders.map((h) => h.count), 1);
     return d.hourlyOrders.map((h) => ({
       hour: h.hour.toString().padStart(2, '0') + ':00',
+      hourNum: h.hour,
       count: h.count,
       pct: Math.round((h.count / maxCount) * 100),
     }));
