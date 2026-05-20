@@ -145,6 +145,7 @@
                   <label
                     class="flex items-center justify-between py-3 px-4 rounded-2xl border-2 cursor-pointer transition-colors"
                     [class]="selected ? 'border-amber-400 bg-amber-50' : 'border-stone-100 bg-stone-50'"
+                    (click)="isGroup && toggleTopping(topping)"
                   >
                     <div class="flex items-center gap-3">
                       @if (isGroup) {
@@ -172,14 +173,6 @@
                       {{ topping.price === 0 ? 'Free' : '+' + (topping.price | currency2) }}
                     </span>
                   </label>
-                  <!-- Invisible click target for radio rows (label[for] not used here) -->
-                  @if (isGroup) {
-                    <button
-                      class="sr-only"
-                      (click)="toggleTopping(topping)"
-                      [attr.aria-pressed]="selected"
-                    ></button>
-                  }
                 }
               </div>
             </div>
