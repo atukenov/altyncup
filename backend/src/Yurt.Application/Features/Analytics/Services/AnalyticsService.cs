@@ -126,7 +126,7 @@ public class AnalyticsService
         "month" => DateTime.UtcNow.AddMonths(-1),
         "6months" => DateTime.UtcNow.AddMonths(-6),
         "year" => DateTime.UtcNow.AddYears(-1),
-        "all" => DateTime.MinValue,
+        "all" => new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc),
         _ => DateTime.UtcNow.AddMonths(-1)
     };
 
@@ -166,7 +166,8 @@ public class AnalyticsService
 
     public async Task<DashboardDto> GetDashboardAsync(CancellationToken ct = default)
     {
-        var today = DateTime.UtcNow.Date;
+        var now = DateTime.UtcNow;
+        var today = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
         var tomorrow = today.AddDays(1);
 
         var pendingStatuses = new[] { OrderStatus.Created };
