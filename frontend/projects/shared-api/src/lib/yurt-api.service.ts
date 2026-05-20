@@ -8,6 +8,9 @@ import {
   CreateOrderRequest,
   CreatePaymentRequest,
   CustomerProfile,
+  CustomerStats,
+  CustomerSummary,
+  DashboardData,
   DeclineOrderRequest,
   Location,
   MenuCategory,
@@ -20,6 +23,7 @@ import {
   Promotion,
   UpdatePaymentRequest,
   UpdateStatusRequest,
+  WorkerAccount,
 } from 'shared-models';
 
 @Injectable({ providedIn: 'root' })
@@ -220,6 +224,47 @@ export class YurtApiService {
 
   updateOrderPayment(id: string, req: UpdatePaymentRequest): Observable<Order> {
     return this.http.post<Order>(`${this.baseUrl}/api/admin/orders/${id}/payment`, req);
+  }
+
+  // ── Dashboard ──────────────────────────────────────────────────────────────
+  getDashboard(): Observable<DashboardData> {
+    return this.http.get<DashboardData>(`${this.baseUrl}/api/admin/dashboard`);
+  }
+
+  // ── Customers (admin) ──────────────────────────────────────────────────────
+  getAdminCustomers(phone?: string): Observable<CustomerSummary[]> {
+    const params = phone ? new HttpParams().set('phone', phone) : undefined;
+    return this.http.get<CustomerSummary[]>(`${this.baseUrl}/api/admin/customers`, { params });
+  }
+
+  // ── Workers ────────────────────────────────────────────────────────────────
+  getWorkers(): Observable<WorkerAccount[]> {
+    return this.http.get<WorkerAccount[]>(`${this.baseUrl}/api/admin/workers`);
+  }
+
+  createWorker(data: { username: string; password: string }): Observable<WorkerAccount> {
+    return this.http.post<WorkerAccount>(`${this.baseUrl}/api/admin/workers`, data);
+  }
+
+  updateWorker(id: string, data: { username: string; isActive: boolean }): Observable<WorkerAccount> {
+    return this.http.put<WorkerAccount>(`${this.baseUrl}/api/admin/workers/${id}`, data);
+  }
+
+  resetWorkerPassword(id: string, newPassword: string): Observable<WorkerAccount> {
+    return this.http.post<WorkerAccount>(`${this.baseUrl}/api/admin/workers/${id}/reset-password`, { newPassword });
+  }
+
+  // ── Customer account ────────────────────────────────────────────────────────
+  changePin(currentPin: string, newPin: string): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/api/auth/pin`, { currentPin, newPin });
+  }
+
+  deleteAccount(): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/api/auth/me`);
+  }
+
+  getCustomerStats(): Observable<CustomerStats> {
+    return this.http.get<CustomerStats>(`${this.baseUrl}/api/auth/me/stats`);
   }
 
   // ── Analytics ───────────────────────────────────────────────────────────────

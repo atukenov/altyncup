@@ -61,7 +61,7 @@ public class AuthService
         var user = await _db.CustomerUsers
             .FirstOrDefaultAsync(u => u.MobileNumber == normalizedMobile, ct);
 
-        if (user == null)
+        if (user == null || !user.IsActive)
             return Result<AuthResponseDto>.Failure("Invalid credentials.", 401);
 
         if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
@@ -99,9 +99,10 @@ public class AuthService
         if (admin == null || !_passwordHasher.Verify(dto.Password, admin.PasswordHash))
             return Result<AuthResponseDto>.Failure("Invalid credentials.", 401);
 
-        var token = _tokenService.GenerateAdminToken(admin.Id, admin.Username, admin.Role.ToString());
+        var role = admin.Role.ToString();
+        var token = _tokenService.GenerateAdminToken(admin.Id, admin.Username, role);
         return Result<AuthResponseDto>.Success(
-            new AuthResponseDto(token, "admin", admin.Id, admin.Username));
+            new AuthResponseDto(token, "admin", admin.Id, admin.Username, role));
     }
 
     public async Task<Result<AuthResponseDto>> RefreshCustomerTokenAsync(

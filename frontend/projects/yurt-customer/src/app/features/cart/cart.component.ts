@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
 import { CartService } from './cart.service';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
@@ -8,7 +9,7 @@ import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CommonModule, ButtonComponent, Currency2Pipe],
+  imports: [CommonModule, FormsModule, ButtonComponent, Currency2Pipe],
   templateUrl: './cart.component.html',
   styleUrl: './cart.component.css',
 })
@@ -20,6 +21,20 @@ export class CartComponent {
 
   loading = signal(false);
   locationName = localStorage.getItem('yurt_location_name') ?? '';
+  expandedNoteKeys = signal<Set<string>>(new Set());
+
+  toggleNote(key: string): void {
+    this.expandedNoteKeys.update((s) => {
+      const next = new Set(s);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  isNoteExpanded(key: string): boolean {
+    return this.expandedNoteKeys().has(key);
+  }
 
   goToMenu(): void {
     this.router.navigate(['/menu']);
@@ -44,6 +59,7 @@ export class CartComponent {
         menuItemId: i.menuItemId,
         quantity: i.quantity,
         toppings: i.selectedToppings ?? [],
+        notes: i.notes,
       }));
 
     this.api.createOrder({ locationId, items }).subscribe({

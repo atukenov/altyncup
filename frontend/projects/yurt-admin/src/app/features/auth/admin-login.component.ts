@@ -34,8 +34,9 @@ export class AdminLoginComponent {
           userId: res.userId,
           displayName: res.displayName,
           userType: 'admin',
+          role: res.role,
         });
-        this.router.navigate(['/orders']);
+        this.router.navigate(['/dashboard']);
       },
       error: () => {
         this.loading.set(false);

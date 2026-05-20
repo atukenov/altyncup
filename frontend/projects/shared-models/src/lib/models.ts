@@ -56,6 +56,7 @@ export interface AuthResponse {
   userType: string;
   userId: string;
   displayName: string;
+  role?: string;
 }
 
 export interface CustomerProfile {
@@ -118,6 +119,7 @@ export interface OrderItemInput {
   menuItemId: string;
   quantity: number;
   toppings?: OrderItemToppingInput[];
+  notes?: string;
 }
 
 export interface CreateOrderRequest {
@@ -174,6 +176,7 @@ export interface OrderItem {
   unitPrice: number;
   lineTotal: number;
   toppings: OrderItemTopping[];
+  notes?: string;
 }
 
 export interface Order {
@@ -207,6 +210,7 @@ export interface CartItem {
   quantity: number;
   imageUrl?: string;
   selectedToppings?: OrderItemToppingInput[];
+  notes?: string;
 }
 
 // ── Admin DTOs ───────────────────────────────────────────────────────────────
@@ -282,6 +286,44 @@ export interface PaymentBreakdownDto {
 export interface OrderStatusBreakdownDto {
   status: string;
   count: number;
+}
+
+// ── Workers ───────────────────────────────────────────────────────────────────
+
+export interface WorkerAccount {
+  id: string;
+  username: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+// ── Customers (admin view) ────────────────────────────────────────────────────
+
+export interface CustomerSummary {
+  id: string;
+  phone: string;
+  displayName: string;
+  registeredAt: string;
+  orderCount: number;
+  totalSpent: number;
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
+export interface DashboardData {
+  ordersToday: number;
+  revenueToday: number;
+  avgOrderValue: number;
+  pendingCount: number;
+  hourlyOrders: { hour: number; count: number }[];
+}
+
+// ── Customer stats ────────────────────────────────────────────────────────────
+
+export interface CustomerStats {
+  totalOrders: number;
+  totalSpent: number;
 }
 
 // ── Promotions ───────────────────────────────────────────────────────────────

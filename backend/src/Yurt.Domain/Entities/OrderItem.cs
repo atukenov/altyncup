@@ -10,6 +10,7 @@ public class OrderItem : BaseEntity
     public decimal UnitPrice { get; set; }
     public decimal LineTotal { get; set; }
     public string MenuItemName { get; set; } = string.Empty; // snapshot
+    public string? Notes { get; set; }
 
     public Order Order { get; set; } = null!;
     public MenuItem MenuItem { get; set; } = null!;

@@ -164,6 +164,39 @@ public class AnalyticsService
         };
     }
 
+    public async Task<DashboardDto> GetDashboardAsync(CancellationToken ct = default)
+    {
+        var today = DateTime.UtcNow.Date;
+        var tomorrow = today.AddDays(1);
+
+        var pendingStatuses = new[] { OrderStatus.Created };
+
+        var todayOrders = await _db.Orders
+            .Where(o => o.CreatedAt >= today && o.CreatedAt < tomorrow && !o.IsArchived)
+            .ToListAsync(ct);
+
+        var pendingCount = await _db.Orders
+            .CountAsync(o => pendingStatuses.Contains(o.Status) && !o.IsArchived, ct);
+
+        var completed = todayOrders.Where(o => o.Status == OrderStatus.Completed).ToList();
+        var revenueToday = completed.Sum(o => o.Total);
+        var avgOrderValue = completed.Count > 0 ? revenueToday / completed.Count : 0m;
+
+        var hourlyOrders = todayOrders
+            .Where(o => o.Status == OrderStatus.Completed)
+            .GroupBy(o => o.CreatedAt.Hour)
+            .Select(g => new HourlyOrderCount(g.Key, g.Count()))
+            .OrderBy(h => h.Hour)
+            .ToList();
+
+        return new DashboardDto(
+            todayOrders.Count,
+            revenueToday,
+            avgOrderValue,
+            pendingCount,
+            hourlyOrders);
+    }
+
     private static DateTime GetWeekStart(DateTime date)
     {
         var diff = (7 + (date.DayOfWeek - DayOfWeek.Monday)) % 7;

@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Yurt.Application.Features.Auth.DTOs;
 using Yurt.Application.Features.Auth.Services;
 using Yurt.Application.Features.Auth.Validators;
 using Yurt.Application.Common.Interfaces;
+using Yurt.Domain.Enums;
 using Yurt.WebApi.Common;
 using Microsoft.AspNetCore.Authorization;
 
@@ -15,15 +17,18 @@ public class AuthController : ApiControllerBase
     private readonly AuthService _authService;
     private readonly ICurrentUserService _currentUser;
     private readonly IApplicationDbContext _db;
+    private readonly IPasswordHasher _hasher;
 
     public AuthController(
         AuthService authService,
         ICurrentUserService currentUser,
-        IApplicationDbContext db)
+        IApplicationDbContext db,
+        IPasswordHasher hasher)
     {
         _authService = authService;
         _currentUser = currentUser;
         _db = db;
+        _hasher = hasher;
     }
 
     /// <summary>Register a new customer using mobile number and 4-digit PIN.</summary>
@@ -84,5 +89,60 @@ public class AuthController : ApiControllerBase
         var userId = _currentUser.UserId!.Value;
         var result = await _authService.UpdateProfileAsync(userId, dto, ct);
         return ToResult(result);
+    }
+
+    /// <summary>Change customer's 4-digit PIN.</summary>
+    [HttpPut("pin")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> ChangePin(
+        [FromBody] ChangePinDto dto, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(dto.CurrentPin) || dto.CurrentPin.Length != 4 ||
+            string.IsNullOrWhiteSpace(dto.NewPin) || dto.NewPin.Length != 4)
+            return ValidationError("Current PIN and new PIN must each be exactly 4 digits.");
+
+        var userId = _currentUser.UserId!.Value;
+        var user = await _db.CustomerUsers.FindAsync([userId], ct);
+        if (user == null) return NotFound();
+
+        if (!_hasher.Verify(dto.CurrentPin, user.PinHash))
+            return Unauthorized(new ProblemDetails { Title = "Current PIN is incorrect." });
+
+        user.PinHash = _hasher.Hash(dto.NewPin);
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    /// <summary>Delete current customer account (soft delete).</summary>
+    [HttpDelete("me")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> DeleteAccount(CancellationToken ct)
+    {
+        var userId = _currentUser.UserId!.Value;
+        var user = await _db.CustomerUsers.FindAsync([userId], ct);
+        if (user == null) return NotFound();
+
+        user.IsActive = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    /// <summary>Get lifetime order stats for the current customer.</summary>
+    [HttpGet("me/stats")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> GetStats(CancellationToken ct)
+    {
+        var userId = _currentUser.UserId!.Value;
+        var orders = await _db.Orders
+            .Where(o => o.CustomerUserId == userId && o.Status == OrderStatus.Completed)
+            .ToListAsync(ct);
+
+        return Ok(new
+        {
+            totalOrders = orders.Count,
+            totalSpent = orders.Sum(o => o.Total)
+        });
     }
 }

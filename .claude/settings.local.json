@@ -9,7 +9,11 @@
       "Bash(ls node_modules/nx/bin/)",
       "Bash(dotnet ef *)",
       "Bash(dotnet build *)",
-      "Bash(node_modules/.bin/ng build *)"
+      "Bash(node_modules/.bin/ng build *)",
+      "Bash(grep -E \"\\\\.\\(cs|ts\\)$\")",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(grep -E \"\\\\.cs$\")",
+      "Bash(npx ng *)"
     ]
   }
 }

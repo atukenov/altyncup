@@ -59,7 +59,8 @@ public class OrderService
                 MenuItemName = menuItem.Name,
                 Quantity = i.Quantity,
                 UnitPrice = menuItem.Price + toppingTotal,
-                LineTotal = lineTotal
+                LineTotal = lineTotal,
+                Notes = i.Notes
             };
             if (i.Toppings is { Count: > 0 })
                 orderItem.Toppings = i.Toppings.Select(t => new OrderItemTopping
@@ -117,7 +118,7 @@ public class OrderService
         return await _db.Orders
             .Include(o => o.Location)
             .Include(o => o.Items).ThenInclude(i => i.Toppings)
-            .Where(o => o.CustomerUserId == customerId && activeStatuses.Contains(o.Status))
+            .Where(o => o.CustomerUserId == customerId && activeStatuses.Contains(o.Status) && !o.IsArchived)
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => MapToDto(o))
             .ToListAsync(ct);
@@ -128,7 +129,7 @@ public class OrderService
         => await _db.Orders
             .Include(o => o.Location)
             .Include(o => o.Items).ThenInclude(i => i.Toppings)
-            .Where(o => o.CustomerUserId == customerId && o.Status == OrderStatus.Completed)
+            .Where(o => o.CustomerUserId == customerId && o.Status == OrderStatus.Completed && !o.IsArchived)
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => MapToDto(o))
             .ToListAsync(ct);
@@ -138,7 +139,7 @@ public class OrderService
         => await _db.Orders
             .Include(o => o.Location)
             .Include(o => o.Items).ThenInclude(i => i.Toppings)
-            .Where(o => o.CustomerUserId == customerId && o.Status == OrderStatus.Declined)
+            .Where(o => o.CustomerUserId == customerId && o.Status == OrderStatus.Declined && !o.IsArchived)
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => MapToDto(o))
             .ToListAsync(ct);
@@ -149,6 +150,7 @@ public class OrderService
         var query = _db.Orders
             .Include(o => o.Location)
             .Include(o => o.Items).ThenInclude(i => i.Toppings)
+            .Where(o => !o.IsArchived)
             .AsQueryable();
 
         if (status.HasValue) query = query.Where(o => o.Status == status.Value);
@@ -262,6 +264,7 @@ public class OrderService
             o.Total,
             o.Items.Select(i => new OrderItemDto(
                 i.Id, i.MenuItemId, i.MenuItemName, i.Quantity, i.UnitPrice, i.LineTotal,
-                i.Toppings.Select(t => new OrderItemToppingDto(t.ToppingId, t.ToppingName, t.Price)).ToList()
+                i.Toppings.Select(t => new OrderItemToppingDto(t.ToppingId, t.ToppingName, t.Price)).ToList(),
+                i.Notes
             )).ToList());
 }

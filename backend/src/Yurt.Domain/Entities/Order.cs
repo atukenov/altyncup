@@ -19,6 +19,9 @@ public class Order : BaseEntity
     public decimal Subtotal { get; set; }
     public decimal Total { get; set; }
 
+    public bool IsArchived { get; set; } = false;
+    public DateTime? ArchivedAt { get; set; }
+
     public CustomerUser CustomerUser { get; set; } = null!;
     public Location Location { get; set; } = null!;
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();

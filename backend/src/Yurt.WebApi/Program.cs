@@ -5,6 +5,7 @@ using Yurt.Infrastructure;
 using Yurt.Infrastructure.Hubs;
 using Yurt.Infrastructure.Persistence;
 using Microsoft.AspNetCore.HttpOverrides;
+using AspNetCoreRateLimit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +60,14 @@ builder.Services.AddCors(opts =>
 builder.Services.AddMemoryCache();
 builder.Services.AddProblemDetails();
 
+// ── Rate Limiting ─────────────────────────────────────────────────────────────
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+builder.Services.AddInMemoryRateLimiting();
+
 // ─────────────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
@@ -95,6 +104,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseSerilogRequestLogging();
+app.UseIpRateLimiting();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

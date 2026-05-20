@@ -8,6 +8,7 @@ public class CustomerUser : BaseEntity
     public string PinHash { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }
 

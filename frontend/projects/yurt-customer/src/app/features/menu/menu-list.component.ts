@@ -2,8 +2,8 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { YurtApiService } from 'shared-api';
-import { MenuItem, MenuCategory, MenuTopping, OrderItemToppingInput } from 'shared-models';
+import { YurtApiService, AuthStateService } from 'shared-api';
+import { MenuItem, MenuCategory, MenuTopping, Order, OrderItemToppingInput } from 'shared-models';
 import { SkeletonCardComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
 
@@ -18,6 +18,7 @@ export class MenuListComponent implements OnInit {
   private api = inject(YurtApiService);
   private cart = inject(CartService);
   private toast = inject(ToastService);
+  private auth = inject(AuthStateService);
 
   loading = signal(true);
   categories = signal<MenuCategory[]>([]);
@@ -25,6 +26,14 @@ export class MenuListComponent implements OnInit {
   selectedCategoryId = signal<string | null>(null);
   search = '';
   locationName = localStorage.getItem('yurt_location_name') ?? '';
+  lastOrder = signal<Order | null>(null);
+
+  get greeting(): string {
+    const name = this.auth.currentUser?.displayName;
+    const hour = new Date().getHours();
+    const time = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    return name ? `${time}, ${name}` : time;
+  }
 
   readonly cartCount = this.cart.count;
   readonly cartTotal = this.cart.total;
@@ -71,6 +80,29 @@ export class MenuListComponent implements OnInit {
   ngOnInit(): void {
     this.api.getCategories().subscribe((cats) => this.categories.set(cats));
     this.loadItems();
+    this.api.getOrderHistory().subscribe({
+      next: (orders) => { if (orders.length) this.lastOrder.set(orders[0]); },
+      error: () => {},
+    });
+  }
+
+  orderAgain(order: Order): void {
+    const menuItemMap = new Map(this.allItems().map((i) => [i.id, i]));
+    for (const item of order.items) {
+      this.cart.addItem({
+        menuItemId: item.menuItemId,
+        name: item.menuItemName,
+        price: item.unitPrice,
+        quantity: item.quantity,
+        imageUrl: menuItemMap.get(item.menuItemId)?.imageUrl,
+        selectedToppings: item.toppings?.map((t) => ({
+          toppingId: t.toppingId,
+          toppingName: t.toppingName,
+          price: t.price,
+        })),
+      });
+    }
+    this.toast.success('Last order added to cart!');
   }
 
   loadItems(search?: string): void {

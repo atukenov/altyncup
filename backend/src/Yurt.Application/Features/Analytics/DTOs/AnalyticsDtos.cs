@@ -29,3 +29,12 @@ public record HourlyDistributionDto(int Hour, int Orders);
 public record PaymentBreakdownDto(string Method, int Count, decimal Total);
 
 public record OrderStatusBreakdownDto(string Status, int Count);
+
+public record DashboardDto(
+    int OrdersToday,
+    decimal RevenueToday,
+    decimal AvgOrderValue,
+    int PendingCount,
+    List<HourlyOrderCount> HourlyOrders);
+
+public record HourlyOrderCount(int Hour, int Count);

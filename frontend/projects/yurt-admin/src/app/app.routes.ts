@@ -45,7 +45,22 @@ export const routes: Routes = [
             (m) => m.PromotionsManagementComponent,
           ),
       },
-      { path: '', redirectTo: 'orders', pathMatch: 'full' },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+      },
+      {
+        path: 'customers',
+        loadComponent: () =>
+          import('./features/customers/customers.component').then((m) => m.CustomersComponent),
+      },
+      {
+        path: 'workers',
+        loadComponent: () =>
+          import('./features/workers/workers.component').then((m) => m.WorkersComponent),
+      },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },
   { path: '**', redirectTo: 'auth/login' },

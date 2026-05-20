@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, Input, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { SignalrService, YurtApiService } from 'shared-api';
+import { NotificationService, SignalrService, YurtApiService } from 'shared-api';
 import {
   CreatePaymentRequest,
   Order,
@@ -45,6 +45,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
   private signalr = inject(SignalrService);
   private toast = inject(ToastService);
+  private notif = inject(NotificationService);
 
   readonly OrderStatus = OrderStatus;
   readonly PaymentStatus = PaymentStatus;
@@ -93,12 +94,26 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
           if (o.id === this.id) {
             this.order.set(o);
             this.toast.info(`Order ${o.status}`);
+            if (localStorage.getItem('yurt_push_enabled') !== 'false') {
+              this.notif.sendNotification({
+                title: 'Order Update',
+                body: `Your order is now ${o.status}`,
+                tag: `order-${o.id}`,
+              });
+            }
           }
         }),
         this.signalr.orderDeclined$.subscribe((o) => {
           if (o.id === this.id) {
             this.order.set(o);
             this.toast.error('Order declined');
+            if (localStorage.getItem('yurt_push_enabled') !== 'false') {
+              this.notif.sendNotification({
+                title: 'Order Declined',
+                body: o.declineReason ?? 'Your order was declined.',
+                tag: `order-${o.id}`,
+              });
+            }
           }
         }),
         this.signalr.paymentUpdated$.subscribe((o) => {

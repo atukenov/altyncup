@@ -26,6 +26,9 @@ export class AuthStateService {
   get isLoggedIn(): boolean {
     return !!this.currentUser;
   }
+  get isAdmin(): boolean {
+    return this.currentUser?.role === 'Admin';
+  }
 
   setUser(user: AuthUser): void {
     this._user$.next(user);

@@ -253,6 +253,9 @@
                     + {{ item.toppings.map(t => t.toppingName).join(', ') }}
                   </p>
                 }
+                @if (item.notes) {
+                  <p class="text-slate-500 text-xs mt-0.5 italic">📝 {{ item.notes }}</p>
+                }
                 <p class="text-slate-400 text-xs mt-0.5">{{ item.unitPrice | currency2 }} each</p>
               </div>
               <span class="font-semibold text-slate-800 text-sm shrink-0">{{

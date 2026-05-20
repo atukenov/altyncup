@@ -52,6 +52,14 @@ export class CartService {
     this.save();
   }
 
+  updateNotes(item: CartItem, notes: string): void {
+    const key = this.itemKey(item);
+    this.items.update((cart) =>
+      cart.map((i) => (this.itemKey(i) === key ? { ...i, notes: notes || undefined } : i)),
+    );
+    this.save();
+  }
+
   clear(): void {
     this.items.set([]);
     this.save();
