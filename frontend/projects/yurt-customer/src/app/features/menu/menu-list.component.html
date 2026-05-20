@@ -145,7 +145,7 @@
                   <label
                     class="flex items-center justify-between py-3 px-4 rounded-2xl border-2 cursor-pointer transition-colors"
                     [class]="selected ? 'border-amber-400 bg-amber-50' : 'border-stone-100 bg-stone-50'"
-                    (click)="isGroup && toggleTopping(topping)"
+                    (click)="isGroup ? toggleTopping(topping) : null"
                   >
                     <div class="flex items-center gap-3">
                       @if (isGroup) {
