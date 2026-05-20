@@ -170,14 +170,12 @@ public class AnalyticsService
         var today = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
         var tomorrow = today.AddDays(1);
 
-        var pendingStatuses = new[] { OrderStatus.Created };
-
         var todayOrders = await _db.Orders
             .Where(o => o.CreatedAt >= today && o.CreatedAt < tomorrow && !o.IsArchived)
             .ToListAsync(ct);
 
         var pendingCount = await _db.Orders
-            .CountAsync(o => pendingStatuses.Contains(o.Status) && !o.IsArchived, ct);
+            .CountAsync(o => o.Status == OrderStatus.Created && !o.IsArchived, ct);
 
         var completed = todayOrders.Where(o => o.Status == OrderStatus.Completed).ToList();
         var revenueToday = completed.Sum(o => o.Total);
