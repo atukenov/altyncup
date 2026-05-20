@@ -180,3 +180,10 @@
   - Use `WebApplicationFactory` with a real test PostgreSQL database (Docker container spun up in CI).
   - Cover the critical paths: place order → accept → complete → payment.
   - Run in GitHub Actions on every pull request.
+
+### Overall application
+
+- [ ] **Language change**
+  - Application should on 3 languages (Russian, English and Kazakh).
+  - By default language is in English.
+  - Customer will be able to change their language in profile page.
