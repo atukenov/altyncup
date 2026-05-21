@@ -72,6 +72,8 @@ export interface CustomerProfile {
 export interface Location {
   id: string;
   name: string;
+  nameRu?: string;
+  nameKk?: string;
   address: string;
   workingHours: string;
   contactPhone: string;
@@ -83,12 +85,16 @@ export interface Location {
 export interface MenuCategory {
   id: string;
   name: string;
+  nameRu?: string;
+  nameKk?: string;
   sortOrder: number;
 }
 
 export interface MenuTopping {
   id: string;
   name: string;
+  nameRu?: string;
+  nameKk?: string;
   price: number;
   isAvailable: boolean;
   categoryIds: string[];
@@ -100,7 +106,11 @@ export interface MenuItem {
   categoryId: string;
   categoryName: string;
   name: string;
+  nameRu?: string;
+  nameKk?: string;
   description: string;
+  descriptionRu?: string;
+  descriptionKk?: string;
   price: number;
   isAvailable: boolean;
   imageUrl?: string;

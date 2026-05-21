@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -43,6 +43,14 @@ export class MenuListComponent implements OnInit {
   readonly cartCount = this.cart.count;
   readonly cartTotal = this.cart.total;
 
+  constructor() {
+    effect(() => {
+      const lang = this.langService.lang();
+      this.api.getCategories(lang).subscribe((cats) => this.categories.set(cats));
+      this.loadItems(this.search || undefined, lang);
+    });
+  }
+
   readonly filteredItems = computed(() => {
     let items = this.allItems();
     if (this.selectedCategoryId())
@@ -83,8 +91,6 @@ export class MenuListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.api.getCategories().subscribe((cats) => this.categories.set(cats));
-    this.loadItems();
     this.api.getOrderHistory().subscribe({
       next: (orders) => { if (orders.length) this.lastOrder.set(orders[0]); },
       error: () => {},
@@ -134,9 +140,9 @@ export class MenuListComponent implements OnInit {
     this.toast.success('Last order added to cart!');
   }
 
-  loadItems(search?: string): void {
+  loadItems(search?: string, lang?: string): void {
     this.loading.set(true);
-    this.api.getMenuItems(this.selectedCategoryId() ?? undefined, search).subscribe({
+    this.api.getMenuItems(this.selectedCategoryId() ?? undefined, search, lang ?? this.langService.lang()).subscribe({
       next: (items) => {
         this.allItems.set(items);
         this.loading.set(false);
@@ -150,11 +156,11 @@ export class MenuListComponent implements OnInit {
 
   selectCategory(id: string | null): void {
     this.selectedCategoryId.set(id);
-    this.loadItems(this.search || undefined);
+    this.loadItems(this.search || undefined, this.langService.lang());
   }
 
   onSearch(): void {
-    this.loadItems(this.search || undefined);
+    this.loadItems(this.search || undefined, this.langService.lang());
   }
 
   addToCart(item: MenuItem): void {

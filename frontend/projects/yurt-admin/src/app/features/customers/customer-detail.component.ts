@@ -5,11 +5,12 @@ import { YurtApiService } from 'shared-api';
 import { Currency2Pipe } from 'shared-ui';
 import { CustomerDetail } from 'shared-models';
 import { environment } from '../../../environments/environment';
+import { AdminTranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-customer-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, Currency2Pipe],
+  imports: [CommonModule, RouterLink, Currency2Pipe, AdminTranslatePipe],
   templateUrl: './customer-detail.component.html',
 })
 export class CustomerDetailComponent implements OnInit {

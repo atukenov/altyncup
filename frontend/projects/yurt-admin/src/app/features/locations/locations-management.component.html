@@ -2,17 +2,17 @@
   <div
     class="px-6 py-4 sticky top-0 bg-white border-b border-slate-100 flex items-center justify-between z-10"
   >
-    <h2 class="text-lg font-bold text-slate-800">Locations</h2>
+    <h2 class="text-lg font-bold text-slate-800">{{ 'locations.title' | t }}</h2>
     <button
       (click)="openDialog()"
       class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors shadow-sm"
     >
-      <span class="text-base leading-none font-bold">+</span> Add Location
+      <span class="text-base leading-none font-bold">+</span> {{ 'locations.add' | t }}
     </button>
   </div>
 
   @if (loading()) {
-    <div class="p-8 text-center text-slate-400 animate-pulse">Loading…</div>
+    <div class="p-8 text-center text-slate-400 animate-pulse">{{ 'label.loading' | t }}</div>
   } @else {
     <div class="p-6 grid gap-4 max-w-3xl">
       @for (loc of locations(); track loc.id) {
@@ -20,7 +20,7 @@
           class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex items-start gap-4"
         >
           <div
-            class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl flex-shrink-0"
+            class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl shrink-0"
           >
             📍
           </div>
@@ -32,7 +32,7 @@
                   loc.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
                 "
                 class="text-xs px-2 py-0.5 rounded-full"
-                >{{ loc.isActive ? 'Active' : 'Inactive' }}</span
+                >{{ loc.isActive ? ('locations.active' | t) : ('locations.inactive' | t) }}</span
               >
             </div>
             <p class="text-slate-500 text-sm mt-0.5">{{ loc.address }}</p>
@@ -40,24 +40,24 @@
               {{ loc.workingHours }} · {{ loc.contactPhone }}
             </p>
           </div>
-          <div class="flex gap-2 flex-shrink-0">
+          <div class="flex gap-2 shrink-0">
             <button
               (click)="openDialog(loc)"
               class="text-xs text-slate-600 hover:text-amber-600 px-2 py-1 rounded hover:bg-amber-50 transition-colors"
             >
-              Edit
+              {{ 'action.edit' | t }}
             </button>
             <button
               (click)="deleteLocation(loc)"
               class="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
             >
-              Delete
+              {{ 'action.delete' | t }}
             </button>
           </div>
         </div>
       }
       @if (!locations().length) {
-        <div class="py-12 text-center text-slate-400 text-sm">No locations yet</div>
+        <div class="py-12 text-center text-slate-400 text-sm">{{ 'locations.noLocations' | t }}</div>
       }
     </div>
   }
@@ -68,11 +68,11 @@
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
       <h3 class="text-lg font-bold text-slate-800 mb-4">
-        {{ form().id ? 'Edit' : 'Add' }} Location
+        {{ form().id ? ('locations.editTitle' | t) : ('locations.addTitle' | t) }}
       </h3>
       <div class="space-y-3">
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Name *</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'locations.name' | t }}</label>
           <input
             type="text"
             [ngModel]="form().name"
@@ -81,7 +81,7 @@
           />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Address *</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'locations.address' | t }}</label>
           <input
             type="text"
             [ngModel]="form().address"
@@ -90,7 +90,7 @@
           />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Working Hours</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'locations.workingHours' | t }}</label>
           <input
             type="text"
             [ngModel]="form().workingHours"
@@ -100,7 +100,7 @@
           />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Contact Phone</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'locations.contactPhone' | t }}</label>
           <input
             type="text"
             [ngModel]="form().contactPhone"
@@ -116,21 +116,22 @@
             (ngModelChange)="patch('isActive', $event)"
             class="rounded border-slate-300 text-amber-500 focus:ring-amber-400"
           />
-          <label for="isActive" class="text-sm text-slate-700">Active</label>
+          <label for="isActive" class="text-sm text-slate-700">{{ 'locations.active' | t }}</label>
         </div>
       </div>
       <div class="flex gap-3 mt-5">
-        <yurt-button variant="ghost" size="md" [fullWidth]="true" (clicked)="showDialog.set(false)"
-          >Cancel</yurt-button
-        >
+        <yurt-button variant="ghost" size="md" [fullWidth]="true" (clicked)="showDialog.set(false)">
+          {{ 'action.cancel' | t }}
+        </yurt-button>
         <yurt-button
           variant="primary"
           size="md"
           [fullWidth]="true"
           [loading]="saving()"
           (clicked)="save()"
-          >Save</yurt-button
         >
+          {{ 'action.save' | t }}
+        </yurt-button>
       </div>
     </div>
   </div>

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
 import { Promotion } from 'shared-models';
 import { ToastService } from 'shared-ui';
+import { AdminTranslatePipe } from '../../core/translate.pipe';
 
 interface PromotionForm {
   id?: string;
@@ -17,7 +18,7 @@ interface PromotionForm {
 @Component({
   selector: 'app-promotions-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AdminTranslatePipe],
   templateUrl: './promotions-management.component.html',
   styleUrl: './promotions-management.component.css',
 })

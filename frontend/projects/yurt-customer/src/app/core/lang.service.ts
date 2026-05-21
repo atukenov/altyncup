@@ -131,7 +131,7 @@ const T: Record<Lang, Record<string, string>> = {
 @Injectable({ providedIn: 'root' })
 export class LangService {
   private readonly KEY = 'yurt_lang';
-  readonly lang = signal<Lang>((localStorage.getItem('yurt_lang') as Lang) || 'en');
+  readonly lang = signal<Lang>((localStorage.getItem('yurt_lang') as Lang) || 'ru');
 
   setLang(lang: Lang): void {
     this.lang.set(lang);

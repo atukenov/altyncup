@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { YurtApiService } from 'shared-api';
 import { AnalyticsResponse } from 'shared-models';
 import { environment } from '../../../environments/environment';
+import { AdminTranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AdminTranslatePipe],
   templateUrl: './analytics.component.html',
   styleUrl: './analytics.component.css',
 })
@@ -21,9 +22,9 @@ export class AnalyticsComponent implements OnInit {
   readonly periods = [
     { label: 'Week', value: 'week' },
     { label: 'Month', value: 'month' },
-    { label: '6 Months', value: '6months' },
-    { label: '1 Year', value: 'year' },
-    { label: 'All Time', value: 'all' },
+    { label: '6M', value: '6months' },
+    { label: '1Y', value: 'year' },
+    { label: 'All', value: 'all' },
   ];
 
   // ── Computed helpers for charts ──────────────────────────────────────────

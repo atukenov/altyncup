@@ -4,7 +4,7 @@
     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
     </svg>
-    Back to Customers
+    {{ 'customers.backTo' | t }}
   </a>
 
   @if (loading()) {
@@ -13,7 +13,7 @@
       <div class="bg-white rounded-2xl border border-slate-100 p-6 h-60"></div>
     </div>
   } @else if (error() || !customer()) {
-    <div class="text-center py-20 text-slate-400">Customer not found.</div>
+    <div class="text-center py-20 text-slate-400">{{ 'customers.notFound' | t }}</div>
   } @else {
     @let c = customer()!;
 
@@ -25,23 +25,23 @@
           <div class="flex items-center gap-2 flex-wrap">
             <h1 class="text-xl font-bold text-slate-800">{{ c.displayName || c.phone }}</h1>
             @if (!c.isActive) {
-              <span class="text-xs font-semibold bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Deactivated</span>
+              <span class="text-xs font-semibold bg-red-100 text-red-600 px-2 py-0.5 rounded-full">{{ 'customers.deactivated' | t }}</span>
             } @else {
-              <span class="text-xs font-semibold bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Active</span>
+              <span class="text-xs font-semibold bg-green-100 text-green-600 px-2 py-0.5 rounded-full">{{ 'customers.active' | t }}</span>
             }
           </div>
           <p class="text-slate-500 font-mono text-sm mt-0.5">{{ c.phone }}</p>
-          <p class="text-slate-400 text-xs mt-1">Member since {{ c.registeredAt | date: 'MMM d, y' }}</p>
+          <p class="text-slate-400 text-xs mt-1">{{ 'customers.memberSince' | t }} {{ c.registeredAt | date: 'MMM d, y' }}</p>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-3 mt-5">
         <div class="bg-amber-50 rounded-xl p-4 text-center">
           <p class="text-2xl font-bold text-amber-600">{{ c.totalOrders }}</p>
-          <p class="text-xs text-slate-500 mt-0.5">Total Orders</p>
+          <p class="text-xs text-slate-500 mt-0.5">{{ 'customers.totalOrders' | t }}</p>
         </div>
         <div class="bg-amber-50 rounded-xl p-4 text-center">
           <p class="text-2xl font-bold text-amber-600">{{ c.totalSpent | currency2 }}</p>
-          <p class="text-xs text-slate-500 mt-0.5">Total Spent</p>
+          <p class="text-xs text-slate-500 mt-0.5">{{ 'customers.totalSpent' | t }}</p>
         </div>
       </div>
     </div>
@@ -49,20 +49,20 @@
     <!-- Order history -->
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       <div class="px-6 py-4 border-b border-slate-50">
-        <h2 class="text-sm font-bold text-slate-700">Recent Orders</h2>
+        <h2 class="text-sm font-bold text-slate-700">{{ 'customers.recentOrders' | t }}</h2>
         <p class="text-xs text-slate-400 mt-0.5">Last {{ c.recentOrders.length }} orders</p>
       </div>
       @if (!c.recentOrders.length) {
-        <div class="text-center py-12 text-slate-400 text-sm">No orders yet.</div>
+        <div class="text-center py-12 text-slate-400 text-sm">{{ 'customers.noOrders' | t }}</div>
       } @else {
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b border-slate-100 text-slate-400 text-xs uppercase tracking-wide">
-              <th class="text-left px-5 py-3">Date</th>
-              <th class="text-left px-5 py-3">Location</th>
-              <th class="text-left px-5 py-3">Status</th>
-              <th class="text-right px-5 py-3">Items</th>
-              <th class="text-right px-5 py-3">Total</th>
+              <th class="text-left px-5 py-3">{{ 'customers.date' | t }}</th>
+              <th class="text-left px-5 py-3">{{ 'customers.location' | t }}</th>
+              <th class="text-left px-5 py-3">{{ 'label.status' | t }}</th>
+              <th class="text-right px-5 py-3">{{ 'customers.items' | t }}</th>
+              <th class="text-right px-5 py-3">{{ 'customers.total' | t }}</th>
             </tr>
           </thead>
           <tbody>
@@ -79,7 +79,7 @@
                       'bg-green-100 text-green-700': o.status === 'Ready',
                       'bg-emerald-100 text-emerald-700': o.status === 'Completed',
                       'bg-red-100 text-red-700': o.status === 'Declined'
-                    }">{{ o.status }}</span>
+                    }">{{ 'order.status.' + o.status | t }}</span>
                 </td>
                 <td class="px-5 py-3 text-right text-slate-600">{{ o.itemCount }}</td>
                 <td class="px-5 py-3 text-right font-semibold text-amber-600">{{ o.total | currency2 }}</td>

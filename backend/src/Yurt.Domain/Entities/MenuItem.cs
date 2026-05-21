@@ -6,7 +6,11 @@ public class MenuItem : BaseEntity
 {
     public Guid CategoryId { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string? NameRu { get; set; }
+    public string? NameKk { get; set; }
     public string Description { get; set; } = string.Empty;
+    public string? DescriptionRu { get; set; }
+    public string? DescriptionKk { get; set; }
     public decimal Price { get; set; }
     public bool IsAvailable { get; set; } = true;
     public string? ImageUrl { get; set; }

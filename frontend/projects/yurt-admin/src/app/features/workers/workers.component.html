@@ -1,14 +1,14 @@
 <div class="p-6 max-w-4xl mx-auto">
   <div class="flex items-center justify-between mb-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-800">Worker Accounts</h1>
-      <p class="text-slate-400 text-sm mt-0.5">Manage staff access</p>
+      <h1 class="text-2xl font-bold text-slate-800">{{ 'workers.title' | t }}</h1>
+      <p class="text-slate-400 text-sm mt-0.5">{{ 'workers.manageStaff' | t }}</p>
     </div>
     <button
       (click)="openCreate()"
       class="bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl px-4 py-2 text-sm transition-colors"
     >
-      + New Worker
+      {{ 'workers.newWorker' | t }}
     </button>
   </div>
 
@@ -19,17 +19,17 @@
       }
     </div>
   } @else if (!workers().length) {
-    <div class="text-center py-20 text-slate-400">No worker accounts found.</div>
+    <div class="text-center py-20 text-slate-400">{{ 'workers.noFound' | t }}</div>
   } @else {
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-slate-100 text-slate-400 text-xs uppercase tracking-wide">
-            <th class="text-left px-5 py-3">Username</th>
-            <th class="text-left px-5 py-3">Role</th>
-            <th class="text-left px-5 py-3">Status</th>
-            <th class="text-left px-5 py-3">Created</th>
-            <th class="text-right px-5 py-3">Actions</th>
+            <th class="text-left px-5 py-3">{{ 'workers.username' | t }}</th>
+            <th class="text-left px-5 py-3">{{ 'workers.role' | t }}</th>
+            <th class="text-left px-5 py-3">{{ 'workers.statusCol' | t }}</th>
+            <th class="text-left px-5 py-3">{{ 'workers.created' | t }}</th>
+            <th class="text-right px-5 py-3">{{ 'workers.actions' | t }}</th>
           </tr>
         </thead>
         <tbody>
@@ -45,7 +45,7 @@
               <td class="px-5 py-3">
                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
                   [class]="w.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
-                  {{ w.isActive ? 'Active' : 'Inactive' }}
+                  {{ w.isActive ? ('workers.active' | t) : ('workers.inactive' | t) }}
                 </span>
               </td>
               <td class="px-5 py-3 text-slate-400">{{ w.createdAt | date: 'MMM d, y' }}</td>
@@ -54,13 +54,13 @@
                   (click)="openEdit(w)"
                   class="text-xs text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-1.5 transition-colors"
                 >
-                  Edit
+                  {{ 'action.edit' | t }}
                 </button>
                 <button
                   (click)="openReset(w)"
                   class="text-xs text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg px-3 py-1.5 transition-colors"
                 >
-                  Reset PW
+                  {{ 'workers.resetPw' | t }}
                 </button>
               </td>
             </tr>
@@ -75,15 +75,15 @@
 @if (showCreate()) {
   <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" (click)="showCreate.set(false)">
     <div class="bg-white rounded-2xl p-6 w-96 shadow-xl" (click)="$event.stopPropagation()">
-      <h2 class="text-lg font-bold text-slate-800 mb-4">New Worker Account</h2>
+      <h2 class="text-lg font-bold text-slate-800 mb-4">{{ 'workers.newAccount' | t }}</h2>
       <div class="space-y-3">
-        <input [(ngModel)]="createUsername" placeholder="Username" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
-        <input [(ngModel)]="createPassword" type="password" placeholder="Password (min 6 chars)" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+        <input [(ngModel)]="createUsername" [placeholder]="'workers.username' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+        <input [(ngModel)]="createPassword" type="password" [placeholder]="'workers.pwMinChars' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
       </div>
       <div class="flex gap-3 mt-5">
-        <button (click)="showCreate.set(false)" class="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+        <button (click)="showCreate.set(false)" class="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">{{ 'action.cancel' | t }}</button>
         <button (click)="submitCreate()" [disabled]="createLoading()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl py-2.5 text-sm disabled:opacity-60 transition-colors">
-          {{ createLoading() ? 'Creating…' : 'Create' }}
+          {{ createLoading() ? ('workers.creating' | t) : ('action.add' | t) }}
         </button>
       </div>
     </div>
@@ -94,18 +94,18 @@
 @if (editWorker()) {
   <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" (click)="editWorker.set(null)">
     <div class="bg-white rounded-2xl p-6 w-96 shadow-xl" (click)="$event.stopPropagation()">
-      <h2 class="text-lg font-bold text-slate-800 mb-4">Edit Worker</h2>
+      <h2 class="text-lg font-bold text-slate-800 mb-4">{{ 'workers.editWorker' | t }}</h2>
       <div class="space-y-3">
-        <input [(ngModel)]="editUsername" placeholder="Username" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+        <input [(ngModel)]="editUsername" [placeholder]="'workers.username' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
         <label class="flex items-center gap-3 cursor-pointer">
           <input type="checkbox" [(ngModel)]="editActive" class="w-4 h-4 rounded text-amber-500" />
-          <span class="text-sm text-slate-700">Active</span>
+          <span class="text-sm text-slate-700">{{ 'workers.active' | t }}</span>
         </label>
       </div>
       <div class="flex gap-3 mt-5">
-        <button (click)="editWorker.set(null)" class="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+        <button (click)="editWorker.set(null)" class="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">{{ 'action.cancel' | t }}</button>
         <button (click)="submitEdit()" [disabled]="editLoading()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl py-2.5 text-sm disabled:opacity-60 transition-colors">
-          {{ editLoading() ? 'Saving…' : 'Save' }}
+          {{ editLoading() ? ('workers.saving' | t) : ('action.save' | t) }}
         </button>
       </div>
     </div>
@@ -116,13 +116,13 @@
 @if (resetWorker()) {
   <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" (click)="resetWorker.set(null)">
     <div class="bg-white rounded-2xl p-6 w-96 shadow-xl" (click)="$event.stopPropagation()">
-      <h2 class="text-lg font-bold text-slate-800 mb-1">Reset Password</h2>
+      <h2 class="text-lg font-bold text-slate-800 mb-1">{{ 'workers.resetTitle' | t }}</h2>
       <p class="text-sm text-slate-400 mb-4">{{ resetWorker()!.username }}</p>
-      <input [(ngModel)]="resetPassword" type="password" placeholder="New password (min 6 chars)" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+      <input [(ngModel)]="resetPassword" type="password" [placeholder]="'workers.newPw' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
       <div class="flex gap-3 mt-5">
-        <button (click)="resetWorker.set(null)" class="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+        <button (click)="resetWorker.set(null)" class="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">{{ 'action.cancel' | t }}</button>
         <button (click)="submitReset()" [disabled]="resetLoading()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl py-2.5 text-sm disabled:opacity-60 transition-colors">
-          {{ resetLoading() ? 'Resetting…' : 'Reset' }}
+          {{ resetLoading() ? ('workers.resetting' | t) : ('action.confirm' | t) }}
         </button>
       </div>
     </div>

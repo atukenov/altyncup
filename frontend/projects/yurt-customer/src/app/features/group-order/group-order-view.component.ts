@@ -87,7 +87,7 @@ export class GroupOrderViewComponent implements OnInit, OnDestroy {
     if (!this.menuItems().length) {
       this.menuLoading.set(true);
       const locationId = this.cart()?.locationId;
-      this.api.getMenuItems(undefined, undefined).subscribe({
+      this.api.getMenuItems(undefined, undefined, 'ru').subscribe({
         next: (items) => { this.menuItems.set(items); this.menuLoading.set(false); },
         error: () => this.menuLoading.set(false),
       });

@@ -1,10 +1,11 @@
-import { Component, inject, OnInit, signal, Input } from '@angular/core';
+import { Component, inject, OnInit, signal, Input, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { YurtApiService, AuthStateService } from 'shared-api';
+import { YurtApiService } from 'shared-api';
 import { MenuItem } from 'shared-models';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
+import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 
 @Component({
@@ -21,23 +22,29 @@ export class ItemDetailComponent implements OnInit {
   private cart = inject(CartService);
   private router = inject(Router);
   private toast = inject(ToastService);
+  private langService = inject(LangService);
 
   item = signal<MenuItem | null>(null);
   loading = signal(true);
   quantity = signal(1);
   isFav = signal(false);
 
-  ngOnInit(): void {
-    this.api.getMenuItem(this.id).subscribe({
-      next: (item) => {
-        this.item.set(item);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-        this.toast.error('Failed to load item.');
-      },
+  constructor() {
+    effect(() => {
+      const lang = this.langService.lang();
+      if (this.id) this.loadItem(lang);
     });
+  }
+
+  private loadItem(lang: string): void {
+    this.loading.set(true);
+    this.api.getMenuItem(this.id, lang).subscribe({
+      next: (item) => { this.item.set(item); this.loading.set(false); },
+      error: () => { this.loading.set(false); this.toast.error('Failed to load item.'); },
+    });
+  }
+
+  ngOnInit(): void {
     this.loadFavorites();
   }
 

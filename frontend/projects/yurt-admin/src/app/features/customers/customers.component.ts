@@ -5,11 +5,12 @@ import { RouterLink } from '@angular/router';
 import { YurtApiService } from 'shared-api';
 import { Currency2Pipe } from 'shared-ui';
 import { CustomerSummary } from 'shared-models';
+import { AdminTranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, Currency2Pipe],
+  imports: [CommonModule, FormsModule, RouterLink, Currency2Pipe, AdminTranslatePipe],
   templateUrl: './customers.component.html',
 })
 export class CustomersComponent implements OnInit {

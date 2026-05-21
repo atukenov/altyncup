@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
 import { Location } from 'shared-models';
 import { ButtonComponent, ToastService } from 'shared-ui';
+import { AdminTranslatePipe } from '../../core/translate.pipe';
 
 interface LocationForm {
   id?: string;
@@ -17,7 +18,7 @@ interface LocationForm {
 @Component({
   selector: 'app-locations-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, AdminTranslatePipe],
   templateUrl: './locations-management.component.html',
   styleUrl: './locations-management.component.css',
 })

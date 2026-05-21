@@ -4,11 +4,17 @@ import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
 import { MenuItem, MenuCategory, MenuTopping } from 'shared-models';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
+import { AdminLangService } from '../../core/lang.service';
+import { AdminTranslatePipe } from '../../core/translate.pipe';
 
 interface MenuItemForm {
   id?: string;
   name: string;
+  nameRu: string;
+  nameKk: string;
   description: string;
+  descriptionRu: string;
+  descriptionKk: string;
   price: number;
   categoryId: string;
   imageUrl: string;
@@ -18,22 +24,32 @@ interface MenuItemForm {
 interface ToppingForm {
   id?: string;
   name: string;
+  nameRu: string;
+  nameKk: string;
   price: number;
   isAvailable: boolean;
   categoryIds: string[];
   group: string;
 }
 
+interface CatInput {
+  id?: string;
+  name: string;
+  nameRu: string;
+  nameKk: string;
+}
+
 @Component({
   selector: 'app-menu-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, Currency2Pipe],
+  imports: [CommonModule, FormsModule, ButtonComponent, Currency2Pipe, AdminTranslatePipe],
   templateUrl: './menu-management.component.html',
   styleUrl: './menu-management.component.css',
 })
 export class MenuManagementComponent implements OnInit {
   private api = inject(YurtApiService);
   private toast = inject(ToastService);
+  readonly langService = inject(AdminLangService);
 
   activeTab = signal<'items' | 'toppings'>('items');
 
@@ -46,23 +62,17 @@ export class MenuManagementComponent implements OnInit {
   showCatDialog = signal(false);
   showToppingDialog = signal(false);
   selectedCategoryId = signal('');
-  catInput = signal<{ name: string }>({ name: '' });
+  catInput = signal<CatInput>({ name: '', nameRu: '', nameKk: '' });
 
   itemForm = signal<MenuItemForm>({
-    name: '',
-    description: '',
-    price: 0,
-    categoryId: '',
-    imageUrl: '',
-    isAvailable: true,
+    name: '', nameRu: '', nameKk: '',
+    description: '', descriptionRu: '', descriptionKk: '',
+    price: 0, categoryId: '', imageUrl: '', isAvailable: true,
   });
 
   toppingForm = signal<ToppingForm>({
-    name: '',
-    price: 0,
-    isAvailable: true,
-    categoryIds: [],
-    group: '',
+    name: '', nameRu: '', nameKk: '',
+    price: 0, isAvailable: true, categoryIds: [], group: '',
   });
 
   filteredItems = computed(() => {
@@ -78,10 +88,7 @@ export class MenuManagementComponent implements OnInit {
     this.loading.set(true);
     this.api.getCategories().subscribe((cats) => this.categories.set(cats));
     this.api.adminGetMenuItems().subscribe({
-      next: (items) => {
-        this.items.set(items);
-        this.loading.set(false);
-      },
+      next: (items) => { this.items.set(items); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
     this.api.adminGetToppings().subscribe((toppings) => this.toppings.set(toppings));
@@ -92,17 +99,81 @@ export class MenuManagementComponent implements OnInit {
   }
 
   toppingCategoryNames(categoryIds: string[]): string {
-    return categoryIds
-      .map((id) => this.categoryName(id))
-      .filter(Boolean)
-      .join(', ') || '—';
+    return categoryIds.map((id) => this.categoryName(id)).filter(Boolean).join(', ') || '—';
+  }
+
+  // Active-language field getters/setters for item form
+  getActiveItemName(): string {
+    const f = this.itemForm();
+    const lang = this.langService.lang();
+    if (lang === 'ru') return f.nameRu;
+    if (lang === 'kk') return f.nameKk;
+    return f.name;
+  }
+  setActiveItemName(val: string): void {
+    const lang = this.langService.lang();
+    if (lang === 'ru') this.patchItemForm('nameRu', val);
+    else if (lang === 'kk') this.patchItemForm('nameKk', val);
+    else this.patchItemForm('name', val);
+  }
+
+  getActiveItemDescription(): string {
+    const f = this.itemForm();
+    const lang = this.langService.lang();
+    if (lang === 'ru') return f.descriptionRu;
+    if (lang === 'kk') return f.descriptionKk;
+    return f.description;
+  }
+  setActiveItemDescription(val: string): void {
+    const lang = this.langService.lang();
+    if (lang === 'ru') this.patchItemForm('descriptionRu', val);
+    else if (lang === 'kk') this.patchItemForm('descriptionKk', val);
+    else this.patchItemForm('description', val);
+  }
+
+  // Active-language field getters/setters for topping form
+  getActiveToppingName(): string {
+    const f = this.toppingForm();
+    const lang = this.langService.lang();
+    if (lang === 'ru') return f.nameRu;
+    if (lang === 'kk') return f.nameKk;
+    return f.name;
+  }
+  setActiveToppingName(val: string): void {
+    const lang = this.langService.lang();
+    if (lang === 'ru') this.patchToppingForm('nameRu', val);
+    else if (lang === 'kk') this.patchToppingForm('nameKk', val);
+    else this.patchToppingForm('name', val);
+  }
+
+  // Active-language field getters/setters for category input
+  getActiveCatName(): string {
+    const f = this.catInput();
+    const lang = this.langService.lang();
+    if (lang === 'ru') return f.nameRu;
+    if (lang === 'kk') return f.nameKk;
+    return f.name;
+  }
+  setActiveCatName(val: string): void {
+    const lang = this.langService.lang();
+    if (lang === 'ru') this.catInput.update((f) => ({ ...f, nameRu: val }));
+    else if (lang === 'kk') this.catInput.update((f) => ({ ...f, nameKk: val }));
+    else this.catInput.update((f) => ({ ...f, name: val }));
+  }
+
+  langLabel(): string {
+    return this.langService.lang().toUpperCase();
   }
 
   openItemDialog(item?: MenuItem): void {
     this.itemForm.set({
       id: item?.id,
       name: item?.name ?? '',
+      nameRu: item?.nameRu ?? '',
+      nameKk: item?.nameKk ?? '',
       description: item?.description ?? '',
+      descriptionRu: item?.descriptionRu ?? '',
+      descriptionKk: item?.descriptionKk ?? '',
       price: item?.price ?? 0,
       categoryId: item?.categoryId ?? this.categories()[0]?.id ?? '',
       imageUrl: item?.imageUrl ?? '',
@@ -117,12 +188,28 @@ export class MenuManagementComponent implements OnInit {
 
   saveItem(): void {
     const f = this.itemForm();
-    if (!f.name || !f.price) {
-      this.toast.error('Name and price are required');
+    if (!f.name && !f.nameRu) {
+      this.toast.error('Name is required');
+      return;
+    }
+    if (!f.price) {
+      this.toast.error('Price is required');
       return;
     }
     this.saving.set(true);
-    const obs = f.id ? this.api.adminUpdateMenuItem(f.id, f) : this.api.adminCreateMenuItem(f);
+    const payload = {
+      name: f.name || f.nameRu,
+      nameRu: f.nameRu || undefined,
+      nameKk: f.nameKk || undefined,
+      description: f.description || f.descriptionRu,
+      descriptionRu: f.descriptionRu || undefined,
+      descriptionKk: f.descriptionKk || undefined,
+      price: f.price,
+      categoryId: f.categoryId,
+      imageUrl: f.imageUrl || undefined,
+      isAvailable: f.isAvailable,
+    };
+    const obs = f.id ? this.api.adminUpdateMenuItem(f.id, payload) : this.api.adminCreateMenuItem(payload);
     obs.subscribe({
       next: (item) => {
         if (f.id) {
@@ -134,10 +221,7 @@ export class MenuManagementComponent implements OnInit {
         this.showItemDialog.set(false);
         this.toast.success('Item saved');
       },
-      error: () => {
-        this.saving.set(false);
-        this.toast.error('Failed to save item');
-      },
+      error: () => { this.saving.set(false); this.toast.error('Failed to save item'); },
     });
   }
 
@@ -153,27 +237,49 @@ export class MenuManagementComponent implements OnInit {
   }
 
   saveCat(): void {
-    const name = this.catInput().name.trim();
+    const f = this.catInput();
+    const name = f.name.trim() || f.nameRu.trim();
     if (!name) return;
     this.saving.set(true);
-    this.api.adminCreateCategory({ name }).subscribe({
+    const payload = {
+      name,
+      nameRu: f.nameRu || undefined,
+      nameKk: f.nameKk || undefined,
+    };
+    const obs = f.id
+      ? this.api.adminUpdateCategory(f.id, payload)
+      : this.api.adminCreateCategory(payload);
+    obs.subscribe({
       next: (cat) => {
-        this.categories.update((list) => [...list, cat]);
+        if (f.id) {
+          this.categories.update((list) => list.map((c) => (c.id === cat.id ? cat : c)));
+        } else {
+          this.categories.update((list) => [...list, cat]);
+        }
         this.saving.set(false);
         this.showCatDialog.set(false);
-        this.toast.success('Category created');
+        this.toast.success(f.id ? 'Category updated' : 'Category created');
       },
-      error: () => {
-        this.saving.set(false);
-        this.toast.error('Failed to create category');
-      },
+      error: () => { this.saving.set(false); this.toast.error('Failed to save category'); },
     });
+  }
+
+  openCatDialog(cat?: MenuCategory): void {
+    this.catInput.set({
+      id: cat?.id,
+      name: cat?.name ?? '',
+      nameRu: cat?.nameRu ?? '',
+      nameKk: cat?.nameKk ?? '',
+    });
+    this.showCatDialog.set(true);
   }
 
   openToppingDialog(topping?: MenuTopping): void {
     this.toppingForm.set({
       id: topping?.id,
       name: topping?.name ?? '',
+      nameRu: topping?.nameRu ?? '',
+      nameKk: topping?.nameKk ?? '',
       price: topping?.price ?? 0,
       isAvailable: topping?.isAvailable ?? true,
       categoryIds: topping?.categoryIds ? [...topping.categoryIds] : [],
@@ -201,14 +307,19 @@ export class MenuManagementComponent implements OnInit {
 
   saveTopping(): void {
     const f = this.toppingForm();
-    if (!f.name) {
-      this.toast.error('Topping name is required');
-      return;
-    }
+    const name = f.name || f.nameRu;
+    if (!name) { this.toast.error('Topping name is required'); return; }
     this.saving.set(true);
-    const obs = f.id
-      ? this.api.adminUpdateTopping(f.id, f)
-      : this.api.adminCreateTopping(f);
+    const payload = {
+      name,
+      nameRu: f.nameRu || undefined,
+      nameKk: f.nameKk || undefined,
+      price: f.price,
+      isAvailable: f.isAvailable,
+      categoryIds: f.categoryIds,
+      group: f.group || undefined,
+    };
+    const obs = f.id ? this.api.adminUpdateTopping(f.id, payload) : this.api.adminCreateTopping(payload);
     obs.subscribe({
       next: (topping) => {
         if (f.id) {
@@ -220,10 +331,7 @@ export class MenuManagementComponent implements OnInit {
         this.showToppingDialog.set(false);
         this.toast.success('Topping saved');
       },
-      error: () => {
-        this.saving.set(false);
-        this.toast.error('Failed to save topping');
-      },
+      error: () => { this.saving.set(false); this.toast.error('Failed to save topping'); },
     });
   }
 

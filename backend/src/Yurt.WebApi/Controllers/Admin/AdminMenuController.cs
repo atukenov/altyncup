@@ -19,7 +19,7 @@ public class AdminMenuController : ApiControllerBase
 
     [HttpGet("categories")]
     public async Task<IActionResult> GetCategories(CancellationToken ct)
-        => Ok(await _menuService.GetCategoriesAsync(ct));
+        => Ok(await _menuService.AdminGetCategoriesAsync(ct));
 
     [HttpPost("categories")]
     public async Task<IActionResult> CreateCategory(
@@ -39,11 +39,11 @@ public class AdminMenuController : ApiControllerBase
 
     [HttpGet("items")]
     public async Task<IActionResult> GetItems(CancellationToken ct)
-        => Ok(await _menuService.GetItemsAsync(null, null, ct));
+        => Ok(await _menuService.AdminGetItemsAsync(ct));
 
     [HttpGet("items/{id:guid}")]
     public async Task<IActionResult> GetItem(Guid id, CancellationToken ct)
-        => ToResult(await _menuService.GetItemByIdAsync(id, ct));
+        => ToResult(await _menuService.GetItemByIdAsync(id, "en", ct));
 
     [HttpPost("items")]
     public async Task<IActionResult> CreateItem(
@@ -63,7 +63,7 @@ public class AdminMenuController : ApiControllerBase
 
     [HttpGet("toppings")]
     public async Task<IActionResult> GetToppings(CancellationToken ct)
-        => Ok(await _menuService.GetToppingsAsync(null, ct));
+        => Ok(await _menuService.AdminGetToppingsAsync(ct));
 
     [HttpPost("toppings")]
     public async Task<IActionResult> CreateTopping(

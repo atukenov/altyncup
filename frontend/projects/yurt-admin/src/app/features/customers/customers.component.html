@@ -1,8 +1,8 @@
 <div class="p-6 max-w-5xl mx-auto">
   <div class="flex items-center justify-between mb-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-800">Customers</h1>
-      <p class="text-slate-400 text-sm mt-0.5">Registered customer accounts</p>
+      <h1 class="text-2xl font-bold text-slate-800">{{ 'customers.title' | t }}</h1>
+      <p class="text-slate-400 text-sm mt-0.5">{{ 'customers.subtitle' | t }}</p>
     </div>
   </div>
 
@@ -13,7 +13,7 @@
         type="text"
         [(ngModel)]="phone"
         (ngModelChange)="onSearch()"
-        placeholder="Search by phone number…"
+        [placeholder]="'customers.searchPhone' | t"
         class="flex-1 text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300"
       />
     </div>
@@ -26,17 +26,17 @@
       }
     </div>
   } @else if (!customers().length) {
-    <div class="text-center py-20 text-slate-400">No customers found.</div>
+    <div class="text-center py-20 text-slate-400">{{ 'customers.noFound' | t }}</div>
   } @else {
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-slate-100 text-slate-400 text-xs uppercase tracking-wide">
-            <th class="text-left px-5 py-3">Phone</th>
-            <th class="text-left px-5 py-3">Name</th>
-            <th class="text-left px-5 py-3">Registered</th>
-            <th class="text-right px-5 py-3">Orders</th>
-            <th class="text-right px-5 py-3">Total Spent</th>
+            <th class="text-left px-5 py-3">{{ 'customers.phone' | t }}</th>
+            <th class="text-left px-5 py-3">{{ 'customers.name' | t }}</th>
+            <th class="text-left px-5 py-3">{{ 'customers.registered' | t }}</th>
+            <th class="text-right px-5 py-3">{{ 'customers.orders' | t }}</th>
+            <th class="text-right px-5 py-3">{{ 'customers.spent' | t }}</th>
           </tr>
         </thead>
         <tbody>

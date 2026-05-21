@@ -33,6 +33,8 @@ public class LocationConfiguration : IEntityTypeConfiguration<Location>
     {
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Name).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.NameRu).HasMaxLength(200);
+        builder.Property(e => e.NameKk).HasMaxLength(200);
         builder.Property(e => e.Address).HasMaxLength(500).IsRequired();
         builder.Property(e => e.WorkingHours).HasMaxLength(200).IsRequired();
         builder.Property(e => e.ContactPhone).HasMaxLength(30).IsRequired();
@@ -45,6 +47,8 @@ public class MenuCategoryConfiguration : IEntityTypeConfiguration<MenuCategory>
     {
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Name).HasMaxLength(100).IsRequired();
+        builder.Property(e => e.NameRu).HasMaxLength(100);
+        builder.Property(e => e.NameKk).HasMaxLength(100);
     }
 }
 
@@ -54,7 +58,11 @@ public class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
     {
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Name).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.NameRu).HasMaxLength(200);
+        builder.Property(e => e.NameKk).HasMaxLength(200);
         builder.Property(e => e.Description).HasMaxLength(1000);
+        builder.Property(e => e.DescriptionRu).HasMaxLength(1000);
+        builder.Property(e => e.DescriptionKk).HasMaxLength(1000);
         builder.Property(e => e.Price).HasPrecision(10, 2);
         builder.Property(e => e.ImageUrl).HasMaxLength(500);
         builder.HasOne(e => e.Category).WithMany(c => c.Items)
@@ -114,7 +122,11 @@ public class PromotionConfiguration : IEntityTypeConfiguration<Promotion>
     {
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Title).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.TitleRu).HasMaxLength(200);
+        builder.Property(e => e.TitleKk).HasMaxLength(200);
         builder.Property(e => e.Description).HasMaxLength(2000);
+        builder.Property(e => e.DescriptionRu).HasMaxLength(2000);
+        builder.Property(e => e.DescriptionKk).HasMaxLength(2000);
         builder.Property(e => e.ImageUrl).HasMaxLength(500);
     }
 }
@@ -125,6 +137,8 @@ public class MenuToppingConfiguration : IEntityTypeConfiguration<MenuTopping>
     {
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Name).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.NameRu).HasMaxLength(200);
+        builder.Property(e => e.NameKk).HasMaxLength(200);
         builder.Property(e => e.Price).HasPrecision(10, 2);
     }
 }

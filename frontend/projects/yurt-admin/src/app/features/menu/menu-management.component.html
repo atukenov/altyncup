@@ -1,8 +1,8 @@
 <div class="flex h-screen overflow-hidden">
   <!-- Category sidebar -->
-  <div class="w-56 bg-white border-r border-slate-100 flex flex-col flex-shrink-0">
+  <div class="w-56 bg-white border-r border-slate-100 flex flex-col shrink-0">
     <div class="px-4 py-4 border-b border-slate-100">
-      <h3 class="font-semibold text-slate-700 text-sm">Categories</h3>
+      <h3 class="font-semibold text-slate-700 text-sm">{{ 'menu.categories' | t }}</h3>
     </div>
     <div class="flex-1 overflow-y-auto py-2">
       <button
@@ -14,7 +14,7 @@
         "
         class="w-full text-left px-4 py-2 text-sm transition-colors"
       >
-        All Items
+        {{ 'menu.allItems' | t }}
       </button>
       @for (cat of categories(); track cat.id) {
         <button
@@ -24,18 +24,24 @@
               ? 'bg-amber-50 text-amber-700 font-semibold'
               : 'text-slate-600 hover:bg-slate-50'
           "
-          class="w-full text-left px-4 py-2 text-sm transition-colors"
+          class="w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between group"
         >
-          {{ cat.name }}
+          <span class="truncate">{{ cat.name }}</span>
+          <button
+            (click)="$event.stopPropagation(); openCatDialog(cat)"
+            class="text-slate-400 hover:text-amber-600 opacity-0 group-hover:opacity-100 transition-all text-xs px-1"
+          >
+            ✎
+          </button>
         </button>
       }
     </div>
     <div class="p-3 border-t border-slate-100 space-y-2">
       <button
-        (click)="showCatDialog.set(true); catInput.set({ name: '' })"
+        (click)="openCatDialog()"
         class="w-full text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl px-3 py-2 transition-colors"
       >
-        + Add Category
+        {{ 'menu.addCategory' | t }}
       </button>
     </div>
   </div>
@@ -56,7 +62,7 @@
           "
           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
         >
-          Items
+          {{ 'menu.items' | t }}
         </button>
         <button
           (click)="activeTab.set('toppings')"
@@ -67,7 +73,7 @@
           "
           class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
         >
-          Toppings
+          {{ 'menu.toppings' | t }}
         </button>
       </div>
 
@@ -76,14 +82,14 @@
           (click)="openItemDialog()"
           class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors shadow-sm"
         >
-          <span class="text-base leading-none font-bold">+</span> Add Item
+          {{ 'menu.addItem' | t }}
         </button>
       } @else {
         <button
           (click)="openToppingDialog()"
           class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors shadow-sm"
         >
-          <span class="text-base leading-none font-bold">+</span> Add Topping
+          {{ 'menu.addTopping' | t }}
         </button>
       }
     </div>
@@ -91,15 +97,15 @@
     <!-- Items table -->
     @if (activeTab() === 'items') {
       @if (loading()) {
-        <div class="p-8 text-center text-slate-400 animate-pulse">Loading…</div>
+        <div class="p-8 text-center text-slate-400 animate-pulse">{{ 'label.loading' | t }}</div>
       } @else {
         <table class="w-full text-sm">
           <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
             <tr>
-              <th class="text-left px-6 py-3">Name</th>
-              <th class="text-left px-6 py-3">Category</th>
-              <th class="text-right px-6 py-3">Price</th>
-              <th class="text-center px-6 py-3">Available</th>
+              <th class="text-left px-6 py-3">{{ 'label.name' | t }}</th>
+              <th class="text-left px-6 py-3">{{ 'label.category' | t }}</th>
+              <th class="text-right px-6 py-3">{{ 'label.price' | t }}</th>
+              <th class="text-center px-6 py-3">{{ 'label.available' | t }}</th>
               <th class="px-6 py-3"></th>
             </tr>
           </thead>
@@ -117,7 +123,7 @@
                       item.isAvailable ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
                     "
                     class="text-xs px-2 py-0.5 rounded-full"
-                    >{{ item.isAvailable ? 'Yes' : 'No' }}</span
+                    >{{ item.isAvailable ? ('label.yes' | t) : ('label.no' | t) }}</span
                   >
                 </td>
                 <td class="px-6 py-3 text-right">
@@ -126,13 +132,13 @@
                       (click)="openItemDialog(item)"
                       class="text-xs text-slate-600 hover:text-amber-600 px-2 py-1 rounded hover:bg-amber-50 transition-colors"
                     >
-                      Edit
+                      {{ 'action.edit' | t }}
                     </button>
                     <button
                       (click)="deleteItem(item)"
                       class="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
                     >
-                      Delete
+                      {{ 'action.delete' | t }}
                     </button>
                   </div>
                 </td>
@@ -141,7 +147,7 @@
           </tbody>
         </table>
         @if (!filteredItems().length) {
-          <div class="py-12 text-center text-slate-400 text-sm">No items in this category</div>
+          <div class="py-12 text-center text-slate-400 text-sm">{{ 'menu.noItems' | t }}</div>
         }
       }
     }
@@ -151,11 +157,11 @@
       <table class="w-full text-sm">
         <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
           <tr>
-            <th class="text-left px-6 py-3">Name</th>
-            <th class="text-left px-6 py-3">Group</th>
-            <th class="text-left px-6 py-3">Categories</th>
-            <th class="text-right px-6 py-3">Price</th>
-            <th class="text-center px-6 py-3">Available</th>
+            <th class="text-left px-6 py-3">{{ 'label.name' | t }}</th>
+            <th class="text-left px-6 py-3">{{ 'label.group' | t }}</th>
+            <th class="text-left px-6 py-3">{{ 'label.categories' | t }}</th>
+            <th class="text-right px-6 py-3">{{ 'label.price' | t }}</th>
+            <th class="text-center px-6 py-3">{{ 'label.available' | t }}</th>
             <th class="px-6 py-3"></th>
           </tr>
         </thead>
@@ -174,7 +180,7 @@
                 {{ toppingCategoryNames(topping.categoryIds) }}
               </td>
               <td class="px-6 py-3 text-right font-semibold text-amber-600">
-                {{ topping.price === 0 ? 'Free' : (topping.price | currency2) }}
+                {{ topping.price === 0 ? ('label.free' | t) : (topping.price | currency2) }}
               </td>
               <td class="px-6 py-3 text-center">
                 <span
@@ -184,7 +190,7 @@
                       : 'bg-slate-100 text-slate-500'
                   "
                   class="text-xs px-2 py-0.5 rounded-full"
-                  >{{ topping.isAvailable ? 'Yes' : 'No' }}</span
+                  >{{ topping.isAvailable ? ('label.yes' | t) : ('label.no' | t) }}</span
                 >
               </td>
               <td class="px-6 py-3 text-right">
@@ -193,13 +199,13 @@
                     (click)="openToppingDialog(topping)"
                     class="text-xs text-slate-600 hover:text-amber-600 px-2 py-1 rounded hover:bg-amber-50 transition-colors"
                   >
-                    Edit
+                    {{ 'action.edit' | t }}
                   </button>
                   <button
                     (click)="deleteTopping(topping)"
                     class="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
                   >
-                    Delete
+                    {{ 'action.delete' | t }}
                   </button>
                 </div>
               </td>
@@ -208,7 +214,7 @@
         </tbody>
       </table>
       @if (!toppings().length) {
-        <div class="py-12 text-center text-slate-400 text-sm">No toppings yet</div>
+        <div class="py-12 text-center text-slate-400 text-sm">{{ 'menu.noToppings' | t }}</div>
       }
     }
   </div>
@@ -219,30 +225,34 @@
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <h3 class="text-lg font-bold text-slate-800 mb-4">
-        {{ itemForm().id ? 'Edit' : 'Add' }} Menu Item
+        {{ itemForm().id ? ('menu.editMenuItemTitle' | t) : ('menu.addMenuItemTitle' | t) }}
       </h3>
       <div class="space-y-3">
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Name *</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">
+            {{ 'label.name' | t }} ({{ langLabel() }}) *
+          </label>
           <input
             type="text"
-            [ngModel]="itemForm().name"
-            (ngModelChange)="patchItemForm('name', $event)"
+            [ngModel]="getActiveItemName()"
+            (ngModelChange)="setActiveItemName($event)"
             class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
           />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Description</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">
+            {{ 'label.description' | t }} ({{ langLabel() }})
+          </label>
           <textarea
-            [ngModel]="itemForm().description"
-            (ngModelChange)="patchItemForm('description', $event)"
+            [ngModel]="getActiveItemDescription()"
+            (ngModelChange)="setActiveItemDescription($event)"
             rows="2"
             class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none resize-none"
           ></textarea>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-medium text-slate-600 mb-1">Price *</label>
+            <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'menu.priceStar' | t }}</label>
             <input
               type="number"
               [ngModel]="itemForm().price"
@@ -253,7 +263,7 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-600 mb-1">Category</label>
+            <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'label.category' | t }}</label>
             <select
               [ngModel]="itemForm().categoryId"
               (ngModelChange)="patchItemForm('categoryId', $event)"
@@ -266,7 +276,7 @@
           </div>
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Image URL</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'label.imageUrl' | t }}</label>
           <input
             type="text"
             [ngModel]="itemForm().imageUrl"
@@ -282,25 +292,16 @@
             (ngModelChange)="patchItemForm('isAvailable', $event)"
             class="rounded border-slate-300 text-amber-500 focus:ring-amber-400"
           />
-          <label for="isAvailable" class="text-sm text-slate-700">Available</label>
+          <label for="isAvailable" class="text-sm text-slate-700">{{ 'label.available' | t }}</label>
         </div>
       </div>
       <div class="flex gap-3 mt-5">
-        <yurt-button
-          variant="ghost"
-          size="md"
-          [fullWidth]="true"
-          (clicked)="showItemDialog.set(false)"
-          >Cancel</yurt-button
-        >
-        <yurt-button
-          variant="primary"
-          size="md"
-          [fullWidth]="true"
-          [loading]="saving()"
-          (clicked)="saveItem()"
-          >Save</yurt-button
-        >
+        <yurt-button variant="ghost" size="md" [fullWidth]="true" (clicked)="showItemDialog.set(false)">
+          {{ 'action.cancel' | t }}
+        </yurt-button>
+        <yurt-button variant="primary" size="md" [fullWidth]="true" [loading]="saving()" (clicked)="saveItem()">
+          {{ 'action.save' | t }}
+        </yurt-button>
       </div>
     </div>
   </div>
@@ -310,30 +311,26 @@
 @if (showCatDialog()) {
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-      <h3 class="text-lg font-bold text-slate-800 mb-4">Add Category</h3>
+      <h3 class="text-lg font-bold text-slate-800 mb-4">
+        {{ catInput().id ? ('menu.editCategoryTitle' | t) : ('menu.addCategoryTitle' | t) }}
+      </h3>
+      <label class="block text-xs font-medium text-slate-600 mb-1">
+        {{ 'menu.categoryName' | t }} ({{ langLabel() }})
+      </label>
       <input
         type="text"
-        [ngModel]="catInput().name"
-        (ngModelChange)="catInput.set({ name: $event })"
-        placeholder="Category name"
+        [ngModel]="getActiveCatName()"
+        (ngModelChange)="setActiveCatName($event)"
+        [placeholder]="'menu.categoryName' | t"
         class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
       />
       <div class="flex gap-3 mt-4">
-        <yurt-button
-          variant="ghost"
-          size="md"
-          [fullWidth]="true"
-          (clicked)="showCatDialog.set(false)"
-          >Cancel</yurt-button
-        >
-        <yurt-button
-          variant="primary"
-          size="md"
-          [fullWidth]="true"
-          [loading]="saving()"
-          (clicked)="saveCat()"
-          >Save</yurt-button
-        >
+        <yurt-button variant="ghost" size="md" [fullWidth]="true" (clicked)="showCatDialog.set(false)">
+          {{ 'action.cancel' | t }}
+        </yurt-button>
+        <yurt-button variant="primary" size="md" [fullWidth]="true" [loading]="saving()" (clicked)="saveCat()">
+          {{ 'action.save' | t }}
+        </yurt-button>
       </div>
     </div>
   </div>
@@ -344,21 +341,23 @@
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <h3 class="text-lg font-bold text-slate-800 mb-4">
-        {{ toppingForm().id ? 'Edit' : 'Add' }} Topping
+        {{ toppingForm().id ? ('menu.editToppingTitle' | t) : ('menu.addToppingTitle' | t) }}
       </h3>
       <div class="space-y-3">
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Name *</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">
+            {{ 'label.name' | t }} ({{ langLabel() }}) *
+          </label>
           <input
             type="text"
-            [ngModel]="toppingForm().name"
-            (ngModelChange)="patchToppingForm('name', $event)"
+            [ngModel]="getActiveToppingName()"
+            (ngModelChange)="setActiveToppingName($event)"
             placeholder="e.g. Oat Milk, Extra Hot"
             class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
           />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Price (0 = free)</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'menu.priceZeroFree' | t }}</label>
           <input
             type="number"
             [ngModel]="toppingForm().price"
@@ -369,19 +368,19 @@
           />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Selection type</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'menu.selectionType' | t }}</label>
           <select
             [ngModel]="toppingForm().group"
             (ngModelChange)="patchToppingForm('group', $event)"
             class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
           >
-            <option value="">Free pick (checkbox)</option>
+            <option value="">{{ 'menu.freePick' | t }}</option>
             <option value="milk">Milk — pick one</option>
             <option value="syrup">Syrup — pick one</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-2">Show for categories</label>
+          <label class="block text-xs font-medium text-slate-600 mb-2">{{ 'menu.showForCats' | t }}</label>
           <div class="space-y-2 max-h-40 overflow-y-auto border border-slate-100 rounded-xl p-3">
             @for (cat of categories(); track cat.id) {
               <label class="flex items-center gap-2 cursor-pointer">
@@ -404,25 +403,16 @@
             (ngModelChange)="patchToppingForm('isAvailable', $event)"
             class="rounded border-slate-300 text-amber-500 focus:ring-amber-400"
           />
-          <label for="toppingAvailable" class="text-sm text-slate-700">Available</label>
+          <label for="toppingAvailable" class="text-sm text-slate-700">{{ 'label.available' | t }}</label>
         </div>
       </div>
       <div class="flex gap-3 mt-5">
-        <yurt-button
-          variant="ghost"
-          size="md"
-          [fullWidth]="true"
-          (clicked)="showToppingDialog.set(false)"
-          >Cancel</yurt-button
-        >
-        <yurt-button
-          variant="primary"
-          size="md"
-          [fullWidth]="true"
-          [loading]="saving()"
-          (clicked)="saveTopping()"
-          >Save</yurt-button
-        >
+        <yurt-button variant="ghost" size="md" [fullWidth]="true" (clicked)="showToppingDialog.set(false)">
+          {{ 'action.cancel' | t }}
+        </yurt-button>
+        <yurt-button variant="primary" size="md" [fullWidth]="true" [loading]="saving()" (clicked)="saveTopping()">
+          {{ 'action.save' | t }}
+        </yurt-button>
       </div>
     </div>
   </div>

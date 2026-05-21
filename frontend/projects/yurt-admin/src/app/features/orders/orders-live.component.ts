@@ -7,12 +7,12 @@ import {
   BadgeComponent,
   ButtonComponent,
   ToastService,
-  OrderStatusLabelPipe,
   OrderStatusColorPipe,
   Currency2Pipe,
 } from 'shared-ui';
 import { environment } from '../../../environments/environment';
 import { Subscription } from 'rxjs';
+import { AdminTranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-orders-live',
@@ -22,9 +22,9 @@ import { Subscription } from 'rxjs';
     FormsModule,
     BadgeComponent,
     ButtonComponent,
-    OrderStatusLabelPipe,
     OrderStatusColorPipe,
     Currency2Pipe,
+    AdminTranslatePipe,
   ],
   templateUrl: './orders-live.component.html',
   styleUrl: './orders-live.component.css',
@@ -64,9 +64,9 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   }
 
   readonly statusTabs = [
-    { label: 'Active', value: 'active' },
-    { label: 'Done', value: 'done' },
-    { label: 'All', value: 'all' },
+    { labelKey: 'orders.tabActive', value: 'active' },
+    { labelKey: 'orders.tabDone', value: 'done' },
+    { labelKey: 'orders.tabAll', value: 'all' },
   ];
 
   private activeStatuses = [

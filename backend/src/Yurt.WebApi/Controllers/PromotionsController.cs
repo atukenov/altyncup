@@ -13,6 +13,7 @@ public class PromotionsController : ControllerBase
         => _promotionService = promotionService;
 
     [HttpGet("active")]
-    public async Task<IActionResult> GetActive(CancellationToken ct)
-        => Ok(await _promotionService.GetActivePromotionsAsync(ct));
+    public async Task<IActionResult> GetActive(
+        [FromQuery] string lang = "ru", CancellationToken ct = default)
+        => Ok(await _promotionService.GetActivePromotionsAsync(lang, ct));
 }

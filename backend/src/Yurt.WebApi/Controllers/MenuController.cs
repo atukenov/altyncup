@@ -14,25 +14,30 @@ public class MenuController : ApiControllerBase
 
     /// <summary>Get all menu categories.</summary>
     [HttpGet("categories")]
-    public async Task<IActionResult> GetCategories(CancellationToken ct)
-        => Ok(await _menuService.GetCategoriesAsync(ct));
+    public async Task<IActionResult> GetCategories(
+        [FromQuery] string lang = "ru", CancellationToken ct = default)
+        => Ok(await _menuService.GetCategoriesAsync(lang, ct));
 
     /// <summary>Get menu items, optionally filtered by categoryId and/or search term.</summary>
     [HttpGet]
     public async Task<IActionResult> GetItems(
         [FromQuery] Guid? categoryId,
         [FromQuery] string? search,
-        CancellationToken ct)
-        => Ok(await _menuService.GetItemsAsync(categoryId, search, ct));
+        [FromQuery] string lang = "ru",
+        CancellationToken ct = default)
+        => Ok(await _menuService.GetItemsAsync(categoryId, search, lang, ct));
 
     /// <summary>Get a single menu item by ID.</summary>
     [HttpGet("items/{id:guid}")]
-    public async Task<IActionResult> GetItem(Guid id, CancellationToken ct)
-        => ToResult(await _menuService.GetItemByIdAsync(id, ct));
+    public async Task<IActionResult> GetItem(
+        Guid id, [FromQuery] string lang = "ru", CancellationToken ct = default)
+        => ToResult(await _menuService.GetItemByIdAsync(id, lang, ct));
 
     /// <summary>Get available toppings, optionally filtered by category.</summary>
     [HttpGet("toppings")]
     public async Task<IActionResult> GetToppings(
-        [FromQuery] Guid? categoryId, CancellationToken ct)
-        => Ok(await _menuService.GetToppingsAsync(categoryId, ct));
+        [FromQuery] Guid? categoryId,
+        [FromQuery] string lang = "ru",
+        CancellationToken ct = default)
+        => Ok(await _menuService.GetToppingsAsync(categoryId, lang, ct));
 }

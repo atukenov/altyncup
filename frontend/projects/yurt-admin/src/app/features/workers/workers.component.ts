@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
 import { ToastService } from 'shared-ui';
 import { WorkerAccount } from 'shared-models';
+import { AdminTranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-workers',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AdminTranslatePipe],
   templateUrl: './workers.component.html',
 })
 export class WorkersComponent implements OnInit {

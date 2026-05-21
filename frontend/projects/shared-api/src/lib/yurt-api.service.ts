@@ -77,8 +77,9 @@ export class YurtApiService {
   }
 
   // ── Locations ──────────────────────────────────────────────────────────────
-  getLocations(): Observable<Location[]> {
-    return this.http.get<Location[]>(`${this.baseUrl}/api/locations`);
+  getLocations(lang?: string): Observable<Location[]> {
+    const params = lang ? new HttpParams().set('lang', lang) : undefined;
+    return this.http.get<Location[]>(`${this.baseUrl}/api/locations`, { params });
   }
 
   getAdminLocations(): Observable<Location[]> {
@@ -98,19 +99,22 @@ export class YurtApiService {
   }
 
   // ── Menu ───────────────────────────────────────────────────────────────────
-  getCategories(): Observable<MenuCategory[]> {
-    return this.http.get<MenuCategory[]>(`${this.baseUrl}/api/menu/categories`);
+  getCategories(lang?: string): Observable<MenuCategory[]> {
+    const params = lang ? new HttpParams().set('lang', lang) : undefined;
+    return this.http.get<MenuCategory[]>(`${this.baseUrl}/api/menu/categories`, { params });
   }
 
-  getMenuItems(categoryId?: string, search?: string): Observable<MenuItem[]> {
+  getMenuItems(categoryId?: string, search?: string, lang?: string): Observable<MenuItem[]> {
     let params = new HttpParams();
     if (categoryId) params = params.set('categoryId', categoryId);
     if (search) params = params.set('search', search);
+    if (lang) params = params.set('lang', lang);
     return this.http.get<MenuItem[]>(`${this.baseUrl}/api/menu`, { params });
   }
 
-  getMenuItem(id: string): Observable<MenuItem> {
-    return this.http.get<MenuItem>(`${this.baseUrl}/api/menu/items/${id}`);
+  getMenuItem(id: string, lang?: string): Observable<MenuItem> {
+    const params = lang ? new HttpParams().set('lang', lang) : undefined;
+    return this.http.get<MenuItem>(`${this.baseUrl}/api/menu/items/${id}`, { params });
   }
 
   // Admin menu
@@ -158,8 +162,10 @@ export class YurtApiService {
     return this.http.delete<void>(`${this.baseUrl}/api/admin/menu/toppings/${id}`);
   }
 
-  getToppings(categoryId?: string): Observable<MenuTopping[]> {
-    const params = categoryId ? new HttpParams().set('categoryId', categoryId) : undefined;
+  getToppings(categoryId?: string, lang?: string): Observable<MenuTopping[]> {
+    let params = new HttpParams();
+    if (categoryId) params = params.set('categoryId', categoryId);
+    if (lang) params = params.set('lang', lang);
     return this.http.get<MenuTopping[]>(`${this.baseUrl}/api/menu/toppings`, { params });
   }
 

@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { YurtApiService } from 'shared-api';
 import { Currency2Pipe } from 'shared-ui';
 import { DashboardData } from 'shared-models';
+import { AdminTranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, Currency2Pipe],
+  imports: [CommonModule, RouterLink, Currency2Pipe, AdminTranslatePipe],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {

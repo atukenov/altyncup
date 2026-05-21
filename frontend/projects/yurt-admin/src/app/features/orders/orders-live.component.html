@@ -4,7 +4,7 @@
     <!-- Header -->
     <div class="px-4 py-4 border-b border-slate-100 flex-shrink-0">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-bold text-slate-800">Live Orders</h2>
+        <h2 class="text-lg font-bold text-slate-800">{{ 'orders.title' | t }}</h2>
         <div class="flex items-center gap-1.5">
           <span
             [class]="signalr.connected() ? 'bg-green-400' : 'bg-red-400'"
@@ -21,7 +21,7 @@
         (ngModelChange)="loadOrders()"
         class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-400 outline-none"
       >
-        <option value="">All Locations</option>
+        <option value="">{{ 'orders.allLocations' | t }}</option>
         @for (loc of locations(); track loc.id) {
           <option [value]="loc.id">{{ loc.name }}</option>
         }
@@ -39,7 +39,7 @@
           "
           class="flex-1 text-xs rounded-lg py-1.5 transition-colors"
         >
-          {{ tab.label }}
+          {{ tab.labelKey | t }}
           @if (countForStatus(tab.value)) {
             <span class="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{{
               countForStatus(tab.value)
@@ -51,11 +51,11 @@
     <!-- Order list -->
     <div class="flex-1 overflow-y-auto">
       @if (loading()) {
-        <div class="p-4 text-center text-slate-400 text-sm animate-pulse">Loading orders…</div>
+        <div class="p-4 text-center text-slate-400 text-sm animate-pulse">{{ 'label.loading' | t }}</div>
       } @else if (!filteredOrders().length) {
         <div class="p-8 text-center text-slate-400">
           <div class="text-4xl mb-2">📋</div>
-          <p class="text-sm">No orders</p>
+          <p class="text-sm">{{ 'orders.noOrders' | t }}</p>
         </div>
       } @else {
         @for (order of filteredOrders(); track order.id) {
@@ -79,7 +79,7 @@
               </div>
               <div class="flex-shrink-0">
                 <yurt-badge [variant]="order.status | orderStatusColor" class="text-xs">
-                  {{ order.status | orderStatusLabel }}
+                  {{ 'order.status.' + order.status | t }}
                 </yurt-badge>
               </div>
             </div>
@@ -96,8 +96,8 @@
       <div class="h-full flex items-center justify-center">
         <div class="text-center text-slate-400">
           <div class="text-6xl mb-4">☕</div>
-          <p class="text-lg font-medium">Select an order</p>
-          <p class="text-sm mt-1">Click any order to view details</p>
+          <p class="text-lg font-medium">{{ 'orders.selectOrder' | t }}</p>
+          <p class="text-sm mt-1">{{ 'orders.clickToView' | t }}</p>
         </div>
       </div>
     } @else {
@@ -112,7 +112,7 @@
             <p class="text-slate-500 text-sm">{{ o.createdAt | date: 'MMM d, yyyy HH:mm' }}</p>
           </div>
           <yurt-badge [variant]="o.status | orderStatusColor" class="text-sm">
-            {{ o.status | orderStatusLabel }}
+            {{ 'order.status.' + o.status | t }}
           </yurt-badge>
         </div>
 
@@ -120,7 +120,7 @@
         @if (o.status === OrderStatus.Created) {
           <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm space-y-3">
             <div>
-              <label class="block text-xs font-medium text-slate-600 mb-1">ETA (minutes)</label>
+              <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'orders.eta' | t }}</label>
               <select
                 [(ngModel)]="etaPresetValue"
                 (ngModelChange)="onEtaPresetChange($event)"
@@ -138,7 +138,7 @@
                   [(ngModel)]="etaInput"
                   min="1"
                   max="120"
-                  placeholder="Enter minutes"
+                  [placeholder]="'orders.etaPlaceholder' | t"
                   class="w-full mt-2 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
                 />
               }
@@ -154,13 +154,13 @@
                     class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
                   ></span>
                 }
-                ✓ Accept
+                {{ 'orders.accept' | t }}
               </button>
               <button
                 (click)="showDecline.set(true)"
                 class="flex-1 inline-flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors"
               >
-                ✕ Decline
+                {{ 'orders.decline' | t }}
               </button>
             </div>
           </div>
@@ -174,7 +174,7 @@
               [loading]="actionLoading()"
               (clicked)="updateStatus(o, OrderStatus.Preparing)"
             >
-              Mark Preparing
+              {{ 'orders.markPreparing' | t }}
             </yurt-button>
           </div>
         }
@@ -187,7 +187,7 @@
               [loading]="actionLoading()"
               (clicked)="updateStatus(o, OrderStatus.Ready)"
             >
-              Mark Ready
+              {{ 'orders.markReady' | t }}
             </yurt-button>
           </div>
         }
@@ -200,7 +200,7 @@
               [loading]="actionLoading()"
               (clicked)="updateStatus(o, OrderStatus.Completed)"
             >
-              Mark Completed
+              {{ 'orders.markCompleted' | t }}
             </yurt-button>
           </div>
         }
@@ -208,24 +208,24 @@
         <!-- Payment controls -->
         @if (o.status !== OrderStatus.Declined) {
           <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
-            <h3 class="text-sm font-semibold text-slate-700 mb-2">Payment</h3>
+            <h3 class="text-sm font-semibold text-slate-700 mb-2">{{ 'orders.payment' | t }}</h3>
             <div class="flex items-center gap-3">
               <select
                 [(ngModel)]="paymentMethod"
                 class="flex-1 text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-400 outline-none"
               >
                 <option value="">-- Method --</option>
-                <option value="Cash">Cash</option>
-                <option value="Card">Card</option>
-                <option value="Other">Other</option>
+                <option value="Cash">{{ 'orders.cash' | t }}</option>
+                <option value="Card">{{ 'orders.card' | t }}</option>
+                <option value="Other">{{ 'orders.other' | t }}</option>
               </select>
               <select
                 [(ngModel)]="paymentStatus"
                 class="flex-1 text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-400 outline-none"
               >
-                <option value="Unpaid">Unpaid</option>
-                <option value="Paid">Paid</option>
-                <option value="Refunded">Refunded</option>
+                <option value="Unpaid">{{ 'orders.unpaid' | t }}</option>
+                <option value="Paid">{{ 'orders.paid' | t }}</option>
+                <option value="Refunded">{{ 'orders.refunded' | t }}</option>
               </select>
               <yurt-button
                 variant="secondary"
@@ -233,7 +233,7 @@
                 [loading]="paymentLoading()"
                 (clicked)="savePayment(o)"
               >
-                Save
+                {{ 'action.save' | t }}
               </yurt-button>
             </div>
           </div>
@@ -241,7 +241,7 @@
 
         <!-- Items -->
         <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
-          <h3 class="text-sm font-semibold text-slate-700 mb-3">Items</h3>
+          <h3 class="text-sm font-semibold text-slate-700 mb-3">{{ 'orders.items' | t }}</h3>
           @for (item of o.items; track item.id) {
             <div class="flex justify-between py-2 border-b border-slate-50 last:border-0">
               <div class="min-w-0 flex-1 pr-3">
@@ -264,7 +264,7 @@
             </div>
           }
           <div class="flex justify-between pt-3 mt-1 border-t border-slate-100">
-            <span class="font-bold text-slate-800">Total</span>
+            <span class="font-bold text-slate-800">{{ 'orders.total' | t }}</span>
             <span class="font-bold text-amber-600">{{ o.total | currency2 }}</span>
           </div>
         </div>
@@ -277,18 +277,18 @@
 @if (showDecline()) {
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-      <h3 class="text-lg font-bold text-slate-800 mb-4">Decline Order</h3>
+      <h3 class="text-lg font-bold text-slate-800 mb-4">{{ 'orders.declineTitle' | t }}</h3>
       <textarea
         [(ngModel)]="declineReason"
         rows="3"
-        placeholder="Reason for declining…"
+        [placeholder]="'orders.declineReason' | t"
         class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-400 outline-none resize-none"
       >
       </textarea>
       <div class="flex gap-3 mt-4">
-        <yurt-button variant="ghost" size="md" [fullWidth]="true" (clicked)="showDecline.set(false)"
-          >Cancel</yurt-button
-        >
+        <yurt-button variant="ghost" size="md" [fullWidth]="true" (clicked)="showDecline.set(false)">
+          {{ 'action.cancel' | t }}
+        </yurt-button>
         <yurt-button
           variant="destructive"
           size="md"
@@ -296,7 +296,7 @@
           [loading]="actionLoading()"
           (clicked)="declineOrder(selectedOrder()!)"
         >
-          Decline
+          {{ 'orders.decline' | t }}
         </yurt-button>
       </div>
     </div>

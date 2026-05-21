@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Yurt.Application.Common.Helpers;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Common.Models;
 using Yurt.Application.Features.Promotions.DTOs;
@@ -12,46 +13,61 @@ public class PromotionService
 
     public PromotionService(IApplicationDbContext db) => _db = db;
 
-    public async Task<List<PromotionDto>> GetActivePromotionsAsync(CancellationToken ct = default)
+    public async Task<List<PromotionDto>> GetActivePromotionsAsync(string lang = "ru", CancellationToken ct = default)
         => await _db.Promotions
             .Where(p => p.IsActive && (p.ExpiresAt == null || p.ExpiresAt > DateTime.UtcNow))
             .OrderByDescending(p => p.CreatedAt)
-            .Select(p => MapToDto(p))
+            .Select(p => new PromotionDto(
+                p.Id,
+                LocalizationHelper.Localize(p.Title, p.TitleRu, p.TitleKk, lang),
+                LocalizationHelper.Localize(p.Description, p.DescriptionRu, p.DescriptionKk, lang),
+                p.ImageUrl, p.IsActive, p.ExpiresAt, p.CreatedAt))
             .ToListAsync(ct);
 
-    public async Task<List<PromotionDto>> GetAllPromotionsAsync(CancellationToken ct = default)
+    public async Task<List<AdminPromotionDto>> GetAllPromotionsAsync(CancellationToken ct = default)
         => await _db.Promotions
             .OrderByDescending(p => p.CreatedAt)
-            .Select(p => MapToDto(p))
+            .Select(p => new AdminPromotionDto(
+                p.Id, p.Title, p.TitleRu, p.TitleKk,
+                p.Description, p.DescriptionRu, p.DescriptionKk,
+                p.ImageUrl, p.IsActive, p.ExpiresAt, p.CreatedAt))
             .ToListAsync(ct);
 
-    public async Task<Result<PromotionDto>> CreateAsync(CreatePromotionDto dto, CancellationToken ct = default)
+    public async Task<Result<AdminPromotionDto>> CreateAsync(CreatePromotionDto dto, CancellationToken ct = default)
     {
         var promo = new Promotion
         {
             Title = dto.Title,
+            TitleRu = dto.TitleRu,
+            TitleKk = dto.TitleKk,
             Description = dto.Description,
+            DescriptionRu = dto.DescriptionRu,
+            DescriptionKk = dto.DescriptionKk,
             ImageUrl = dto.ImageUrl,
             ExpiresAt = dto.ExpiresAt
         };
         _db.Promotions.Add(promo);
         await _db.SaveChangesAsync(ct);
-        return Result<PromotionDto>.Success(MapToDto(promo), 201);
+        return Result<AdminPromotionDto>.Success(MapToAdminDto(promo), 201);
     }
 
-    public async Task<Result<PromotionDto>> UpdateAsync(Guid id, UpdatePromotionDto dto, CancellationToken ct = default)
+    public async Task<Result<AdminPromotionDto>> UpdateAsync(Guid id, UpdatePromotionDto dto, CancellationToken ct = default)
     {
         var promo = await _db.Promotions.FindAsync([id], ct);
-        if (promo == null) return Result<PromotionDto>.NotFound();
+        if (promo == null) return Result<AdminPromotionDto>.NotFound();
 
         promo.Title = dto.Title;
+        promo.TitleRu = dto.TitleRu;
+        promo.TitleKk = dto.TitleKk;
         promo.Description = dto.Description;
+        promo.DescriptionRu = dto.DescriptionRu;
+        promo.DescriptionKk = dto.DescriptionKk;
         promo.ImageUrl = dto.ImageUrl;
         promo.IsActive = dto.IsActive;
         promo.ExpiresAt = dto.ExpiresAt;
 
         await _db.SaveChangesAsync(ct);
-        return Result<PromotionDto>.Success(MapToDto(promo));
+        return Result<AdminPromotionDto>.Success(MapToAdminDto(promo));
     }
 
     public async Task<Result<bool>> DeleteAsync(Guid id, CancellationToken ct = default)
@@ -63,6 +79,8 @@ public class PromotionService
         return Result<bool>.Success(true);
     }
 
-    private static PromotionDto MapToDto(Promotion p)
-        => new(p.Id, p.Title, p.Description, p.ImageUrl, p.IsActive, p.ExpiresAt, p.CreatedAt);
+    private static AdminPromotionDto MapToAdminDto(Promotion p)
+        => new(p.Id, p.Title, p.TitleRu, p.TitleKk,
+               p.Description, p.DescriptionRu, p.DescriptionKk,
+               p.ImageUrl, p.IsActive, p.ExpiresAt, p.CreatedAt);
 }

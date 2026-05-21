@@ -3,26 +3,24 @@
     class="px-6 py-4 sticky top-0 bg-white border-b border-slate-100 flex items-center justify-between z-10"
   >
     <div>
-      <h2 class="text-lg font-bold text-slate-800">Promotions</h2>
-      <p class="text-xs text-slate-400">Pop-up ads shown to customers on app open</p>
+      <h2 class="text-lg font-bold text-slate-800">{{ 'promotions.title' | t }}</h2>
+      <p class="text-xs text-slate-400">{{ 'promotions.subtitle' | t }}</p>
     </div>
     <button
       (click)="openDialog()"
       class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors shadow-sm"
     >
-      <span class="text-base leading-none font-bold">+</span> New Promotion
+      {{ 'promotions.newPromotion' | t }}
     </button>
   </div>
 
   @if (loading()) {
-    <div class="p-8 text-center text-slate-400 animate-pulse">Loading…</div>
+    <div class="p-8 text-center text-slate-400 animate-pulse">{{ 'label.loading' | t }}</div>
   } @else if (promotions().length === 0) {
     <div class="p-12 text-center">
       <div class="text-4xl mb-3">📢</div>
-      <p class="text-slate-500 font-medium">No promotions yet</p>
-      <p class="text-slate-400 text-sm mt-1">
-        Create your first promo to show customers a pop-up when they open the app.
-      </p>
+      <p class="text-slate-500 font-medium">{{ 'promotions.noPromotions' | t }}</p>
+      <p class="text-slate-400 text-sm mt-1">{{ 'promotions.createFirst' | t }}</p>
     </div>
   } @else {
     <div class="p-6 grid gap-4 max-w-3xl">
@@ -31,7 +29,7 @@
           class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex items-start gap-4"
         >
           <div
-            class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl flex-shrink-0"
+            class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl shrink-0"
           >
             📢
           </div>
@@ -39,38 +37,38 @@
             <div class="flex items-center gap-2 flex-wrap">
               <h3 class="font-semibold text-slate-800">{{ promo.title }}</h3>
               @if (promo.isActive && !isExpired(promo)) {
-                <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700"
-                  >Active</span
-                >
+                <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                  {{ 'promotions.active' | t }}
+                </span>
               } @else if (isExpired(promo)) {
-                <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600"
-                  >Expired</span
-                >
+                <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+                  {{ 'promotions.expired' | t }}
+                </span>
               } @else {
-                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500"
-                  >Inactive</span
-                >
+                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                  {{ 'promotions.inactive' | t }}
+                </span>
               }
             </div>
             <p class="text-slate-500 text-sm mt-0.5 line-clamp-2">{{ promo.description }}</p>
             @if (promo.expiresAt) {
               <p class="text-slate-400 text-xs mt-1">
-                Expires: {{ promo.expiresAt | date: 'medium' }}
+                {{ 'promotions.expires' | t }} {{ promo.expiresAt | date: 'medium' }}
               </p>
             }
           </div>
-          <div class="flex gap-2 flex-shrink-0">
+          <div class="flex gap-2 shrink-0">
             <button
               (click)="openDialog(promo)"
               class="text-xs text-slate-600 hover:text-amber-600 px-2 py-1 rounded hover:bg-amber-50 transition-colors"
             >
-              Edit
+              {{ 'action.edit' | t }}
             </button>
             <button
               (click)="deletePromotion(promo)"
               class="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
             >
-              Delete
+              {{ 'action.delete' | t }}
             </button>
           </div>
         </div>
@@ -89,7 +87,9 @@
         (click)="$event.stopPropagation()"
       >
         <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 class="font-semibold text-slate-800">{{ form().id ? 'Edit' : 'New' }} Promotion</h3>
+          <h3 class="font-semibold text-slate-800">
+            {{ form().id ? ('promotions.editTitle' | t) : ('promotions.addTitle' | t) }}
+          </h3>
           <button
             (click)="showDialog.set(false)"
             class="text-slate-400 hover:text-slate-600 text-xl leading-none"
@@ -100,7 +100,7 @@
 
         <div class="px-6 py-5 space-y-4">
           <div>
-            <label class="text-xs font-medium text-slate-600 mb-1 block">Title *</label>
+            <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.title_label' | t }} *</label>
             <input
               type="text"
               [ngModel]="form().title"
@@ -110,19 +110,17 @@
             />
           </div>
           <div>
-            <label class="text-xs font-medium text-slate-600 mb-1 block">Description</label>
+            <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'label.description' | t }}</label>
             <textarea
               [ngModel]="form().description"
               (ngModelChange)="patch('description', $event)"
               rows="3"
               class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
-              placeholder="Promotion details shown to customers…"
+              [placeholder]="'promotions.detailsPlaceholder' | t"
             ></textarea>
           </div>
           <div>
-            <label class="text-xs font-medium text-slate-600 mb-1 block"
-              >Image URL (optional)</label
-            >
+            <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.imageUrlOpt' | t }}</label>
             <input
               type="text"
               [ngModel]="form().imageUrl"
@@ -133,9 +131,7 @@
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-medium text-slate-600 mb-1 block"
-                >Expires at (optional)</label
-              >
+              <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.expiresOpt' | t }}</label>
               <input
                 type="datetime-local"
                 [ngModel]="form().expiresAt"
@@ -151,7 +147,7 @@
                   (ngModelChange)="patch('isActive', $event)"
                   class="w-4 h-4 rounded accent-amber-500"
                 />
-                <span class="text-sm text-slate-700">Active</span>
+                <span class="text-sm text-slate-700">{{ 'promotions.active' | t }}</span>
               </label>
             </div>
           </div>
@@ -162,14 +158,14 @@
             (click)="showDialog.set(false)"
             class="px-4 py-2 rounded-xl text-sm text-slate-600 hover:bg-slate-50 transition-colors"
           >
-            Cancel
+            {{ 'action.cancel' | t }}
           </button>
           <button
             (click)="save()"
             [disabled]="saving()"
             class="px-5 py-2 rounded-xl text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 transition-colors shadow-sm"
           >
-            {{ saving() ? 'Saving…' : 'Save' }}
+            {{ saving() ? ('promotions.saving' | t) : ('action.save' | t) }}
           </button>
         </div>
       </div>
