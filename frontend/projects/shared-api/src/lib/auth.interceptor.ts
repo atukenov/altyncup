@@ -15,7 +15,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       if (err.status === 401 && !req.url.includes('/auth/refresh') && !req.url.includes('/auth/logout')) {
         const rt = auth.refreshToken;
         if (rt) {
-          const isAdmin = auth.currentUser?.userType === 'Admin';
+          const isAdmin = auth.currentUser?.userType === 'admin';
           const refresh$ = isAdmin ? api.adminRefreshToken(rt) : api.refreshToken(rt);
           return refresh$.pipe(
             switchMap(res => {

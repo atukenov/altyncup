@@ -34,7 +34,7 @@ export class AdminLoginComponent {
           refreshToken: res.refreshToken,
           userId: res.userId,
           displayName: res.displayName,
-          userType: 'Admin',
+          userType: 'admin',
           role: res.role,
         });
         this.router.navigate(['/dashboard']);
