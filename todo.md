@@ -85,6 +85,31 @@
   - View all registered customers with registration date, order count, and total spend.
   - Search by phone number.
 
+- [x] **Analytics page**
+  - Top-selling items (last 7 / 30 days) with quantity and revenue.
+  - Revenue over time (daily/weekly/monthly) chart.
+  - Peak hours heatmap.
+  - Export to CSV.
+
+- [x] **Location management**
+  - Edit working hours, contact phone, and active status from the admin panel.
+  - Temporarily close a location (orders blocked while inactive).
+
+- [x] **Customer detail page (admin)**
+  - Click into any customer from the customer list to see their full order history.
+  - Profile card with total orders and total spend.
+
+- [x] **Group ordering (customer)**
+  - Customer creates a group cart and shares a link/code with friends.
+  - Each participant adds their own items.
+  - One person confirms and pays.
+
+- [x] **Admin multi-language UI**
+  - Admin panel fully translated into Russian, English, and Kazakh.
+  - Language switcher (RU / EN / KK) in the admin sidebar.
+  - All order status labels, navigation, form fields, and action buttons translated.
+  - Single-language-at-a-time form for entering menu content translations.
+
 ---
 
 ## 🔲 Upcoming Features
@@ -108,17 +133,6 @@
   - Assign promotions to specific categories, items, or all orders.
   - View usage stats per promotion: how many times used, total discount given.
 
-- [ ] **Analytics page**
-  - Top-selling items (last 7 / 30 days) with quantity and revenue.
-  - Revenue over time (daily/weekly/monthly) chart.
-  - Peak hours heatmap.
-  - Most popular topping combinations.
-  - Export to CSV.
-
-- [ ] **Location management**
-  - Edit working hours, contact phone, and active status from the admin panel.
-  - Temporarily close a location (orders blocked while inactive).
-
 - [ ] **Staff performance metrics**
   - Per-worker stats: orders accepted, avg acceptance time, declined count.
   - Leaderboard view for the current day / week.
@@ -128,10 +142,6 @@
   - Mark a menu item or topping as "out of stock" — auto-hides it from customers.
   - Optional stock counter per item; auto-hides when count reaches zero.
   - Low-stock alert shown on the dashboard.
-
-- [ ] **Customer detail page (admin)**
-  - Click into any customer from the customer list to see their full order history.
-  - Add internal notes or tags (e.g. "VIP", "frequent") visible only to staff.
 
 - [ ] **Feedback moderation**
   - View all submitted ratings and comments.
@@ -180,11 +190,6 @@
   - Customer tops up an in-app balance (e.g. ₸5,000 blocks).
   - Pay instantly at checkout using wallet — no Kaspi QR scan needed.
   - Wallet top-up via Kaspi QR. Balance shown on profile and cart.
-
-- [ ] **Group ordering**
-  - Customer creates a "group cart" and shares a link/code with friends.
-  - Each participant adds their own items.
-  - One person confirms and pays.
 
 - [ ] **Item availability notifications**
   - Customer taps "Notify me" on an out-of-stock item.
