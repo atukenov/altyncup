@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 using Yurt.Application.Features.Promotions.DTOs;
 using Yurt.Application.Features.Promotions.Services;
 using Yurt.WebApi.Common;
@@ -7,7 +8,8 @@ using Yurt.WebApi.Common;
 namespace Yurt.WebApi.Controllers.Admin;
 
 [ApiController]
-[Route("api/admin/promotions")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/admin/promotions")]
 [Authorize(Policy = "AdminOnly")]
 public class AdminPromotionsController : ApiControllerBase
 {

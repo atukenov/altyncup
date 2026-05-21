@@ -28,17 +28,21 @@ export class App implements OnInit, OnDestroy {
     this.signalr.configure(environment.apiUrl);
 
     if (this.auth.isLoggedIn) {
-      this.api.refreshToken().subscribe({
-        next: (res) => {
-          this.auth.setUser({
-            token: res.token,
-            userId: res.userId,
-            displayName: res.displayName,
-            userType: res.userType,
-          });
-        },
-        error: () => this.auth.logout(),
-      });
+      const rt = this.auth.refreshToken;
+      if (rt) {
+        this.api.refreshToken(rt).subscribe({
+          next: (res) => {
+            this.auth.setUser({
+              accessToken: res.accessToken,
+              refreshToken: res.refreshToken,
+              userId: res.userId,
+              displayName: res.displayName,
+              userType: res.userType,
+            });
+          },
+          error: () => this.auth.logout(),
+        });
+      }
     }
     this.notifications.initialize();
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.GroupOrders;
 using Yurt.WebApi.Common;
@@ -7,7 +8,8 @@ using Yurt.WebApi.Common;
 namespace Yurt.WebApi.Controllers;
 
 [ApiController]
-[Route("api/group-orders")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/group-orders")]
 [Authorize(Policy = "CustomerOnly")]
 public class GroupOrderController : ApiControllerBase
 {

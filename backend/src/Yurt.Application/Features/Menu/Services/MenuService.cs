@@ -10,8 +10,13 @@ namespace Yurt.Application.Features.Menu.Services;
 public class MenuService
 {
     private readonly IApplicationDbContext _db;
+    private readonly IAuditLogService _audit;
 
-    public MenuService(IApplicationDbContext db) => _db = db;
+    public MenuService(IApplicationDbContext db, IAuditLogService audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
 
     // ── Customer endpoints (localized) ────────────────────────────────────────
 
@@ -128,6 +133,7 @@ public class MenuService
         };
         _db.MenuCategories.Add(cat);
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("CategoryCreated", "MenuCategory", cat.Id.ToString(), cat.Name, ct);
         return Result<AdminMenuCategoryDto>.Success(
             new AdminMenuCategoryDto(cat.Id, cat.Name, cat.NameRu, cat.NameKk, cat.SortOrder), 201);
     }
@@ -144,6 +150,7 @@ public class MenuService
         cat.SortOrder = dto.SortOrder;
         cat.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("CategoryUpdated", "MenuCategory", id.ToString(), cat.Name, ct);
         return Result<AdminMenuCategoryDto>.Success(
             new AdminMenuCategoryDto(cat.Id, cat.Name, cat.NameRu, cat.NameKk, cat.SortOrder));
     }
@@ -152,8 +159,10 @@ public class MenuService
     {
         var cat = await _db.MenuCategories.FindAsync([id], ct);
         if (cat == null) return Result<bool>.NotFound();
+        var name = cat.Name;
         _db.MenuCategories.Remove(cat);
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("CategoryDeleted", "MenuCategory", id.ToString(), name, ct);
         return Result<bool>.Success(true);
     }
 
@@ -183,6 +192,7 @@ public class MenuService
         await _db.SaveChangesAsync(ct);
 
         item.Category = cat;
+        await _audit.LogAsync("MenuItemCreated", "MenuItem", item.Id.ToString(), item.Name, ct);
         return Result<AdminMenuItemDto>.Success(MapAdminItemToDto(item), 201);
     }
 
@@ -208,6 +218,7 @@ public class MenuService
         item.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("MenuItemUpdated", "MenuItem", id.ToString(), item.Name, ct);
         return Result<AdminMenuItemDto>.Success(MapAdminItemToDto(item));
     }
 
@@ -215,8 +226,10 @@ public class MenuService
     {
         var item = await _db.MenuItems.FindAsync([id], ct);
         if (item == null) return Result<bool>.NotFound();
+        var name = item.Name;
         _db.MenuItems.Remove(item);
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("MenuItemDeleted", "MenuItem", id.ToString(), name, ct);
         return Result<bool>.Success(true);
     }
 
@@ -244,6 +257,7 @@ public class MenuService
             });
 
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("ToppingCreated", "MenuTopping", topping.Id.ToString(), topping.Name, ct);
         return Result<AdminMenuToppingDto>.Success(
             new AdminMenuToppingDto(topping.Id, topping.Name, topping.NameRu, topping.NameKk,
                 topping.Price, topping.IsAvailable, dto.CategoryIds.Distinct().ToList(), topping.Group), 201);
@@ -277,6 +291,7 @@ public class MenuService
             });
 
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("ToppingUpdated", "MenuTopping", id.ToString(), topping.Name, ct);
         return Result<AdminMenuToppingDto>.Success(
             new AdminMenuToppingDto(topping.Id, topping.Name, topping.NameRu, topping.NameKk,
                 topping.Price, topping.IsAvailable, dto.CategoryIds.Distinct().ToList(), topping.Group));
@@ -286,8 +301,10 @@ public class MenuService
     {
         var topping = await _db.MenuToppings.FindAsync([id], ct);
         if (topping == null) return Result<bool>.NotFound();
+        var name = topping.Name;
         _db.MenuToppings.Remove(topping);
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("ToppingDeleted", "MenuTopping", id.ToString(), name, ct);
         return Result<bool>.Success(true);
     }
 

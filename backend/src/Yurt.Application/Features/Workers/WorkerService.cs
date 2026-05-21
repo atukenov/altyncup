@@ -10,11 +10,13 @@ public class WorkerService
 {
     private readonly IApplicationDbContext _db;
     private readonly IPasswordHasher _hasher;
+    private readonly IAuditLogService _audit;
 
-    public WorkerService(IApplicationDbContext db, IPasswordHasher hasher)
+    public WorkerService(IApplicationDbContext db, IPasswordHasher hasher, IAuditLogService audit)
     {
         _db = db;
         _hasher = hasher;
+        _audit = audit;
     }
 
     public async Task<List<WorkerDto>> GetWorkersAsync(CancellationToken ct = default)
@@ -38,6 +40,7 @@ public class WorkerService
         _db.AdminUsers.Add(worker);
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync("WorkerCreated", "AdminUser", worker.Id.ToString(), worker.Username, ct);
         return Result<WorkerDto>.Success(
             new WorkerDto(worker.Id, worker.Username, worker.Role.ToString(), worker.IsActive, worker.CreatedAt), 201);
     }
@@ -56,6 +59,8 @@ public class WorkerService
         worker.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
+        var action = dto.IsActive ? "WorkerActivated" : "WorkerDeactivated";
+        await _audit.LogAsync(action, "AdminUser", id.ToString(), worker.Username, ct);
         return Result<WorkerDto>.Success(
             new WorkerDto(worker.Id, worker.Username, worker.Role.ToString(), worker.IsActive, worker.CreatedAt));
     }
@@ -69,6 +74,7 @@ public class WorkerService
         worker.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync("WorkerPasswordReset", "AdminUser", id.ToString(), worker.Username, ct);
         return Result<WorkerDto>.Success(
             new WorkerDto(worker.Id, worker.Username, worker.Role.ToString(), worker.IsActive, worker.CreatedAt));
     }

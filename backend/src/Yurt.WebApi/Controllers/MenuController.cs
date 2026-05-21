@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 using Yurt.Application.Features.Menu.Services;
 using Yurt.WebApi.Common;
 
 namespace Yurt.WebApi.Controllers;
 
 [ApiController]
-[Route("api/menu")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/menu")]
 public class MenuController : ApiControllerBase
 {
     private readonly MenuService _menuService;

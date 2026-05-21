@@ -52,7 +52,8 @@ export enum SandboxPaymentBehavior {
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export interface AuthResponse {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
   userType: string;
   userId: string;
   displayName: string;
@@ -411,5 +412,18 @@ export interface Promotion {
   imageUrl?: string;
   isActive: boolean;
   expiresAt?: string;
+  createdAt: string;
+}
+
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  performedByAdminId?: string;
+  performedByUsername: string;
+  details?: string;
+  ipAddress?: string;
   createdAt: string;
 }

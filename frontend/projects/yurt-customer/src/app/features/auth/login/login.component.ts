@@ -75,7 +75,8 @@ export class LoginComponent {
     this.api.login('+7' + this.phoneDigits, this.pin4).subscribe({
       next: (res) => {
         this.auth.setUser({
-          token: res.token,
+          accessToken: res.accessToken,
+          refreshToken: res.refreshToken,
           userId: res.userId,
           displayName: res.displayName,
           userType: res.userType,

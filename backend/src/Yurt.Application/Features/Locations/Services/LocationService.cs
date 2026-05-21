@@ -10,8 +10,13 @@ namespace Yurt.Application.Features.Locations.Services;
 public class LocationService
 {
     private readonly IApplicationDbContext _db;
+    private readonly IAuditLogService _audit;
 
-    public LocationService(IApplicationDbContext db) => _db = db;
+    public LocationService(IApplicationDbContext db, IAuditLogService audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
 
     public async Task<List<LocationDto>> GetActiveLocationsAsync(string lang = "ru", CancellationToken ct = default)
         => await _db.Locations
@@ -51,6 +56,7 @@ public class LocationService
         };
         _db.Locations.Add(loc);
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("LocationCreated", "Location", loc.Id.ToString(), loc.Name, ct);
         return Result<AdminLocationDto>.Success(MapToAdminDto(loc), 201);
     }
 
@@ -69,6 +75,7 @@ public class LocationService
         loc.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("LocationUpdated", "Location", id.ToString(), loc.Name, ct);
         return Result<AdminLocationDto>.Success(MapToAdminDto(loc));
     }
 
@@ -76,8 +83,10 @@ public class LocationService
     {
         var loc = await _db.Locations.FindAsync([id], ct);
         if (loc == null) return Result<bool>.NotFound();
+        var name = loc.Name;
         _db.Locations.Remove(loc);
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("LocationDeleted", "Location", id.ToString(), name, ct);
         return Result<bool>.Success(true);
     }
 

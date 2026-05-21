@@ -1,6 +1,14 @@
 namespace Yurt.Application.Features.Auth.DTOs;
 
-public record AuthResponseDto(string Token, string UserType, Guid UserId, string DisplayName, string? Role = null);
+public record AuthResponseDto(
+    string AccessToken,
+    string RefreshToken,
+    string UserType,
+    Guid UserId,
+    string DisplayName,
+    string? Role = null);
+
+public record RefreshRequestDto(string RefreshToken);
 
 public record CustomerRegisterDto(string MobileNumber, string Pin4, string FirstName = "", string LastName = "");
 public record CustomerLoginDto(string MobileNumber, string Pin4);

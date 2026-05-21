@@ -83,7 +83,8 @@ export class RegisterComponent {
       .subscribe({
         next: (res) => {
           this.auth.setUser({
-            token: res.token,
+            accessToken: res.accessToken,
+            refreshToken: res.refreshToken,
             userId: res.userId,
             displayName: res.displayName,
             userType: res.userType,

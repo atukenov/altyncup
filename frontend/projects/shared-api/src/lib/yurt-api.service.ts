@@ -5,6 +5,7 @@ import {
   AcceptOrderRequest,
   AddGroupOrderItemRequest,
   AnalyticsResponse,
+  AuditLogEntry,
   AuthResponse,
   CreateOrderRequest,
   CreatePaymentRequest,
@@ -38,6 +39,10 @@ export class YurtApiService {
     this.baseUrl = baseUrl.replace(/\/$/, '');
   }
 
+  private get api(): string {
+    return `${this.baseUrl}/api/v1`;
+  }
+
   // ── Auth ───────────────────────────────────────────────────────────────────
   register(
     mobileNumber: string,
@@ -45,7 +50,7 @@ export class YurtApiService {
     firstName: string = '',
     lastName: string = '',
   ): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/api/auth/register`, {
+    return this.http.post<AuthResponse>(`${this.api}/auth/register`, {
       mobileNumber,
       pin4,
       firstName,
@@ -54,23 +59,35 @@ export class YurtApiService {
   }
 
   login(mobileNumber: string, pin4: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/api/auth/login`, { mobileNumber, pin4 });
+    return this.http.post<AuthResponse>(`${this.api}/auth/login`, { mobileNumber, pin4 });
   }
 
   me(): Observable<CustomerProfile> {
-    return this.http.get<CustomerProfile>(`${this.baseUrl}/api/auth/me`);
+    return this.http.get<CustomerProfile>(`${this.api}/auth/me`);
   }
 
   updateProfile(data: { firstName: string; lastName: string }): Observable<CustomerProfile> {
-    return this.http.put<CustomerProfile>(`${this.baseUrl}/api/auth/me`, data);
+    return this.http.put<CustomerProfile>(`${this.api}/auth/me`, data);
   }
 
-  refreshToken(): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/api/auth/refresh`, {});
+  refreshToken(refreshToken: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.api}/auth/refresh`, { refreshToken });
+  }
+
+  adminRefreshToken(refreshToken: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.api}/admin/auth/refresh`, { refreshToken });
+  }
+
+  logout(refreshToken: string): Observable<void> {
+    return this.http.post<void>(`${this.api}/auth/logout`, { refreshToken });
+  }
+
+  adminLogout(refreshToken: string): Observable<void> {
+    return this.http.post<void>(`${this.api}/admin/auth/logout`, { refreshToken });
   }
 
   adminLogin(username: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/api/admin/auth/login`, {
+    return this.http.post<AuthResponse>(`${this.api}/admin/auth/login`, {
       username,
       password,
     });
@@ -79,29 +96,29 @@ export class YurtApiService {
   // ── Locations ──────────────────────────────────────────────────────────────
   getLocations(lang?: string): Observable<Location[]> {
     const params = lang ? new HttpParams().set('lang', lang) : undefined;
-    return this.http.get<Location[]>(`${this.baseUrl}/api/locations`, { params });
+    return this.http.get<Location[]>(`${this.api}/locations`, { params });
   }
 
   getAdminLocations(): Observable<Location[]> {
-    return this.http.get<Location[]>(`${this.baseUrl}/api/admin/locations`);
+    return this.http.get<Location[]>(`${this.api}/admin/locations`);
   }
 
   createLocation(data: Partial<Location>): Observable<Location> {
-    return this.http.post<Location>(`${this.baseUrl}/api/admin/locations`, data);
+    return this.http.post<Location>(`${this.api}/admin/locations`, data);
   }
 
   updateLocation(id: string, data: Partial<Location>): Observable<Location> {
-    return this.http.put<Location>(`${this.baseUrl}/api/admin/locations/${id}`, data);
+    return this.http.put<Location>(`${this.api}/admin/locations/${id}`, data);
   }
 
   deleteLocation(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/api/admin/locations/${id}`);
+    return this.http.delete<void>(`${this.api}/admin/locations/${id}`);
   }
 
   // ── Menu ───────────────────────────────────────────────────────────────────
   getCategories(lang?: string): Observable<MenuCategory[]> {
     const params = lang ? new HttpParams().set('lang', lang) : undefined;
-    return this.http.get<MenuCategory[]>(`${this.baseUrl}/api/menu/categories`, { params });
+    return this.http.get<MenuCategory[]>(`${this.api}/menu/categories`, { params });
   }
 
   getMenuItems(categoryId?: string, search?: string, lang?: string): Observable<MenuItem[]> {
@@ -109,106 +126,107 @@ export class YurtApiService {
     if (categoryId) params = params.set('categoryId', categoryId);
     if (search) params = params.set('search', search);
     if (lang) params = params.set('lang', lang);
-    return this.http.get<MenuItem[]>(`${this.baseUrl}/api/menu`, { params });
+    return this.http.get<MenuItem[]>(`${this.api}/menu`, { params });
   }
 
   getMenuItem(id: string, lang?: string): Observable<MenuItem> {
     const params = lang ? new HttpParams().set('lang', lang) : undefined;
-    return this.http.get<MenuItem>(`${this.baseUrl}/api/menu/items/${id}`, { params });
+    return this.http.get<MenuItem>(`${this.api}/menu/items/${id}`, { params });
   }
 
   // Admin menu
   adminGetMenuItems(): Observable<MenuItem[]> {
-    return this.http.get<MenuItem[]>(`${this.baseUrl}/api/admin/menu/items`);
+    return this.http.get<MenuItem[]>(`${this.api}/admin/menu/items`);
   }
 
   adminCreateMenuItem(data: Partial<MenuItem>): Observable<MenuItem> {
-    return this.http.post<MenuItem>(`${this.baseUrl}/api/admin/menu/items`, data);
+    return this.http.post<MenuItem>(`${this.api}/admin/menu/items`, data);
   }
 
   adminUpdateMenuItem(id: string, data: Partial<MenuItem>): Observable<MenuItem> {
-    return this.http.put<MenuItem>(`${this.baseUrl}/api/admin/menu/items/${id}`, data);
+    return this.http.put<MenuItem>(`${this.api}/admin/menu/items/${id}`, data);
   }
 
   adminDeleteMenuItem(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/api/admin/menu/items/${id}`);
+    return this.http.delete<void>(`${this.api}/admin/menu/items/${id}`);
   }
 
   adminCreateCategory(data: Partial<MenuCategory>): Observable<MenuCategory> {
-    return this.http.post<MenuCategory>(`${this.baseUrl}/api/admin/menu/categories`, data);
+    return this.http.post<MenuCategory>(`${this.api}/admin/menu/categories`, data);
   }
 
   adminUpdateCategory(id: string, data: Partial<MenuCategory>): Observable<MenuCategory> {
-    return this.http.put<MenuCategory>(`${this.baseUrl}/api/admin/menu/categories/${id}`, data);
+    return this.http.put<MenuCategory>(`${this.api}/admin/menu/categories/${id}`, data);
   }
 
   adminDeleteCategory(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/api/admin/menu/categories/${id}`);
+    return this.http.delete<void>(`${this.api}/admin/menu/categories/${id}`);
   }
 
   adminGetToppings(): Observable<MenuTopping[]> {
-    return this.http.get<MenuTopping[]>(`${this.baseUrl}/api/admin/menu/toppings`);
+    return this.http.get<MenuTopping[]>(`${this.api}/admin/menu/toppings`);
   }
 
   adminCreateTopping(data: Partial<MenuTopping>): Observable<MenuTopping> {
-    return this.http.post<MenuTopping>(`${this.baseUrl}/api/admin/menu/toppings`, data);
+    return this.http.post<MenuTopping>(`${this.api}/admin/menu/toppings`, data);
   }
 
   adminUpdateTopping(id: string, data: Partial<MenuTopping>): Observable<MenuTopping> {
-    return this.http.put<MenuTopping>(`${this.baseUrl}/api/admin/menu/toppings/${id}`, data);
+    return this.http.put<MenuTopping>(`${this.api}/admin/menu/toppings/${id}`, data);
   }
 
   adminDeleteTopping(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/api/admin/menu/toppings/${id}`);
+    return this.http.delete<void>(`${this.api}/admin/menu/toppings/${id}`);
   }
 
   getToppings(categoryId?: string, lang?: string): Observable<MenuTopping[]> {
     let params = new HttpParams();
     if (categoryId) params = params.set('categoryId', categoryId);
     if (lang) params = params.set('lang', lang);
-    return this.http.get<MenuTopping[]>(`${this.baseUrl}/api/menu/toppings`, { params });
+    return this.http.get<MenuTopping[]>(`${this.api}/menu/toppings`, { params });
   }
 
   // ── Favorites ──────────────────────────────────────────────────────────────
-  getFavorites(): Observable<MenuItem[]> {
-    return this.http.get<MenuItem[]>(`${this.baseUrl}/api/favorites`);
+  getFavorites(lang?: string): Observable<MenuItem[]> {
+    const params = lang ? new HttpParams().set('lang', lang) : undefined;
+    return this.http.get<MenuItem[]>(`${this.api}/favorites`, { params });
   }
 
   addFavorite(menuItemId: string): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/api/favorites/${menuItemId}`, {});
+    return this.http.post<void>(`${this.api}/favorites/${menuItemId}`, {});
   }
 
   removeFavorite(menuItemId: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/api/favorites/${menuItemId}`);
+    return this.http.delete<void>(`${this.api}/favorites/${menuItemId}`);
   }
 
   // ── Orders ─────────────────────────────────────────────────────────────────
   createOrder(request: CreateOrderRequest): Observable<Order> {
-    return this.http.post<Order>(`${this.baseUrl}/api/orders`, request);
+    return this.http.post<Order>(`${this.api}/orders`, request);
   }
 
   getActiveOrders(): Observable<Order[]> {
-    return this.http.get<Order[]>(`${this.baseUrl}/api/orders/active`);
+    return this.http.get<Order[]>(`${this.api}/orders/active`);
   }
 
   createPayment(request: CreatePaymentRequest): Observable<PaymentInvoiceResponse> {
-    return this.http.post<PaymentInvoiceResponse>(`${this.baseUrl}/api/payments/create`, request);
+    return this.http.post<PaymentInvoiceResponse>(`${this.api}/payments/create`, request);
   }
 
   getPaymentStatus(invoiceId: string): Observable<PaymentStatusResponse> {
-    return this.http.get<PaymentStatusResponse>(`${this.baseUrl}/api/payments/status/${invoiceId}`);
+    return this.http.get<PaymentStatusResponse>(`${this.api}/payments/status/${invoiceId}`);
   }
 
   getOrderHistory(): Observable<Order[]> {
-    return this.http.get<Order[]>(`${this.baseUrl}/api/orders/history`);
+    return this.http.get<Order[]>(`${this.api}/orders/history`);
   }
 
   getDeclinedOrders(): Observable<Order[]> {
-    return this.http.get<Order[]>(`${this.baseUrl}/api/orders/declined`);
+    return this.http.get<Order[]>(`${this.api}/orders/declined`);
   }
 
   getOrder(id: string): Observable<Order> {
-    return this.http.get<Order>(`${this.baseUrl}/api/orders/${id}`);
+    return this.http.get<Order>(`${this.api}/orders/${id}`);
   }
 
   // Admin orders
@@ -216,119 +234,139 @@ export class YurtApiService {
     let params = new HttpParams();
     if (status) params = params.set('status', status);
     if (locationId) params = params.set('locationId', locationId);
-    return this.http.get<Order[]>(`${this.baseUrl}/api/admin/orders`, { params });
+    return this.http.get<Order[]>(`${this.api}/admin/orders`, { params });
   }
 
   acceptOrder(id: string, req: AcceptOrderRequest): Observable<Order> {
-    return this.http.post<Order>(`${this.baseUrl}/api/admin/orders/${id}/accept`, req);
+    return this.http.post<Order>(`${this.api}/admin/orders/${id}/accept`, req);
   }
 
   declineOrder(id: string, req: DeclineOrderRequest): Observable<Order> {
-    return this.http.post<Order>(`${this.baseUrl}/api/admin/orders/${id}/decline`, req);
+    return this.http.post<Order>(`${this.api}/admin/orders/${id}/decline`, req);
   }
 
   updateOrderStatus(id: string, req: UpdateStatusRequest): Observable<Order> {
-    return this.http.post<Order>(`${this.baseUrl}/api/admin/orders/${id}/status`, req);
+    return this.http.post<Order>(`${this.api}/admin/orders/${id}/status`, req);
   }
 
   updateOrderPayment(id: string, req: UpdatePaymentRequest): Observable<Order> {
-    return this.http.post<Order>(`${this.baseUrl}/api/admin/orders/${id}/payment`, req);
+    return this.http.post<Order>(`${this.api}/admin/orders/${id}/payment`, req);
   }
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
   getDashboard(): Observable<DashboardData> {
-    return this.http.get<DashboardData>(`${this.baseUrl}/api/admin/dashboard`);
+    return this.http.get<DashboardData>(`${this.api}/admin/dashboard`);
   }
 
   // ── Customers (admin) ──────────────────────────────────────────────────────
   getAdminCustomers(phone?: string): Observable<CustomerSummary[]> {
     const params = phone ? new HttpParams().set('phone', phone) : undefined;
-    return this.http.get<CustomerSummary[]>(`${this.baseUrl}/api/admin/customers`, { params });
+    return this.http.get<CustomerSummary[]>(`${this.api}/admin/customers`, { params });
   }
 
   getAdminCustomer(id: string): Observable<CustomerDetail> {
-    return this.http.get<CustomerDetail>(`${this.baseUrl}/api/admin/customers/${id}`);
+    return this.http.get<CustomerDetail>(`${this.api}/admin/customers/${id}`);
   }
 
   // ── Workers ────────────────────────────────────────────────────────────────
   getWorkers(): Observable<WorkerAccount[]> {
-    return this.http.get<WorkerAccount[]>(`${this.baseUrl}/api/admin/workers`);
+    return this.http.get<WorkerAccount[]>(`${this.api}/admin/workers`);
   }
 
   createWorker(data: { username: string; password: string }): Observable<WorkerAccount> {
-    return this.http.post<WorkerAccount>(`${this.baseUrl}/api/admin/workers`, data);
+    return this.http.post<WorkerAccount>(`${this.api}/admin/workers`, data);
   }
 
   updateWorker(id: string, data: { username: string; isActive: boolean }): Observable<WorkerAccount> {
-    return this.http.put<WorkerAccount>(`${this.baseUrl}/api/admin/workers/${id}`, data);
+    return this.http.put<WorkerAccount>(`${this.api}/admin/workers/${id}`, data);
   }
 
   resetWorkerPassword(id: string, newPassword: string): Observable<WorkerAccount> {
-    return this.http.post<WorkerAccount>(`${this.baseUrl}/api/admin/workers/${id}/reset-password`, { newPassword });
+    return this.http.post<WorkerAccount>(`${this.api}/admin/workers/${id}/reset-password`, { newPassword });
   }
 
   // ── Customer account ────────────────────────────────────────────────────────
   changePin(currentPin: string, newPin: string): Observable<void> {
-    return this.http.put<void>(`${this.baseUrl}/api/auth/pin`, { currentPin, newPin });
+    return this.http.put<void>(`${this.api}/auth/pin`, { currentPin, newPin });
   }
 
   deleteAccount(): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/api/auth/me`);
+    return this.http.delete<void>(`${this.api}/auth/me`);
   }
 
   getCustomerStats(): Observable<CustomerStats> {
-    return this.http.get<CustomerStats>(`${this.baseUrl}/api/auth/me/stats`);
+    return this.http.get<CustomerStats>(`${this.api}/auth/me/stats`);
   }
 
   // ── Analytics ───────────────────────────────────────────────────────────────
   getAnalytics(period: string): Observable<AnalyticsResponse> {
     const params = new HttpParams().set('period', period);
-    return this.http.get<AnalyticsResponse>(`${this.baseUrl}/api/admin/analytics`, { params });
+    return this.http.get<AnalyticsResponse>(`${this.api}/admin/analytics`, { params });
   }
 
   // ── Promotions ──────────────────────────────────────────────────────────────
   getActivePromotions(): Observable<Promotion[]> {
-    return this.http.get<Promotion[]>(`${this.baseUrl}/api/promotions/active`);
+    return this.http.get<Promotion[]>(`${this.api}/promotions/active`);
   }
 
   getAdminPromotions(): Observable<Promotion[]> {
-    return this.http.get<Promotion[]>(`${this.baseUrl}/api/admin/promotions`);
+    return this.http.get<Promotion[]>(`${this.api}/admin/promotions`);
   }
 
   createPromotion(data: Partial<Promotion>): Observable<Promotion> {
-    return this.http.post<Promotion>(`${this.baseUrl}/api/admin/promotions`, data);
+    return this.http.post<Promotion>(`${this.api}/admin/promotions`, data);
   }
 
   updatePromotion(id: string, data: Partial<Promotion>): Observable<Promotion> {
-    return this.http.put<Promotion>(`${this.baseUrl}/api/admin/promotions/${id}`, data);
+    return this.http.put<Promotion>(`${this.api}/admin/promotions/${id}`, data);
   }
 
   deletePromotion(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/api/admin/promotions/${id}`);
+    return this.http.delete<void>(`${this.api}/admin/promotions/${id}`);
+  }
+
+  // ── Audit Log ───────────────────────────────────────────────────────────────
+  getAuditLog(params: {
+    entityType?: string;
+    adminId?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    pageSize?: number;
+  }): Observable<{ total: number; page: number; pageSize: number; items: AuditLogEntry[] }> {
+    let httpParams = new HttpParams();
+    if (params.entityType) httpParams = httpParams.set('entityType', params.entityType);
+    if (params.adminId) httpParams = httpParams.set('adminId', params.adminId);
+    if (params.from) httpParams = httpParams.set('from', params.from);
+    if (params.to) httpParams = httpParams.set('to', params.to);
+    if (params.page) httpParams = httpParams.set('page', params.page);
+    if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize);
+    return this.http.get<{ total: number; page: number; pageSize: number; items: AuditLogEntry[] }>(
+      `${this.api}/admin/audit-log`, { params: httpParams });
   }
 
   // ── Group Orders ────────────────────────────────────────────────────────────
   createGroupOrder(locationId: string): Observable<GroupCart> {
-    return this.http.post<GroupCart>(`${this.baseUrl}/api/group-orders`, { locationId });
+    return this.http.post<GroupCart>(`${this.api}/group-orders`, { locationId });
   }
 
   joinGroupOrder(code: string): Observable<GroupCart> {
-    return this.http.post<GroupCart>(`${this.baseUrl}/api/group-orders/join`, { code });
+    return this.http.post<GroupCart>(`${this.api}/group-orders/join`, { code });
   }
 
   getGroupOrder(id: string): Observable<GroupCart> {
-    return this.http.get<GroupCart>(`${this.baseUrl}/api/group-orders/${id}`);
+    return this.http.get<GroupCart>(`${this.api}/group-orders/${id}`);
   }
 
   addGroupOrderItem(id: string, req: AddGroupOrderItemRequest): Observable<GroupCart> {
-    return this.http.post<GroupCart>(`${this.baseUrl}/api/group-orders/${id}/items`, req);
+    return this.http.post<GroupCart>(`${this.api}/group-orders/${id}/items`, req);
   }
 
   removeGroupOrderItem(id: string, itemId: string): Observable<GroupCart> {
-    return this.http.delete<GroupCart>(`${this.baseUrl}/api/group-orders/${id}/items/${itemId}`);
+    return this.http.delete<GroupCart>(`${this.api}/group-orders/${id}/items/${itemId}`);
   }
 
   checkoutGroupOrder(id: string): Observable<Order> {
-    return this.http.post<Order>(`${this.baseUrl}/api/group-orders/${id}/checkout`, {});
+    return this.http.post<Order>(`${this.api}/group-orders/${id}/checkout`, {});
   }
 }

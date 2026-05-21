@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 using Yurt.Application.Features.Auth.DTOs;
 using Yurt.Application.Features.Auth.Services;
 using Yurt.Application.Features.Auth.Validators;
@@ -7,7 +8,8 @@ using Yurt.WebApi.Common;
 namespace Yurt.WebApi.Controllers.Admin;
 
 [ApiController]
-[Route("api/admin/auth")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/admin/auth")]
 public class AdminAuthController : ApiControllerBase
 {
     private readonly AuthService _authService;
@@ -23,7 +25,26 @@ public class AdminAuthController : ApiControllerBase
         if (!validation.IsValid)
             return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
 
-        var result = await _authService.LoginAdminAsync(dto, ct);
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await _authService.LoginAdminAsync(dto, ip, ct);
         return ToResult(result);
+    }
+
+    /// <summary>Rotate an admin refresh token.</summary>
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequestDto dto, CancellationToken ct)
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await _authService.RefreshAsync(dto.RefreshToken, ip, ct);
+        return ToResult(result);
+    }
+
+    /// <summary>Revoke an admin refresh token (logout).</summary>
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] RefreshRequestDto dto, CancellationToken ct)
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        await _authService.RevokeAsync(dto.RefreshToken, ip, ct);
+        return NoContent();
     }
 }

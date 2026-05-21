@@ -30,10 +30,11 @@ export class AdminLoginComponent {
     this.api.adminLogin(this.username, this.password).subscribe({
       next: (res) => {
         this.auth.setUser({
-          token: res.token,
+          accessToken: res.accessToken,
+          refreshToken: res.refreshToken,
           userId: res.userId,
           displayName: res.displayName,
-          userType: 'admin',
+          userType: 'Admin',
           role: res.role,
         });
         this.router.navigate(['/dashboard']);

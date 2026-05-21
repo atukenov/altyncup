@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.Payments.DTOs;
 using Yurt.Application.Features.Payments.Services;
@@ -9,7 +10,8 @@ using Yurt.WebApi.Common;
 namespace Yurt.WebApi.Controllers;
 
 [ApiController]
-[Route("api/payments")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/payments")]
 public class PaymentsController : ApiControllerBase
 {
   private readonly PaymentService _paymentService;

@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 using Yurt.Application.Features.Locations.Services;
 using Yurt.WebApi.Common;
 
 namespace Yurt.WebApi.Controllers;
 
 [ApiController]
-[Route("api/locations")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/locations")]
 public class LocationsController : ApiControllerBase
 {
     private readonly LocationService _locationService;

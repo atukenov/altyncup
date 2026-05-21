@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.Orders.DTOs;
 using Yurt.Application.Features.Orders.Services;
@@ -8,7 +9,8 @@ using Yurt.WebApi.Common;
 namespace Yurt.WebApi.Controllers;
 
 [ApiController]
-[Route("api/orders")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/orders")]
 [Authorize(Policy = "CustomerOnly")]
 public class OrdersController : ApiControllerBase
 {

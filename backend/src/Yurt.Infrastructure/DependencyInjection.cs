@@ -18,6 +18,7 @@ using Yurt.Application.Features.GroupOrders;
 using Yurt.Application.Features.Workers;
 using Yurt.Application.Features.Payments.Services;
 using Yurt.Application.Features.Promotions.Services;
+using Yurt.Application.Features.AuditLog.Services;
 using Yurt.Infrastructure.Hubs;
 using Yurt.Infrastructure.Payments;
 using Yurt.Infrastructure.Persistence;
@@ -47,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IOrdersHubService, OrdersHubService>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
 
         // Payment services
         services.Configure<PaymentOptions>(configuration.GetSection("Payment"));

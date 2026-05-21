@@ -10,8 +10,13 @@ namespace Yurt.Application.Features.Promotions.Services;
 public class PromotionService
 {
     private readonly IApplicationDbContext _db;
+    private readonly IAuditLogService _audit;
 
-    public PromotionService(IApplicationDbContext db) => _db = db;
+    public PromotionService(IApplicationDbContext db, IAuditLogService audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
 
     public async Task<List<PromotionDto>> GetActivePromotionsAsync(string lang = "ru", CancellationToken ct = default)
         => await _db.Promotions
@@ -48,6 +53,7 @@ public class PromotionService
         };
         _db.Promotions.Add(promo);
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("PromotionCreated", "Promotion", promo.Id.ToString(), promo.Title, ct);
         return Result<AdminPromotionDto>.Success(MapToAdminDto(promo), 201);
     }
 
@@ -67,6 +73,7 @@ public class PromotionService
         promo.ExpiresAt = dto.ExpiresAt;
 
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("PromotionUpdated", "Promotion", id.ToString(), promo.Title, ct);
         return Result<AdminPromotionDto>.Success(MapToAdminDto(promo));
     }
 
@@ -74,8 +81,10 @@ public class PromotionService
     {
         var promo = await _db.Promotions.FindAsync([id], ct);
         if (promo == null) return Result<bool>.NotFound();
+        var title = promo.Title;
         _db.Promotions.Remove(promo);
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("PromotionDeleted", "Promotion", id.ToString(), title, ct);
         return Result<bool>.Success(true);
     }
 

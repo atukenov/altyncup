@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.Favorites.Services;
 using Yurt.WebApi.Common;
@@ -7,7 +8,8 @@ using Yurt.WebApi.Common;
 namespace Yurt.WebApi.Controllers;
 
 [ApiController]
-[Route("api/favorites")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/favorites")]
 [Authorize(Policy = "CustomerOnly")]
 public class FavoritesController : ApiControllerBase
 {
@@ -22,8 +24,8 @@ public class FavoritesController : ApiControllerBase
 
     /// <summary>Get customer's favorites.</summary>
     [HttpGet]
-    public async Task<IActionResult> Get(CancellationToken ct)
-        => Ok(await _favoriteService.GetFavoritesAsync(_currentUser.UserId!.Value, ct));
+    public async Task<IActionResult> Get([FromQuery] string lang = "ru", CancellationToken ct = default)
+        => Ok(await _favoriteService.GetFavoritesAsync(_currentUser.UserId!.Value, lang, ct));
 
     /// <summary>Add a menu item to favorites.</summary>
     [HttpPost("{menuItemId:guid}")]

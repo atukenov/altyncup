@@ -195,3 +195,30 @@ public class PaymentWebhookLogConfiguration : IEntityTypeConfiguration<PaymentWe
         builder.Property(e => e.Processed).HasDefaultValue(false);
     }
 }
+
+public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
+{
+    public void Configure(EntityTypeBuilder<RefreshToken> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.HasIndex(e => e.Token).IsUnique();
+        builder.Property(e => e.Token).HasMaxLength(128).IsRequired();
+        builder.Property(e => e.UserType).HasConversion<string>().HasMaxLength(20);
+        builder.Property(e => e.ReplacedByToken).HasMaxLength(128);
+        builder.Property(e => e.CreatedByIp).HasMaxLength(50);
+    }
+}
+
+public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
+{
+    public void Configure(EntityTypeBuilder<AuditLog> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Action).HasMaxLength(100).IsRequired();
+        builder.Property(e => e.EntityType).HasMaxLength(100).IsRequired();
+        builder.Property(e => e.EntityId).HasMaxLength(100);
+        builder.Property(e => e.PerformedByUsername).HasMaxLength(200);
+        builder.Property(e => e.Details).HasMaxLength(2000);
+        builder.Property(e => e.IpAddress).HasMaxLength(50);
+    }
+}

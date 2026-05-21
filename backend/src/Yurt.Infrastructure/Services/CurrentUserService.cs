@@ -20,6 +20,9 @@ public class CurrentUserService : ICurrentUserService
         }
     }
 
+    public string? Username
+        => _accessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Name);
+
     public string? UserType
         => _accessor.HttpContext?.User?.FindFirstValue("user_type");
 

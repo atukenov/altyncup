@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 using Yurt.Application.Features.Customers;
 using Yurt.WebApi.Common;
 
 namespace Yurt.WebApi.Controllers.Admin;
 
 [ApiController]
-[Route("api/admin/customers")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/admin/customers")]
 [Authorize(Policy = "AdminOnly")]
 public class AdminCustomersController : ApiControllerBase
 {

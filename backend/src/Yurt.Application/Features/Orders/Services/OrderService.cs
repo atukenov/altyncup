@@ -11,11 +11,13 @@ public class OrderService
 {
     private readonly IApplicationDbContext _db;
     private readonly IOrdersHubService _hub;
+    private readonly IAuditLogService _audit;
 
-    public OrderService(IApplicationDbContext db, IOrdersHubService hub)
+    public OrderService(IApplicationDbContext db, IOrdersHubService hub, IAuditLogService audit)
     {
         _db = db;
         _hub = hub;
+        _audit = audit;
     }
 
     public async Task<Result<OrderDto>> CreateOrderAsync(
@@ -178,6 +180,7 @@ public class OrderService
         await _db.SaveChangesAsync(ct);
 
         await _hub.NotifyOrderUpdatedAsync(order, ct);
+        await _audit.LogAsync("OrderAccepted", "Order", orderId.ToString(), $"ETA: {dto.EtaMinutes} min", ct);
         return Result<OrderDto>.Success(MapToDto(order));
     }
 
@@ -196,6 +199,7 @@ public class OrderService
         await _db.SaveChangesAsync(ct);
 
         await _hub.NotifyOrderDeclinedAsync(order, ct);
+        await _audit.LogAsync("OrderDeclined", "Order", orderId.ToString(), dto.Reason, ct);
         return Result<OrderDto>.Success(MapToDto(order));
     }
 
@@ -222,6 +226,7 @@ public class OrderService
         await _db.SaveChangesAsync(ct);
 
         await _hub.NotifyOrderUpdatedAsync(order, ct);
+        await _audit.LogAsync($"OrderStatus{dto.Status}", "Order", orderId.ToString(), null, ct);
         return Result<OrderDto>.Success(MapToDto(order));
     }
 
@@ -237,6 +242,8 @@ public class OrderService
         await _db.SaveChangesAsync(ct);
 
         await _hub.NotifyPaymentUpdatedAsync(order, ct);
+        await _audit.LogAsync("OrderPaymentUpdated", "Order", orderId.ToString(),
+            $"{dto.PaymentStatus} / {dto.PaymentMethod}", ct);
         return Result<OrderDto>.Success(MapToDto(order));
     }
 

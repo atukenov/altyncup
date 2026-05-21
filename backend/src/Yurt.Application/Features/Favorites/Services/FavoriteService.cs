@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Yurt.Application.Common.Helpers;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Common.Models;
 using Yurt.Application.Features.Menu.DTOs;
@@ -12,19 +13,23 @@ public class FavoriteService
     public FavoriteService(IApplicationDbContext db) => _db = db;
 
     public async Task<List<MenuItemDto>> GetFavoritesAsync(
-        Guid customerId, CancellationToken ct = default)
-        => await _db.Favorites
+        Guid customerId, string lang = "ru", CancellationToken ct = default)
+    {
+        var favs = await _db.Favorites
             .Where(f => f.CustomerUserId == customerId)
-            .Select(f => new MenuItemDto(
-                f.MenuItem.Id,
-                f.MenuItem.CategoryId,
-                f.MenuItem.Category.Name,
-                f.MenuItem.Name,
-                f.MenuItem.Description,
-                f.MenuItem.Price,
-                f.MenuItem.IsAvailable,
-                f.MenuItem.ImageUrl))
+            .Include(f => f.MenuItem).ThenInclude(m => m.Category)
             .ToListAsync(ct);
+
+        return favs.Select(f => new MenuItemDto(
+            f.MenuItem.Id,
+            f.MenuItem.CategoryId,
+            f.MenuItem.Category?.Name ?? "",
+            LocalizationHelper.Localize(f.MenuItem.Name, f.MenuItem.NameRu, f.MenuItem.NameKk, lang),
+            LocalizationHelper.Localize(f.MenuItem.Description, f.MenuItem.DescriptionRu, f.MenuItem.DescriptionKk, lang),
+            f.MenuItem.Price,
+            f.MenuItem.IsAvailable,
+            f.MenuItem.ImageUrl)).ToList();
+    }
 
     public async Task<Result<bool>> AddFavoriteAsync(
         Guid customerId, Guid menuItemId, CancellationToken ct = default)

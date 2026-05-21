@@ -22,6 +22,8 @@ public interface IApplicationDbContext
     DbSet<GroupCart> GroupCarts { get; }
     DbSet<GroupCartItem> GroupCartItems { get; }
     DbSet<GroupCartMember> GroupCartMembers { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<AuditLog> AuditLogs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

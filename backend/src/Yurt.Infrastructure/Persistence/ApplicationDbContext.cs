@@ -26,6 +26,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<GroupCart> GroupCarts => Set<GroupCart>();
     public DbSet<GroupCartItem> GroupCartItems => Set<GroupCartItem>();
     public DbSet<GroupCartMember> GroupCartMembers => Set<GroupCartMember>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

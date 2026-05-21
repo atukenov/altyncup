@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Yurt.Application.Features.Auth.DTOs;
 using Yurt.Application.Features.Auth.Services;
@@ -11,7 +12,8 @@ using Microsoft.AspNetCore.Authorization;
 namespace Yurt.WebApi.Controllers;
 
 [ApiController]
-[Route("api/auth")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/auth")]
 public class AuthController : ApiControllerBase
 {
     private readonly AuthService _authService;
@@ -41,7 +43,8 @@ public class AuthController : ApiControllerBase
         if (!validation.IsValid)
             return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
 
-        var result = await _authService.RegisterCustomerAsync(dto, ct);
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await _authService.RegisterCustomerAsync(dto, ip, ct);
         return ToResult(result);
     }
 
@@ -55,18 +58,27 @@ public class AuthController : ApiControllerBase
         if (!validation.IsValid)
             return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
 
-        var result = await _authService.LoginCustomerAsync(dto, ct);
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await _authService.LoginCustomerAsync(dto, ip, ct);
         return ToResult(result);
     }
 
-    /// <summary>Issue a fresh 7-day token for the current customer (sliding expiration).</summary>
+    /// <summary>Rotate a refresh token — returns a new access token + refresh token pair.</summary>
     [HttpPost("refresh")]
-    [Authorize(Policy = "CustomerOnly")]
-    public async Task<IActionResult> Refresh(CancellationToken ct)
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequestDto dto, CancellationToken ct)
     {
-        var userId = _currentUser.UserId!.Value;
-        var result = await _authService.RefreshCustomerTokenAsync(userId, ct);
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await _authService.RefreshAsync(dto.RefreshToken, ip, ct);
         return ToResult(result);
+    }
+
+    /// <summary>Revoke a refresh token (logout).</summary>
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] RefreshRequestDto dto, CancellationToken ct)
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        await _authService.RevokeAsync(dto.RefreshToken, ip, ct);
+        return NoContent();
     }
 
     /// <summary>Get current customer profile.</summary>

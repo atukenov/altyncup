@@ -1,22 +1,37 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json.Serialization;
+using System.Security.Claims;
 using Serilog;
 using Yurt.Infrastructure;
 using Yurt.Infrastructure.Hubs;
 using Yurt.Infrastructure.Persistence;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Diagnostics;
 using AspNetCoreRateLimit;
+using Asp.Versioning;
+using Yurt.WebApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Serilog ───────────────────────────────────────────────────────────────────
 builder.Host.UseSerilog((ctx, lc) =>
     lc.ReadFrom.Configuration(ctx.Configuration)
-      .Enrich.FromLogContext()
-      .WriteTo.Console());
+      .Enrich.FromLogContext());
 
 // ── Infrastructure (DB, Auth, SignalR, Services) ──────────────────────────────
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// ── API Versioning ────────────────────────────────────────────────────────────
+builder.Services.AddApiVersioning(o =>
+{
+    o.DefaultApiVersion = new ApiVersion(1, 0);
+    o.AssumeDefaultVersionWhenUnspecified = true;
+    o.ReportApiVersions = true;
+}).AddApiExplorer(o =>
+{
+    o.GroupNameFormat = "'v'VVV";
+    o.SubstituteApiVersionInUrl = true;
+});
 
 // ── Controllers ───────────────────────────────────────────────────────────────
 builder.Services.AddControllers()
@@ -83,6 +98,10 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 app.UseExceptionHandler(opts =>
     opts.Run(async ctx =>
     {
+        var ex = ctx.Features.Get<IExceptionHandlerFeature>()?.Error;
+        var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Unhandled exception for {Method} {Path}", ctx.Request.Method, ctx.Request.Path);
+
         ctx.Response.StatusCode = 500;
         ctx.Response.ContentType = "application/problem+json";
         await ctx.Response.WriteAsJsonAsync(new ProblemDetails
@@ -103,7 +122,14 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseSerilogRequestLogging();
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseSerilogRequestLogging(opts =>
+    opts.EnrichDiagnosticContext = (diag, ctx) =>
+    {
+        var userId = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId is not null) diag.Set("UserId", userId);
+        if (ctx.Items["CorrelationId"] is string cid) diag.Set("CorrelationId", cid);
+    });
 app.UseIpRateLimiting();
 app.UseCors();
 app.UseAuthentication();

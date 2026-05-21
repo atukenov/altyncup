@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -38,20 +39,25 @@ public class JwtTokenService : ITokenService
         return GenerateToken(claims);
     }
 
+    public string GenerateRefreshToken()
+        => Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
+
+    public int RefreshTokenDays
+        => int.Parse(_config["Jwt:RefreshTokenDays"] ?? "7");
+
     private string GenerateToken(List<Claim> claims)
     {
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_config["Jwt:Secret"]!));
 
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expiry = DateTime.UtcNow.AddDays(
-            double.Parse(_config["Jwt:ExpiryDays"] ?? "7"));
+        var minutes = double.Parse(_config["Jwt:AccessTokenMinutes"] ?? "15");
 
         var token = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: claims,
-            expires: expiry,
+            expires: DateTime.UtcNow.AddMinutes(minutes),
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
