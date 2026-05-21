@@ -125,7 +125,7 @@
             </a>
             <button
               (click)="toggleFav(item, $event)"
-              class="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-sm z-10 transition-all active:scale-95"
+              class="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-sm transition-all active:scale-95"
               [class.text-red-500]="isFav(item.id)"
               [class.text-stone-300]="!isFav(item.id)"
               aria-label="Toggle favorite"

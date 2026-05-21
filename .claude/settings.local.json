@@ -14,7 +14,8 @@
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
       "Bash(grep -E \"\\\\.cs$\")",
       "Bash(npx ng *)",
-      "Bash(ng build *)"
+      "Bash(ng build *)",
+      "Bash(xargs ls)"
     ]
   }
 }
