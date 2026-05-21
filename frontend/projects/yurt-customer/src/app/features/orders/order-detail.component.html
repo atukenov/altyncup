@@ -112,7 +112,7 @@
         >
           <div class="flex-1 min-w-0">
             <p class="text-stone-800 text-sm font-semibold">{{ item.menuItemName }}</p>
-            @if (item.toppings?.length) {
+            @if (item.toppings.length) {
               @for (t of item.toppings; track t.toppingId) {
                 <p class="text-stone-400 text-xs mt-0.5">+ {{ t.toppingName }}@if (t.price > 0) { <span class="text-stone-300">(+{{ t.price | currency2 }})</span>}</p>
               }
@@ -237,7 +237,7 @@
               <div class="flex justify-between items-start gap-3">
                 <div class="flex-1 min-w-0">
                   <p class="text-stone-800 text-sm font-semibold">{{ item.menuItemName }}</p>
-                  @if (item.toppings?.length) {
+                  @if (item.toppings.length) {
                     @for (t of item.toppings; track t.toppingId) {
                       <p class="text-stone-400 text-xs">+ {{ t.toppingName }}@if (t.price > 0) { <span class="text-stone-300">(+{{ t.price | currency2 }})</span>}</p>
                     }

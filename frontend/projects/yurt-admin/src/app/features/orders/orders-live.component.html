@@ -248,7 +248,7 @@
                 <p class="text-slate-800 text-sm font-medium">
                   {{ item.quantity }} × {{ item.menuItemName }}
                 </p>
-                @if (item.toppings?.length) {
+                @if (item.toppings.length) {
                   <p class="text-slate-400 text-xs mt-0.5">
                     + {{ item.toppings.map(t => t.toppingName).join(', ') }}
                   </p>

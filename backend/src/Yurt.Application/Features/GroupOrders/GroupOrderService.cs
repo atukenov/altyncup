@@ -66,13 +66,18 @@ public class GroupOrderService
             var user = await _db.CustomerUsers.FindAsync([userId], ct);
             if (user == null) return Result<GroupCartDto>.Failure("User not found.", 400);
 
-            cart.Members.Add(new GroupCartMember
+            var displayName = (user.FirstName + " " + user.LastName).Trim() is { Length: > 0 } n ? n : user.MobileNumber;
+            var member = new GroupCartMember
             {
                 GroupCartId = cart.Id,
                 CustomerUserId = userId,
-                DisplayName = (user.FirstName + " " + user.LastName).Trim() is { Length: > 0 } name ? name : user.MobileNumber,
-            });
+                DisplayName = displayName,
+            };
+            // Add directly to DbSet to avoid EF marking the parent GroupCart as Modified,
+            // which would cause a spurious UPDATE and DbUpdateConcurrencyException.
+            _db.GroupCartMembers.Add(member);
             await _db.SaveChangesAsync(ct);
+            cart.Members.Add(member); // keep in-memory list in sync for DTO mapping
         }
 
         var dto = MapToDto(cart, userId);
@@ -112,8 +117,9 @@ public class GroupOrderService
             Notes = req.Notes,
         };
 
-        cart.Items.Add(item);
+        _db.GroupCartItems.Add(item);
         await _db.SaveChangesAsync(ct);
+        cart.Items.Add(item); // keep in-memory list in sync for DTO mapping
 
         var dto = MapToDto(cart, userId);
         await _hub.NotifyGroupCartUpdatedAsync(cart.Id, dto, ct);
