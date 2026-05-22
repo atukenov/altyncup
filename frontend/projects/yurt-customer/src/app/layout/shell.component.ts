@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { PromoPopupComponent } from './promo-popup.component';
 import { TranslatePipe } from '../core/translate.pipe';
+import { CartService } from '../features/cart/cart.service';
 
 @Component({
   selector: 'app-shell',
@@ -10,4 +11,6 @@ import { TranslatePipe } from '../core/translate.pipe';
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.css',
 })
-export class ShellComponent {}
+export class ShellComponent {
+  readonly cart = inject(CartService);
+}

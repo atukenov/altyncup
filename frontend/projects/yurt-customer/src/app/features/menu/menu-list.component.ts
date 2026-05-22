@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService, AuthStateService } from 'shared-api';
-import { MenuItem, MenuCategory, MenuTopping, Order, OrderItemToppingInput } from 'shared-models';
+import { MenuItem, MenuCategory, MenuTopping, Order, OrderItemToppingInput, Promotion } from 'shared-models';
 import { SkeletonCardComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
@@ -18,19 +18,35 @@ import { TranslatePipe } from '../../core/translate.pipe';
 })
 export class MenuListComponent implements OnInit {
   private api = inject(YurtApiService);
-  private cart = inject(CartService);
+  readonly cart = inject(CartService);
   private toast = inject(ToastService);
-  private auth = inject(AuthStateService);
+  readonly auth = inject(AuthStateService);
   readonly langService = inject(LangService);
 
   loading = signal(true);
   categories = signal<MenuCategory[]>([]);
   allItems = signal<MenuItem[]>([]);
+  promotions = signal<Promotion[]>([]);
   selectedCategoryId = signal<string | null>(null);
   search = '';
   locationName = localStorage.getItem('yurt_location_name') ?? '';
   lastOrder = signal<Order | null>(null);
   favoritedIds = signal<Set<string>>(new Set());
+
+  private static readonly CATEGORY_EMOJIS: Record<string, string> = {
+    coffee: '☕', кофе: '☕', қофе: '☕', 'cold drinks': '🧊',
+    'холодные напитки': '🧊', 'суық сусындар': '🧊',
+    food: '🥐', еда: '🥐', тағам: '🥐',
+    desserts: '🍰', десерты: '🍰', десерттер: '🍰',
+    tea: '🍵', чай: '🍵', шай: '🍵',
+    snacks: '🍿', снеки: '🍿', снектер: '🍿',
+    smoothies: '🥤', смузи: '🥤',
+    breakfast: '🥞', завтрак: '🥞', 'таңғы ас': '🥞',
+  };
+
+  categoryEmoji(name: string): string {
+    return MenuListComponent.CATEGORY_EMOJIS[name.toLowerCase()] ?? '';
+  }
 
   get greeting(): string {
     const name = this.auth.currentUser?.displayName;
@@ -47,6 +63,7 @@ export class MenuListComponent implements OnInit {
     effect(() => {
       const lang = this.langService.lang();
       this.api.getCategories(lang).subscribe((cats) => this.categories.set(cats));
+      this.api.getActivePromotions().subscribe((promos) => this.promotions.set(promos));
       this.loadItems(this.search || undefined, lang);
     });
   }
