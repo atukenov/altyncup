@@ -13,6 +13,7 @@ import {
 import { environment } from '../../../environments/environment';
 import { Subscription } from 'rxjs';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
+import { SoundService } from '../../core/sound.service';
 
 @Component({
   selector: 'app-orders-live',
@@ -33,6 +34,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   readonly signalr = inject(SignalrService);
   private api = inject(YurtApiService);
   private toast = inject(ToastService);
+  private sound = inject(SoundService);
 
   readonly OrderStatus = OrderStatus;
 
@@ -105,6 +107,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
         this.signalr.orderCreated$.subscribe((o) => {
           this.orders.update((list) => [o, ...list]);
           this.toast.info(`New order #${o.id.slice(-6).toUpperCase()}`);
+          this.sound.playNewOrder();
         }),
         this.signalr.orderUpdated$.subscribe((o) => this.upsertOrder(o)),
         this.signalr.orderDeclined$.subscribe((o) => this.upsertOrder(o)),
