@@ -50,7 +50,7 @@ export class MenuListComponent implements OnInit {
 
   get greeting(): string {
     const name = this.auth.currentUser?.displayName;
-    const hour = new Date().getHours();
+    const hour = (new Date().getUTCHours() + 5) % 24;
     const key = hour < 12 ? 'greeting.morning' : hour < 17 ? 'greeting.afternoon' : 'greeting.evening';
     const time = this.langService.t(key);
     return name ? `${time}, ${name}` : time;
