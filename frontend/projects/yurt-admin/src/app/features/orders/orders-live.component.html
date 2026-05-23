@@ -73,6 +73,7 @@
                 <p class="text-sm font-semibold text-slate-800 truncate">
                   Order #{{ order.id.slice(-6).toUpperCase() }}
                 </p>
+                <p class="text-xs font-medium text-slate-700 truncate mt-0.5">{{ order.customerName }}</p>
                 <p class="text-xs text-slate-500 mt-0.5">
                   {{ order.createdAt | date: 'HH:mm' }} · {{ order.items.length }} item(s)
                 </p>
@@ -109,6 +110,7 @@
             <h2 class="text-xl font-bold text-slate-800">
               Order #{{ o.id.slice(-6).toUpperCase() }}
             </h2>
+            <p class="text-slate-800 text-sm font-semibold">{{ o.customerName }}</p>
             <p class="text-slate-500 text-sm">{{ o.createdAt | date: 'MMM d, yyyy HH:mm' }}</p>
           </div>
           <yurt-badge [variant]="o.status | orderStatusColor" class="text-sm">

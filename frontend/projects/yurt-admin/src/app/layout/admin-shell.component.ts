@@ -1,10 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthStateService } from 'shared-api';
 import { ToastService } from 'shared-ui';
 import { AdminLangService } from '../core/lang.service';
 import { AdminTranslatePipe } from '../core/translate.pipe';
+
+const SIDEBAR_KEY = 'yurt_admin_sidebar_collapsed';
 
 @Component({
   selector: 'app-admin-shell',
@@ -18,6 +20,14 @@ export class AdminShellComponent {
   readonly langService = inject(AdminLangService);
   private router = inject(Router);
   private toast = inject(ToastService);
+
+  collapsed = signal(localStorage.getItem(SIDEBAR_KEY) === '1');
+
+  toggleSidebar(): void {
+    const next = !this.collapsed();
+    this.collapsed.set(next);
+    localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0');
+  }
 
   initials(): string {
     const name = this.auth.currentUser?.displayName ?? '?';

@@ -151,6 +151,7 @@ public class OrderService
     {
         var query = _db.Orders
             .Include(o => o.Location)
+            .Include(o => o.CustomerUser)
             .Include(o => o.Items).ThenInclude(i => i.Toppings)
             .Where(o => !o.IsArchived)
             .AsQueryable();
@@ -250,13 +251,23 @@ public class OrderService
     private async Task<Order?> LoadOrderAsync(Guid id, CancellationToken ct)
         => await _db.Orders
             .Include(o => o.Location)
+            .Include(o => o.CustomerUser)
             .Include(o => o.Items).ThenInclude(i => i.Toppings)
             .FirstOrDefaultAsync(o => o.Id == id, ct);
 
     public static OrderDto MapToDto(Order o)
-        => new(
+    {
+        var customer = o.CustomerUser;
+        var customerName = customer == null
+            ? ""
+            : !string.IsNullOrWhiteSpace(customer.FirstName)
+                ? $"{customer.FirstName} {customer.LastName}".Trim()
+                : customer.MobileNumber;
+
+        return new(
             o.Id,
             o.CustomerUserId,
+            customerName,
             o.LocationId,
             o.Location?.Name ?? "",
             o.Status,
@@ -274,4 +285,5 @@ public class OrderService
                 i.Toppings.Select(t => new OrderItemToppingDto(t.ToppingId, t.ToppingName, t.Price)).ToList(),
                 i.Notes
             )).ToList());
+    }
 }

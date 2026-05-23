@@ -193,6 +193,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   customerUserId: string;
+  customerName: string;
   locationId: string;
   locationName: string;
   status: OrderStatus;

@@ -14,6 +14,7 @@ public record UpdatePaymentDto(PaymentStatus PaymentStatus, PaymentMethod Paymen
 public record OrderDto(
     Guid Id,
     Guid CustomerUserId,
+    string CustomerName,
     Guid LocationId,
     string LocationName,
     OrderStatus Status,
