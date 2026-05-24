@@ -2,19 +2,20 @@ using Yurt.Domain.Enums;
 
 namespace Yurt.Application.Features.Orders.DTOs;
 
-public record CreateOrderDto(Guid LocationId, List<OrderItemInputDto> Items);
+public record CreateOrderDto(Guid LocationId, List<OrderItemInputDto> Items, PaymentMethod PaymentMethod);
 public record OrderItemInputDto(Guid MenuItemId, int Quantity, List<OrderItemToppingInputDto>? Toppings = null, string? Notes = null);
 public record OrderItemToppingInputDto(Guid ToppingId, string ToppingName, decimal Price);
 
 public record AcceptOrderDto(int EtaMinutes);
 public record DeclineOrderDto(string Reason);
 public record UpdateOrderStatusDto(OrderStatus Status);
-public record UpdatePaymentDto(PaymentStatus PaymentStatus, PaymentMethod PaymentMethod);
+public record UpdatePaymentDto(PaymentStatus PaymentStatus);
 
 public record OrderDto(
     Guid Id,
     Guid CustomerUserId,
     string CustomerName,
+    string CustomerPhone,
     Guid LocationId,
     string LocationName,
     OrderStatus Status,

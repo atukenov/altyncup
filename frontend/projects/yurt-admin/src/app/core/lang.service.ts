@@ -54,6 +54,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'orders.total': 'Total', 'orders.payment': 'Payment', 'orders.cash': 'Cash',
     'orders.card': 'Card', 'orders.other': 'Other', 'orders.paid': 'Paid',
     'orders.unpaid': 'Unpaid', 'orders.refunded': 'Refunded',
+    'orders.acceptRequiresPayment': 'Confirm payment before accepting', 'orders.method': 'Payment method',
 
     // Locations
     'locations.title': 'Locations', 'locations.add': 'Add Location',
@@ -189,6 +190,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'orders.total': 'Итого', 'orders.payment': 'Оплата', 'orders.cash': 'Наличные',
     'orders.card': 'Карта', 'orders.other': 'Другое', 'orders.paid': 'Оплачено',
     'orders.unpaid': 'Не оплачено', 'orders.refunded': 'Возврат',
+    'orders.acceptRequiresPayment': 'Подтвердите оплату перед принятием', 'orders.method': 'Метод оплаты',
 
     // Locations
     'locations.title': 'Локации', 'locations.add': 'Добавить локацию',
@@ -324,6 +326,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'orders.total': 'Жиыны', 'orders.payment': 'Төлем', 'orders.cash': 'Қолма-қол',
     'orders.card': 'Карта', 'orders.other': 'Басқа', 'orders.paid': 'Төленді',
     'orders.unpaid': 'Төленбеді', 'orders.refunded': 'Қайтарылды',
+    'orders.acceptRequiresPayment': 'Қабылдамас бұрын төлемді растаңыз', 'orders.method': 'Төлем әдісі',
 
     // Locations
     'locations.title': 'Мекендер', 'locations.add': 'Мекен қосу',

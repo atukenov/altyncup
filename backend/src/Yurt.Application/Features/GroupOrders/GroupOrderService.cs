@@ -168,7 +168,7 @@ public class GroupOrderService
                 i.Notes);
         }).ToList();
 
-        var createDto = new CreateOrderDto(cart.LocationId, orderItems);
+        var createDto = new CreateOrderDto(cart.LocationId, orderItems, PaymentMethod.Other);
         var result = await _orders.CreateOrderAsync(userId, createDto, ct);
         if (!result.Succeeded) return result;
 

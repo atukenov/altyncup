@@ -22,6 +22,9 @@ export enum PaymentMethod {
   Cash = 'Cash',
   Card = 'Card',
   Other = 'Other',
+  KaspiBank = 'KaspiBank',
+  HalykBank = 'HalykBank',
+  FreedomBank = 'FreedomBank',
 }
 
 export enum PaymentProvider {
@@ -136,6 +139,7 @@ export interface OrderItemInput {
 export interface CreateOrderRequest {
   locationId: string;
   items: OrderItemInput[];
+  paymentMethod: PaymentMethod;
 }
 
 export interface CreatePaymentRequest {
@@ -194,6 +198,7 @@ export interface Order {
   id: string;
   customerUserId: string;
   customerName: string;
+  customerPhone?: string;
   locationId: string;
   locationName: string;
   status: OrderStatus;
@@ -241,7 +246,6 @@ export interface UpdateStatusRequest {
 
 export interface UpdatePaymentRequest {
   paymentStatus: PaymentStatus;
-  paymentMethod: PaymentMethod;
 }
 
 // ── Analytics ────────────────────────────────────────────────────────────────

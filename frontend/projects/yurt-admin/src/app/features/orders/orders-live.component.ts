@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService, SignalrService } from 'shared-api';
@@ -49,12 +49,18 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   etaPresetValue = '10';
   useCustomEta = false;
   declineReason = '';
-  paymentMethod = '';
   paymentStatus = 'Unpaid';
 
   actionLoading = signal(false);
   paymentLoading = signal(false);
   showDecline = signal(false);
+
+  constructor() {
+    effect(() => {
+      const o = this.selectedOrder();
+      if (o) this.paymentStatus = o.paymentStatus;
+    });
+  }
 
   onEtaPresetChange(val: string): void {
     if (val === 'custom') {
@@ -184,7 +190,6 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
     this.api
       .updateOrderPayment(order.id, {
         paymentStatus: this.paymentStatus as any,
-        paymentMethod: this.paymentMethod as any,
       })
       .subscribe({
         next: (o) => {
@@ -199,11 +204,18 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
       });
   }
 
+  canAccept(order: Order): boolean {
+    return order.paymentStatus === 'Paid';
+  }
+
   private upsertOrder(updated: Order): void {
     this.orders.update((list) => {
       const idx = list.findIndex((o) => o.id === updated.id);
       return idx >= 0 ? list.map((o) => (o.id === updated.id ? updated : o)) : [updated, ...list];
     });
-    if (this.selectedOrder()?.id === updated.id) this.selectedOrder.set(updated);
+    if (this.selectedOrder()?.id === updated.id) {
+      this.selectedOrder.set(updated);
+      this.paymentStatus = updated.paymentStatus;
+    }
   }
 }

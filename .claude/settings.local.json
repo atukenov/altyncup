@@ -20,7 +20,8 @@
       "Bash(npx tsc *)",
       "Bash(xargs -I {} basename {})",
       "Bash(dotnet add *)",
-      "Bash(xargs cat)"
+      "Bash(xargs cat)",
+      "Bash(grep -i \"\\\\.cs$\")"
     ]
   }
 }

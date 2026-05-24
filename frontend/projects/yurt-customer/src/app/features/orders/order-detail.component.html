@@ -31,7 +31,7 @@
 
     <!-- Status Hero -->
     <div
-      class="bg-gradient-to-br from-amber-400 via-amber-50 to-stone-50 px-6 py-8 text-center border-b border-stone-100"
+      class="bg-linear-to-br from-amber-400 via-amber-50 to-stone-50 px-6 py-8 text-center border-b border-stone-100"
     >
       <div class="text-6xl mb-4 animate-bounce" style="animation-duration: 2s">
         {{ statusEmoji(o.status) }}
@@ -133,50 +133,28 @@
     <!-- Payment -->
     <div class="bg-white mx-4 mt-3 rounded-2xl border border-stone-100 p-4 shadow-sm">
       <h3 class="text-sm font-bold text-stone-700 mb-3">{{ 'order.payment' | t }}</h3>
+      @if (o.paymentMethod) {
+        <div class="flex justify-between text-sm mb-2">
+          <span class="text-stone-500">{{ 'order.method' | t }}</span>
+          <span class="text-stone-700 font-semibold">{{ o.paymentMethod }}</span>
+        </div>
+      }
       <div class="flex justify-between text-sm items-center">
         <span class="text-stone-500">{{ 'order.status' | t }}</span>
         <yurt-badge [variant]="o.paymentStatus === 'Paid' ? 'green' : 'amber'">{{
           o.paymentStatus
         }}</yurt-badge>
       </div>
-      @if (o.paymentMethod) {
-        <div class="flex justify-between text-sm mt-2">
-          <span class="text-stone-500">{{ 'order.method' | t }}</span>
-          <span class="text-stone-700 font-semibold">{{ o.paymentMethod }}</span>
+      @if (o.paymentStatus === PaymentStatus.Unpaid) {
+        <div class="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <span class="text-amber-500 text-base shrink-0">💳</span>
+          <p class="text-amber-700 text-xs font-medium">{{ 'order.waitingPayment' | t }}</p>
         </div>
       }
-      @if (canPay(o)) {
-        <div class="mt-4 space-y-3">
-          <button
-            type="button"
-            class="w-full inline-flex justify-center items-center rounded-2xl bg-amber-500 text-white px-4 py-3 text-sm font-semibold shadow-sm hover:bg-amber-600 disabled:opacity-60"
-            [disabled]="paymentLoading()"
-            (click)="startPayment()"
-          >
-            @if (!paymentLoading()) {
-              {{ 'order.payKaspi' | t }}
-            } @else {
-              {{ 'order.creatingInvoice' | t }}
-            }
-          </button>
-          @if (paymentError()) {
-            <div class="text-red-700 text-sm">{{ paymentError() }}</div>
-          }
-        </div>
-      }
-      @if (payment()) {
-        <div class="mt-5">
-          <app-payment-qr-code
-            [qrCode]="payment()!.qrCode"
-            [amount]="payment()!.amount"
-            [label]="'order.scanQR' | t"
-          ></app-payment-qr-code>
-          <app-payment-status
-            [status]="payment()!.status"
-            [provider]="payment()!.provider"
-            [orderStatus]="o.status"
-            [paymentUrl]="payment()!.paymentUrl"
-          ></app-payment-status>
+      @if (o.paymentStatus === PaymentStatus.Paid) {
+        <div class="mt-3 flex items-start gap-2 bg-teal-50 border border-teal-200 rounded-xl p-3">
+          <span class="text-teal-500 text-base shrink-0">✅</span>
+          <p class="text-teal-700 text-xs font-medium">{{ 'order.paymentConfirmed' | t }}</p>
         </div>
       }
     </div>

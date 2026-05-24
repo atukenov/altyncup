@@ -4,13 +4,10 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { NotificationService, SignalrService, YurtApiService } from 'shared-api';
 import {
-  CreatePaymentRequest,
   Order,
   OrderStatus,
-  PaymentInvoiceResponse,
-  PaymentProvider,
+  PaymentMethod,
   PaymentStatus,
-  SandboxPaymentBehavior,
 } from 'shared-models';
 import {
   BadgeComponent,
@@ -20,8 +17,6 @@ import {
   ToastService,
 } from 'shared-ui';
 import { environment } from '../../../environments/environment';
-import { PaymentQrCodeComponent } from './payment-qr-code.component';
-import { PaymentStatusComponent } from './payment-status.component';
 import { TranslatePipe } from '../../core/translate.pipe';
 
 @Component({
@@ -33,8 +28,6 @@ import { TranslatePipe } from '../../core/translate.pipe';
     OrderStatusLabelPipe,
     OrderStatusColorPipe,
     Currency2Pipe,
-    PaymentQrCodeComponent,
-    PaymentStatusComponent,
     TranslatePipe,
   ],
   templateUrl: './order-detail.component.html',
@@ -51,12 +44,9 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
 
   readonly OrderStatus = OrderStatus;
   readonly PaymentStatus = PaymentStatus;
-  readonly PaymentProvider = PaymentProvider;
+  readonly PaymentMethod = PaymentMethod;
 
   order = signal<Order | null>(null);
-  payment = signal<PaymentInvoiceResponse | null>(null);
-  paymentLoading = signal(false);
-  paymentError = signal<string | null>(null);
   loading = signal(true);
   showReceipt = signal(false);
   private subs: Subscription[] = [];
@@ -144,43 +134,6 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
 
   stepDotClass(current: OrderStatus, step: OrderStatus): string {
     return this.stepIsReached(current, step) ? 'bg-amber-500' : 'bg-stone-200';
-  }
-
-  canPay(order: Order | null): boolean {
-    return (
-      !!order &&
-      order.paymentStatus === PaymentStatus.Unpaid &&
-      order.status === OrderStatus.Created
-    );
-  }
-
-  async startPayment(): Promise<void> {
-    const order = this.order();
-    if (!order) {
-      this.toast.error('Order unavailable.');
-      return;
-    }
-
-    this.paymentLoading.set(true);
-    this.paymentError.set(null);
-
-    const request: CreatePaymentRequest = {
-      orderId: order.id,
-      provider: PaymentProvider.KaspiSandbox,
-      sandboxBehavior: SandboxPaymentBehavior.Default,
-    };
-
-    this.api.createPayment(request).subscribe({
-      next: (payment) => {
-        this.payment.set(payment);
-        this.paymentLoading.set(false);
-        this.toast.success('Kaspi invoice created. Scan the QR code to pay.');
-      },
-      error: (err) => {
-        this.paymentLoading.set(false);
-        this.paymentError.set(err.error?.title ?? 'Failed to create payment.');
-      },
-    });
   }
 
   statusEmoji(status: OrderStatus): string {

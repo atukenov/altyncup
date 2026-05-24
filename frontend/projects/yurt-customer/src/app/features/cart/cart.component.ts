@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
+import { PaymentMethod } from 'shared-models';
 import { CartService } from './cart.service';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { TranslatePipe } from '../../core/translate.pipe';
@@ -20,7 +21,10 @@ export class CartComponent {
   private router = inject(Router);
   private toast = inject(ToastService);
 
+  readonly PaymentMethod = PaymentMethod;
+
   loading = signal(false);
+  selectedPaymentMethod = signal<PaymentMethod | null>(null);
   locationName = localStorage.getItem('yurt_location_name') ?? '';
   expandedNoteKeys = signal<Set<string>>(new Set());
 
@@ -53,6 +57,12 @@ export class CartComponent {
       return;
     }
 
+    const paymentMethod = this.selectedPaymentMethod();
+    if (!paymentMethod) {
+      this.toast.warning('Select a payment method to continue.');
+      return;
+    }
+
     this.loading.set(true);
     const items = this.cart
       .items()
@@ -63,7 +73,7 @@ export class CartComponent {
         notes: i.notes,
       }));
 
-    this.api.createOrder({ locationId, items }).subscribe({
+    this.api.createOrder({ locationId, items, paymentMethod }).subscribe({
       next: (order) => {
         this.cart.clear();
         this.toast.success('Order placed! ☕');

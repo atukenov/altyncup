@@ -255,18 +255,20 @@
 ## 💰 Monetization
 
 ### 1. SaaS Subscription (primary)
+
 Charge café businesses a monthly or annual fee to use the platform.
 
-| Tier | Price | Limits |
-|---|---|---|
-| **Starter** | Free | 1 location, 100 orders/month, basic analytics |
-| **Growth** | ₸25,000 / month | 3 locations, unlimited orders, full analytics, promo codes |
-| **Business** | ₸60,000 / month | Unlimited locations, staff accounts, loyalty program, priority support |
-| **Enterprise** | Custom | White-label, custom domain, SLA, dedicated onboarding |
+| Tier           | Price           | Limits                                                                 |
+| -------------- | --------------- | ---------------------------------------------------------------------- |
+| **Starter**    | Free            | 1 location, 100 orders/month, basic analytics                          |
+| **Growth**     | ₸25,000 / month | 3 locations, unlimited orders, full analytics, promo codes             |
+| **Business**   | ₸60,000 / month | Unlimited locations, staff accounts, loyalty program, priority support |
+| **Enterprise** | Custom          | White-label, custom domain, SLA, dedicated onboarding                  |
 
 Implementation: add a `Plan` field to the tenant/location entity; gate features by plan in middleware.
 
 ### 2. Transaction Fee
+
 Charge a small percentage of each order processed through the platform's payment flow.
 
 - **0.5–1%** of every paid order (Kaspi QR, card).
@@ -274,36 +276,61 @@ Charge a small percentage of each order processed through the platform's payment
 - Low friction: automatically deducted from monthly payout to the café.
 
 ### 3. Loyalty & Wallet Module (add-on)
+
 - The in-app wallet top-up and loyalty point system are Premium features.
 - Cafés on the Starter plan see the feature locked with an upgrade prompt.
 - Alternatively: charge per top-up transaction (e.g. 1% platform fee on wallet loads).
 
 ### 4. Promoted / Featured Items
+
 - Cafés can pay to feature up to 3 items at the top of the menu with a "Featured" badge.
 - Flat monthly fee per featured slot: ₸5,000 / item / month.
 - Admin UI to manage featured slots per location.
 
 ### 5. Setup & Onboarding Fee
+
 - One-time fee of ₸30,000–₸80,000 for assisted onboarding: menu migration, staff training, custom branding, and first-month support.
 - Reduces churn by ensuring the café actually launches successfully.
 
 ### 6. White-Label Licensing
+
 - Sell the entire platform to a café chain or POS reseller as a white-labeled product.
 - They pay a one-time licensing fee (₸500,000+) or a recurring royalty.
 - They handle their own support; you provide updates and hosting optionally.
 
 ### 7. SMS / Notification Credits
+
 - Server-side push notifications (FCM) and SMS fallbacks are metered.
 - Include a free monthly credit (e.g. 500 pushes); overage charged per 1,000 messages.
 - Incentivises cafés to only notify for genuinely important events.
 
 ### 8. Data & Benchmarking Reports
+
 - Aggregate anonymized order data across all tenants.
 - Sell monthly industry reports to cafés: "How does your avg order value compare to similar cafés in Almaty?"
 - Low effort once analytics are built; high perceived value for café owners.
 
 ### Recommended Launch Path
+
 1. Launch with **free tier** to acquire the first 10–20 cafés and prove product-market fit.
 2. Introduce **Growth plan** once cafés rely on the platform (switching cost is high).
 3. Add **transaction fee** when real Kaspi integration goes live.
 4. Layer in **featured items** and **add-ons** as the customer base grows.
+
+### Payment process
+
+- Payment will be applied via pos terminal
+- payment options Kaspi Bank, Halyk Bank, Freedom Bank
+- Worker send payment via pos terminal manually
+- Receive payment accept order
+- for the manuall entry of payment need Phone number of customer.
+- in admin page, when customer send with what payment options he/she is gonna pay, it will be seen in order details.
+- customer when added the items, and go to cart, when go to place order, next step it must be choose payment options (kaspi bank, halyk bank or freedom bank)
+- the admin page order details must also shown the phone number of customer
+- on admin page, in order details, payment method cannot be changed, no dropdown, but worker can change is paid, or refunded. by default is unpaid.
+- mark it as accepted only available if payment is paid.
+
+### Integration with iikoCard platform (customer balance)
+
+- api which will get the customer balance via phone number.
+- payment add new option card balance

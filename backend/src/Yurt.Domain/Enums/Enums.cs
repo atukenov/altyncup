@@ -48,7 +48,10 @@ public enum PaymentMethod
 {
     Cash = 0,
     Card = 1,
-    Other = 2
+    Other = 2,
+    KaspiBank = 3,
+    HalykBank = 4,
+    FreedomBank = 5
 }
 
 public enum AdminRole

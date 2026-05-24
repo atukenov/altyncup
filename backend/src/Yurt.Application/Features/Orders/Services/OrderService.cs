@@ -75,6 +75,7 @@ public class OrderService
             return orderItem;
         }).ToList();
 
+        order.PaymentMethod = dto.PaymentMethod;
         order.Items = orderItems;
         order.Subtotal = orderItems.Sum(i => i.LineTotal);
         order.Total = order.Subtotal; // no tax for now
@@ -174,6 +175,9 @@ public class OrderService
         if (order.Status != OrderStatus.Created)
             return Result<OrderDto>.Failure("Order cannot be accepted in its current status.", 422);
 
+        if (order.PaymentStatus != PaymentStatus.Paid)
+            return Result<OrderDto>.Failure("Order cannot be accepted until payment is confirmed.", 422);
+
         order.Status = OrderStatus.Accepted;
         order.EtaMinutes = dto.EtaMinutes;
         order.AcceptedAt = DateTime.UtcNow;
@@ -238,13 +242,12 @@ public class OrderService
         if (order == null) return Result<OrderDto>.NotFound();
 
         order.PaymentStatus = dto.PaymentStatus;
-        order.PaymentMethod = dto.PaymentMethod;
         order.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
         await _hub.NotifyPaymentUpdatedAsync(order, ct);
         await _audit.LogAsync("OrderPaymentUpdated", "Order", orderId.ToString(),
-            $"{dto.PaymentStatus} / {dto.PaymentMethod}", ct);
+            $"{dto.PaymentStatus}", ct);
         return Result<OrderDto>.Success(MapToDto(order));
     }
 
@@ -263,11 +266,13 @@ public class OrderService
             : !string.IsNullOrWhiteSpace(customer.FirstName)
                 ? $"{customer.FirstName} {customer.LastName}".Trim()
                 : customer.MobileNumber;
+        var customerPhone = customer?.MobileNumber ?? "";
 
         return new(
             o.Id,
             o.CustomerUserId,
             customerName,
+            customerPhone,
             o.LocationId,
             o.Location?.Name ?? "",
             o.Status,
