@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService, AuthStateService } from 'shared-api';
-import { MenuItem, MenuCategory, MenuTopping, Order, OrderItemToppingInput, Promotion } from 'shared-models';
+import { MenuItem, MenuCategory, MenuTopping, OrderItemToppingInput, Promotion } from 'shared-models';
 import { SkeletonCardComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
@@ -30,7 +30,6 @@ export class MenuListComponent implements OnInit {
   selectedCategoryId = signal<string | null>(null);
   search = '';
   locationName = localStorage.getItem('yurt_location_name') ?? '';
-  lastOrder = signal<Order | null>(null);
   favoritedIds = signal<Set<string>>(new Set());
 
   private static readonly CATEGORY_EMOJIS: Record<string, string> = {
@@ -108,10 +107,6 @@ export class MenuListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.api.getOrderHistory().subscribe({
-      next: (orders) => { if (orders.length) this.lastOrder.set(orders[0]); },
-      error: () => {},
-    });
     this.api.getFavorites().subscribe({
       next: (favs) => this.favoritedIds.set(new Set(favs.map((f) => f.id))),
       error: () => {},
@@ -136,25 +131,6 @@ export class MenuListComponent implements OnInit {
         this.toast.success('Added to favorites ♥');
       });
     }
-  }
-
-  orderAgain(order: Order): void {
-    const menuItemMap = new Map(this.allItems().map((i) => [i.id, i]));
-    for (const item of order.items) {
-      this.cart.addItem({
-        menuItemId: item.menuItemId,
-        name: item.menuItemName,
-        price: item.unitPrice,
-        quantity: item.quantity,
-        imageUrl: menuItemMap.get(item.menuItemId)?.imageUrl,
-        selectedToppings: item.toppings?.map((t) => ({
-          toppingId: t.toppingId,
-          toppingName: t.toppingName,
-          price: t.price,
-        })),
-      });
-    }
-    this.toast.success('Last order added to cart!');
   }
 
   loadItems(search?: string, lang?: string): void {

@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-stone-50">
 
   <!-- ── Branded gradient header ─────────────────────────────────────────── -->
-  <div class="bg-linear-to-br from-amber-500 to-amber-600 sticky top-0 z-20 shadow-md">
+  <div class="bg-linear-to-br from-amber-500 to-amber-600 shadow-md">
     <div class="px-4 pt-5 pb-4">
       <div class="flex items-center justify-between mb-3">
         <div>
@@ -68,34 +68,6 @@
     </div>
   }
 
-  <!-- ── Order Again card ────────────────────────────────────────────────── -->
-  @if (lastOrder()) {
-    @let lo = lastOrder()!;
-    <div class="px-4 pt-3">
-      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 flex items-center gap-3">
-        <div class="flex -space-x-1.5 shrink-0">
-          @for (item of lo.items.slice(0, 3); track item.id) {
-            <span class="w-9 h-9 rounded-full bg-amber-50 border-2 border-white flex items-center justify-center text-base shadow-sm">☕</span>
-          }
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-xs font-bold text-stone-500 uppercase tracking-wide mb-0.5">{{ 'menu.orderAgain' | t }}</p>
-          <p class="text-stone-800 font-semibold text-sm truncate">
-            {{ lo.items[0]?.menuItemName }}
-            @if (lo.items.length > 1) {
-              <span class="text-stone-400 font-normal"> +{{ lo.items.length - 1 }} more</span>
-            }
-          </p>
-        </div>
-        <button
-          (click)="orderAgain(lo)"
-          class="shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl px-4 py-2.5 transition-colors active:scale-95"
-        >
-          {{ 'menu.reorder' | t }}
-        </button>
-      </div>
-    </div>
-  }
 
   <!-- ── Category chips ─────────────────────────────────────────────────── -->
   <div class="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
