@@ -1,6 +1,6 @@
 # Deploy Android App to Google Play Market
 
-**App:** Yurt (`com.yurt.app`)  
+**App:** Altyncup (`com.yurt.app`)  
 **Min SDK:** 23 (Android 6.0) · **Target SDK:** 35 (Android 15)
 
 ---
@@ -41,8 +41,8 @@ This copies the built web assets into the Android project and updates any native
 
 ```bash
 keytool -genkey -v \
-  -keystore yurt-release.keystore \
-  -alias yurt \
+  -keystore altyncup-release.keystore \
+  -alias altyncup \
   -keyalg RSA \
   -keysize 2048 \
   -validity 10000
@@ -53,7 +53,7 @@ You will be prompted for:
 - Key alias password
 - Name, organisation, country details
 
-Store `yurt-release.keystore` somewhere **outside** the git repository.
+Store `altyncup-release.keystore` somewhere **outside** the git repository.
 
 ---
 
@@ -66,7 +66,7 @@ android {
     ...
     signingConfigs {
         release {
-            storeFile file("/path/to/yurt-release.keystore")
+            storeFile file("/path/to/altyncup-release.keystore")
             storePassword "YOUR_STORE_PASSWORD"
             keyAlias "yurt"
             keyPassword "YOUR_KEY_PASSWORD"
