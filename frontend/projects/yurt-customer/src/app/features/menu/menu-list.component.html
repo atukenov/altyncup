@@ -224,23 +224,17 @@
     </div>
   }
 
-  <!-- ── Sticky cart bar ─────────────────────────────────────────────────── -->
+  <!-- ── Floating cart button ──────────────────────────────────────────── -->
   @if (cartCount() > 0) {
-    @let firstItem = cart.items()[0];
-    <div class="fixed bottom-16 left-4 right-4 max-w-lg mx-auto">
-      <button
-        routerLink="/cart"
-        class="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white font-bold rounded-2xl py-4 shadow-2xl shadow-amber-300/50 flex items-center justify-between px-5 transition-all focus:outline-none"
-      >
-        <span class="bg-white text-amber-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold shadow-sm shrink-0">{{ cartCount() }}</span>
-        <span class="flex-1 text-center text-sm truncate px-3">
-          {{ firstItem.name }}
-          @if (cart.items().length > 1) {
-            <span class="font-normal opacity-80"> +{{ cart.items().length - 1 }} more</span>
-          }
-        </span>
-        <span class="font-bold shrink-0">{{ cartTotal() | currency2 }}</span>
-      </button>
-    </div>
+    <button
+      routerLink="/cart"
+      class="fixed bottom-20 right-4 z-30 w-14 h-14 bg-amber-500 hover:bg-amber-600 active:scale-95 rounded-full shadow-xl shadow-amber-300/60 flex items-center justify-center transition-all focus:outline-none"
+      aria-label="View cart"
+    >
+      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+      <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1 shadow">{{ cartCount() }}</span>
+    </button>
   }
 </div>

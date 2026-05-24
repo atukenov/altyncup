@@ -1,14 +1,16 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
+import { noAuthGuard } from './guards/no-auth.guard';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'auth/login',
+    redirectTo: 'menu',
     pathMatch: 'full',
   },
   {
     path: 'auth',
+    canActivateChild: [noAuthGuard],
     loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },
   {
@@ -60,5 +62,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: 'auth/login' },
+  { path: '**', redirectTo: 'menu' },
 ];
