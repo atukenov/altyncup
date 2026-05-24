@@ -136,15 +136,16 @@
       @if (o.paymentMethod) {
         <div class="flex justify-between items-center text-sm mb-2">
           <span class="text-stone-500">{{ 'order.method' | t }}</span>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center">
             @if (o.paymentMethod === PaymentMethod.KaspiBank) {
               <img src="kaspi.png" alt="Kaspi Bank" class="h-5 w-auto object-contain" />
             } @else if (o.paymentMethod === PaymentMethod.HalykBank) {
               <img src="halyk.png" alt="Halyk Bank" class="h-5 w-auto object-contain" />
             } @else if (o.paymentMethod === PaymentMethod.FreedomBank) {
               <img src="freedom.png" alt="Freedom Bank" class="h-5 w-auto object-contain" />
+            } @else {
+              <span class="text-stone-700 font-semibold">{{ o.paymentMethod }}</span>
             }
-            <span class="text-stone-700 font-semibold">{{ o.paymentMethod }}</span>
           </div>
         </div>
       }
@@ -261,15 +262,16 @@
             @if (r.paymentMethod) {
               <div class="flex justify-between items-center text-sm">
                 <span class="text-stone-500">{{ 'order.method' | t }}</span>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center">
                   @if (r.paymentMethod === PaymentMethod.KaspiBank) {
                     <img src="kaspi.png" alt="Kaspi Bank" class="h-4 w-auto object-contain" />
                   } @else if (r.paymentMethod === PaymentMethod.HalykBank) {
                     <img src="halyk.png" alt="Halyk Bank" class="h-4 w-auto object-contain" />
                   } @else if (r.paymentMethod === PaymentMethod.FreedomBank) {
                     <img src="freedom.png" alt="Freedom Bank" class="h-4 w-auto object-contain" />
+                  } @else {
+                    <span class="text-stone-700 font-semibold">{{ r.paymentMethod }}</span>
                   }
-                  <span class="text-stone-700 font-semibold">{{ r.paymentMethod }}</span>
                 </div>
               </div>
             }

@@ -220,15 +220,16 @@
             @if (o.paymentMethod) {
               <div class="flex justify-between items-center text-sm mb-3">
                 <span class="text-slate-500">{{ 'orders.method' | t }}</span>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center">
                   @if (o.paymentMethod === 'KaspiBank') {
                     <img src="kaspi.png" alt="Kaspi Bank" class="h-5 w-auto object-contain" />
                   } @else if (o.paymentMethod === 'HalykBank') {
                     <img src="halyk.png" alt="Halyk Bank" class="h-5 w-auto object-contain" />
                   } @else if (o.paymentMethod === 'FreedomBank') {
                     <img src="freedom.png" alt="Freedom Bank" class="h-5 w-auto object-contain" />
+                  } @else {
+                    <span class="font-semibold text-slate-800">{{ o.paymentMethod }}</span>
                   }
-                  <span class="font-semibold text-slate-800">{{ o.paymentMethod }}</span>
                 </div>
               </div>
             }
