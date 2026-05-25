@@ -110,6 +110,12 @@
   - All order status labels, navigation, form fields, and action buttons translated.
   - Single-language-at-a-time form for entering menu content translations.
 
+- [x] **Activate / deactivate users and workers (admin)**
+  - Admin can activate or deactivate any customer account from the customer detail page.
+  - Admin can activate or deactivate any worker account directly from the workers table (one-click toggle button).
+  - Deactivated accounts are blocked from logging in immediately.
+  - All toggle actions are recorded in the audit log.
+
 ---
 
 ## 🔲 Upcoming Features
@@ -317,18 +323,7 @@ Charge a small percentage of each order processed through the platform's payment
 3. Add **transaction fee** when real Kaspi integration goes live.
 4. Layer in **featured items** and **add-ons** as the customer base grows.
 
-### Payment process
-
-- Payment will be applied via pos terminal
-- payment options Kaspi Bank, Halyk Bank, Freedom Bank
-- Worker send payment via pos terminal manually
-- Receive payment accept order
-- for the manuall entry of payment need Phone number of customer.
-- in admin page, when customer send with what payment options he/she is gonna pay, it will be seen in order details.
-- customer when added the items, and go to cart, when go to place order, next step it must be choose payment options (kaspi bank, halyk bank or freedom bank)
-- the admin page order details must also shown the phone number of customer
-- on admin page, in order details, payment method cannot be changed, no dropdown, but worker can change is paid, or refunded. by default is unpaid.
-- mark it as accepted only available if payment is paid.
+<!-- ------------------------------------------------------------------------------------------------ -->
 
 ### Integration with iikoCard platform (customer balance)
 

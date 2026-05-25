@@ -18,3 +18,5 @@ public record ResetWorkerPasswordDto
 {
     public string NewPassword { get; init; } = "";
 }
+
+public record SetWorkerActiveDto(bool IsActive);

@@ -268,6 +268,10 @@ export class YurtApiService {
     return this.http.get<CustomerDetail>(`${this.api}/admin/customers/${id}`);
   }
 
+  setCustomerActive(id: string, isActive: boolean): Observable<CustomerDetail> {
+    return this.http.patch<CustomerDetail>(`${this.api}/admin/customers/${id}/active`, { isActive });
+  }
+
   // ── Workers ────────────────────────────────────────────────────────────────
   getWorkers(): Observable<WorkerAccount[]> {
     return this.http.get<WorkerAccount[]>(`${this.api}/admin/workers`);
@@ -279,6 +283,10 @@ export class YurtApiService {
 
   updateWorker(id: string, data: { username: string; isActive: boolean }): Observable<WorkerAccount> {
     return this.http.put<WorkerAccount>(`${this.api}/admin/workers/${id}`, data);
+  }
+
+  setWorkerActive(id: string, isActive: boolean): Observable<WorkerAccount> {
+    return this.http.patch<WorkerAccount>(`${this.api}/admin/workers/${id}/active`, { isActive });
   }
 
   resetWorkerPassword(id: string, newPassword: string): Observable<WorkerAccount> {

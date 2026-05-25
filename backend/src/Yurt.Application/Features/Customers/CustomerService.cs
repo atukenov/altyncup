@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Yurt.Application.Common.Interfaces;
+using Yurt.Application.Common.Models;
 using Yurt.Domain.Enums;
 
 namespace Yurt.Application.Features.Customers;
@@ -7,8 +8,13 @@ namespace Yurt.Application.Features.Customers;
 public class CustomerService
 {
     private readonly IApplicationDbContext _db;
+    private readonly IAuditLogService _audit;
 
-    public CustomerService(IApplicationDbContext db) => _db = db;
+    public CustomerService(IApplicationDbContext db, IAuditLogService audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
 
     public async Task<List<CustomerSummaryDto>> GetCustomersAsync(string? phone, CancellationToken ct = default)
     {
@@ -29,6 +35,22 @@ public class CustomerService
                 u.Orders.Count(o => o.Status == OrderStatus.Completed),
                 u.Orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.Total)))
             .ToListAsync(ct);
+    }
+
+    public async Task<Result<CustomerDetailDto>> SetActiveAsync(Guid id, bool isActive, CancellationToken ct = default)
+    {
+        var user = await _db.CustomerUsers.FirstOrDefaultAsync(u => u.Id == id, ct);
+        if (user is null) return Result<CustomerDetailDto>.NotFound();
+
+        user.IsActive = isActive;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        var action = isActive ? "CustomerActivated" : "CustomerDeactivated";
+        await _audit.LogAsync(action, "CustomerUser", id.ToString(), user.MobileNumber, ct);
+
+        var detail = await GetCustomerDetailAsync(id, ct);
+        return Result<CustomerDetailDto>.Success(detail!);
     }
 
     public async Task<CustomerDetailDto?> GetCustomerDetailAsync(Guid id, CancellationToken ct = default)

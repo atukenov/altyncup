@@ -65,6 +65,21 @@ public class WorkerService
             new WorkerDto(worker.Id, worker.Username, worker.Role.ToString(), worker.IsActive, worker.CreatedAt));
     }
 
+    public async Task<Result<WorkerDto>> SetActiveAsync(Guid id, bool isActive, CancellationToken ct = default)
+    {
+        var worker = await _db.AdminUsers.FirstOrDefaultAsync(u => u.Id == id, ct);
+        if (worker is null) return Result<WorkerDto>.NotFound();
+
+        worker.IsActive = isActive;
+        worker.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        var action = isActive ? "WorkerActivated" : "WorkerDeactivated";
+        await _audit.LogAsync(action, "AdminUser", id.ToString(), worker.Username, ct);
+        return Result<WorkerDto>.Success(
+            new WorkerDto(worker.Id, worker.Username, worker.Role.ToString(), worker.IsActive, worker.CreatedAt));
+    }
+
     public async Task<Result<WorkerDto>> ResetPasswordAsync(Guid id, ResetWorkerPasswordDto dto, CancellationToken ct = default)
     {
         var worker = await _db.AdminUsers.FirstOrDefaultAsync(u => u.Id == id, ct);

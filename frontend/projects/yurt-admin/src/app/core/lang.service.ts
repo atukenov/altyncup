@@ -108,6 +108,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'customers.deactivated': 'Deactivated', 'customers.recentOrders': 'Recent Orders',
     'customers.noOrders': 'No orders yet.', 'customers.date': 'Date',
     'customers.location': 'Location', 'customers.items': 'Items', 'customers.total': 'Total',
+    'customers.activate': 'Activate', 'customers.deactivate': 'Deactivate', 'customers.updating': 'Updating…',
 
     // Workers
     'workers.title': 'Workers', 'workers.add': 'Add Worker',
@@ -117,6 +118,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'workers.username': 'Username', 'workers.password': 'Password', 'workers.role': 'Role',
     'workers.statusCol': 'Status', 'workers.created': 'Created', 'workers.actions': 'Actions',
     'workers.resetPw': 'Reset PW', 'workers.active': 'Active', 'workers.inactive': 'Inactive',
+    'workers.activate': 'Activate', 'workers.deactivate': 'Deactivate',
     'workers.newAccount': 'New Worker Account', 'workers.editWorker': 'Edit Worker',
     'workers.resetTitle': 'Reset Password',
     'workers.pwMinChars': 'Password (min 6 chars)', 'workers.newPw': 'New password (min 6 chars)',
@@ -244,6 +246,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'customers.deactivated': 'Деактивирован', 'customers.recentOrders': 'Последние заказы',
     'customers.noOrders': 'Заказов пока нет.', 'customers.date': 'Дата',
     'customers.location': 'Локация', 'customers.items': 'Позиции', 'customers.total': 'Итого',
+    'customers.activate': 'Активировать', 'customers.deactivate': 'Деактивировать', 'customers.updating': 'Обновление…',
 
     // Workers
     'workers.title': 'Сотрудники', 'workers.add': 'Добавить сотрудника',
@@ -253,6 +256,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'workers.username': 'Логин', 'workers.password': 'Пароль', 'workers.role': 'Роль',
     'workers.statusCol': 'Статус', 'workers.created': 'Создан', 'workers.actions': 'Действия',
     'workers.resetPw': 'Сброс пароля', 'workers.active': 'Активен', 'workers.inactive': 'Неактивен',
+    'workers.activate': 'Активировать', 'workers.deactivate': 'Деактивировать',
     'workers.newAccount': 'Новый сотрудник', 'workers.editWorker': 'Изменить сотрудника',
     'workers.resetTitle': 'Сброс пароля',
     'workers.pwMinChars': 'Пароль (мин. 6 символов)', 'workers.newPw': 'Новый пароль (мин. 6 символов)',
@@ -380,6 +384,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'customers.deactivated': 'Өшірілген', 'customers.recentOrders': 'Соңғы тапсырыстар',
     'customers.noOrders': 'Тапсырыстар жоқ.', 'customers.date': 'Күн',
     'customers.location': 'Мекен', 'customers.items': 'Позициялар', 'customers.total': 'Жиыны',
+    'customers.activate': 'Белсендіру', 'customers.deactivate': 'Өшіру', 'customers.updating': 'Жаңарту…',
 
     // Workers
     'workers.title': 'Қызметкерлер', 'workers.add': 'Қызметкер қосу',
@@ -389,6 +394,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'workers.username': 'Логин', 'workers.password': 'Құпия сөз', 'workers.role': 'Рөл',
     'workers.statusCol': 'Мәртебе', 'workers.created': 'Жасалды', 'workers.actions': 'Іс-әрекеттер',
     'workers.resetPw': 'Пароль сфыіру', 'workers.active': 'Белсенді', 'workers.inactive': 'Белсенді емес',
+    'workers.activate': 'Белсендіру', 'workers.deactivate': 'Өшіру',
     'workers.newAccount': 'Жаңа қызметкер', 'workers.editWorker': 'Қызметкерді өзгерту',
     'workers.resetTitle': 'Пароль сфыіру',
     'workers.pwMinChars': 'Пароль (мин. 6 таңба)', 'workers.newPw': 'Жаңа пароль (мин. 6 таңба)',

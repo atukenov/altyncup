@@ -92,6 +92,16 @@ export class WorkersComponent implements OnInit {
     });
   }
 
+  toggleActive(worker: WorkerAccount): void {
+    this.api.setWorkerActive(worker.id, !worker.isActive).subscribe({
+      next: (updated) => {
+        this.workers.update((list) => list.map((x) => (x.id === updated.id ? updated : x)));
+        this.toast.success(updated.isActive ? 'Worker activated.' : 'Worker deactivated.');
+      },
+      error: () => this.toast.error('Failed to update worker status.'),
+    });
+  }
+
   openReset(worker: WorkerAccount): void {
     this.resetWorker.set(worker);
     this.resetPassword = '';

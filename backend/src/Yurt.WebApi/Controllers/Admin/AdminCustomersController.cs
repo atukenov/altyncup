@@ -26,4 +26,11 @@ public class AdminCustomersController : ApiControllerBase
         var detail = await _customers.GetCustomerDetailAsync(id, ct);
         return detail is null ? NotFound() : Ok(detail);
     }
+
+    [HttpPatch("{id:guid}/active")]
+    public async Task<IActionResult> SetActive(Guid id, [FromBody] SetActiveDto dto, CancellationToken ct)
+    {
+        var result = await _customers.SetActiveAsync(id, dto.IsActive, ct);
+        return ToResult(result);
+    }
 }

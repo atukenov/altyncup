@@ -42,6 +42,13 @@ public class AdminWorkersController : ApiControllerBase
         return ToResult(result);
     }
 
+    [HttpPatch("{id:guid}/active")]
+    public async Task<IActionResult> SetActive(Guid id, [FromBody] SetWorkerActiveDto dto, CancellationToken ct)
+    {
+        var result = await _workers.SetActiveAsync(id, dto.IsActive, ct);
+        return ToResult(result);
+    }
+
     [HttpPost("{id:guid}/reset-password")]
     public async Task<IActionResult> ResetPassword(Guid id, [FromBody] ResetWorkerPasswordDto dto, CancellationToken ct)
     {

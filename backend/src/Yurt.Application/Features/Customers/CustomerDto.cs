@@ -2,6 +2,8 @@ using Yurt.Domain.Enums;
 
 namespace Yurt.Application.Features.Customers;
 
+public record SetActiveDto(bool IsActive);
+
 public record CustomerSummaryDto(
     Guid Id,
     string Phone,
