@@ -93,11 +93,29 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(e => e.PaymentMethod).HasConversion<string>().HasMaxLength(20);
         builder.Property(e => e.DeclineReason).HasMaxLength(500);
         builder.Property(e => e.Subtotal).HasPrecision(10, 2);
+        builder.Property(e => e.DiscountAmount).HasPrecision(10, 2).HasDefaultValue(0m);
         builder.Property(e => e.Total).HasPrecision(10, 2);
         builder.HasOne(e => e.CustomerUser).WithMany(c => c.Orders)
             .HasForeignKey(e => e.CustomerUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(e => e.Location).WithMany(l => l.Orders)
             .HasForeignKey(e => e.LocationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(e => e.DiscountCode).WithMany(d => d.Orders)
+            .HasForeignKey(e => e.DiscountCodeId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+public class DiscountCodeConfiguration : IEntityTypeConfiguration<DiscountCode>
+{
+    public void Configure(EntityTypeBuilder<DiscountCode> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.HasIndex(e => e.Code).IsUnique();
+        builder.Property(e => e.Code).HasMaxLength(50).IsRequired();
+        builder.Property(e => e.Title).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.DiscountType).HasConversion<string>().HasMaxLength(20);
+        builder.Property(e => e.DiscountValue).HasPrecision(10, 2);
+        builder.Property(e => e.MinOrderAmount).HasPrecision(10, 2);
+        builder.Property(e => e.UsedCount).HasDefaultValue(0);
     }
 }
 

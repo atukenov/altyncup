@@ -140,6 +140,7 @@ export interface CreateOrderRequest {
   locationId: string;
   items: OrderItemInput[];
   paymentMethod: PaymentMethod;
+  discountCode?: string;
 }
 
 export interface CreatePaymentRequest {
@@ -210,7 +211,9 @@ export interface Order {
   paymentStatus: PaymentStatus;
   paymentMethod?: PaymentMethod;
   subtotal: number;
+  discountAmount: number;
   total: number;
+  discountCode?: string;
   items: OrderItem[];
 }
 
@@ -406,6 +409,30 @@ export interface DashboardData {
 export interface CustomerStats {
   totalOrders: number;
   totalSpent: number;
+}
+
+// ── Discount Codes ────────────────────────────────────────────────────────────
+
+export interface DiscountCode {
+  id: string;
+  code: string;
+  title: string;
+  discountType: 'Percentage' | 'FixedAmount';
+  discountValue: number;
+  maxUses?: number;
+  usedCount: number;
+  minOrderAmount?: number;
+  startsAt?: string;
+  expiresAt?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface ValidateDiscountCodeResponse {
+  isValid: boolean;
+  message: string;
+  discountAmount: number;
+  description: string;
 }
 
 // ── Promotions ───────────────────────────────────────────────────────────────

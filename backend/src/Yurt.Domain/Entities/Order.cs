@@ -17,7 +17,11 @@ public class Order : BaseEntity
     public PaymentMethod? PaymentMethod { get; set; }
 
     public decimal Subtotal { get; set; }
+    public decimal DiscountAmount { get; set; } = 0;
     public decimal Total { get; set; }
+
+    public Guid? DiscountCodeId { get; set; }
+    public DiscountCode? DiscountCode { get; set; }
 
     public bool IsArchived { get; set; } = false;
     public DateTime? ArchivedAt { get; set; }

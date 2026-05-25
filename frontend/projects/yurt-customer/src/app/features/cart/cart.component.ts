@@ -28,6 +28,9 @@ export class CartComponent {
   locationName = localStorage.getItem('yurt_location_name') ?? '';
   expandedNoteKeys = signal<Set<string>>(new Set());
 
+  promoCodeInput = signal('');
+  promoLoading = signal(false);
+
   toggleNote(key: string): void {
     this.expandedNoteKeys.update((s) => {
       const next = new Set(s);
@@ -43,6 +46,32 @@ export class CartComponent {
 
   goToMenu(): void {
     this.router.navigate(['/menu']);
+  }
+
+  applyPromoCode(): void {
+    const code = this.promoCodeInput().trim();
+    if (!code) return;
+    this.promoLoading.set(true);
+    this.api.validateDiscountCode(code, this.cart.subtotal()).subscribe({
+      next: (res) => {
+        this.promoLoading.set(false);
+        if (res.isValid) {
+          this.cart.applyDiscount(code, res);
+          this.toast.success(`Promo applied: ${res.description}`);
+        } else {
+          this.toast.error(res.message);
+        }
+      },
+      error: () => {
+        this.promoLoading.set(false);
+        this.toast.error('Failed to validate promo code.');
+      },
+    });
+  }
+
+  removePromoCode(): void {
+    this.cart.clearDiscount();
+    this.promoCodeInput.set('');
   }
 
   checkout(): void {
@@ -73,7 +102,9 @@ export class CartComponent {
         notes: i.notes,
       }));
 
-    this.api.createOrder({ locationId, items, paymentMethod }).subscribe({
+    const discountCode = this.cart.appliedDiscount()?.code;
+
+    this.api.createOrder({ locationId, items, paymentMethod, discountCode }).subscribe({
       next: (order) => {
         this.cart.clear();
         this.toast.success('Order placed! ☕');

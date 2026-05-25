@@ -1,16 +1,27 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { CartItem } from 'shared-models';
+import { CartItem, ValidateDiscountCodeResponse } from 'shared-models';
+
+export interface AppliedDiscount {
+  code: string;
+  discountAmount: number;
+  description: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
   private readonly CART_KEY = 'yurt_cart';
   readonly items = signal<CartItem[]>(this.loadCart());
+  readonly appliedDiscount = signal<AppliedDiscount | null>(null);
 
-  readonly total = computed(() =>
+  readonly subtotal = computed(() =>
     this.items().reduce((sum, i) => {
       const toppingsPrice = i.selectedToppings?.reduce((s, t) => s + t.price, 0) ?? 0;
       return sum + (i.price + toppingsPrice) * i.quantity;
     }, 0),
+  );
+
+  readonly total = computed(() =>
+    Math.max(0, this.subtotal() - (this.appliedDiscount()?.discountAmount ?? 0)),
   );
 
   readonly count = computed(() => this.items().reduce((sum, i) => sum + i.quantity, 0));
@@ -18,6 +29,20 @@ export class CartService {
   itemKey(item: CartItem): string {
     const toppingIds = (item.selectedToppings ?? []).map((t) => t.toppingId).sort().join(',');
     return toppingIds ? `${item.menuItemId}:${toppingIds}` : item.menuItemId;
+  }
+
+  applyDiscount(code: string, result: ValidateDiscountCodeResponse): void {
+    if (result.isValid) {
+      this.appliedDiscount.set({
+        code: code.toUpperCase(),
+        discountAmount: result.discountAmount,
+        description: result.description,
+      });
+    }
+  }
+
+  clearDiscount(): void {
+    this.appliedDiscount.set(null);
   }
 
   addItem(item: CartItem): void {
@@ -62,6 +87,7 @@ export class CartService {
 
   clear(): void {
     this.items.set([]);
+    this.appliedDiscount.set(null);
     this.save();
   }
 

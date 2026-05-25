@@ -32,7 +32,8 @@
       "Bash(sips --padToHeightWidth 292 292 --padColor FFFFFF /Users/amakenzi/Desktop/Dev/altyncup/frontend/projects/yurt-customer/public/altyncup-logo.jpg --out /tmp/altyncup-icon-square.png)",
       "Bash(sips --resampleHeightWidth 1024 1024 /tmp/altyncup-icon-square.png --out /Users/amakenzi/Desktop/Dev/altyncup/frontend/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png)",
       "Bash(sips -g pixelWidth -g pixelHeight /Users/amakenzi/Desktop/Dev/altyncup/frontend/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png)",
-      "Bash(rm /tmp/altyncup-icon-square.png)"
+      "Bash(rm /tmp/altyncup-icon-square.png)",
+      "Bash(./node_modules/.bin/nx build *)"
     ],
     "additionalDirectories": [
       "/private/tmp"

@@ -116,6 +116,24 @@
   - Deactivated accounts are blocked from logging in immediately.
   - All toggle actions are recorded in the audit log.
 
+- [x] **Audit log**
+  - Track which worker accepted, declined, or completed each order.
+  - Track admin actions: menu changes, worker account changes, promotions created.
+  - Filterable audit log page in the admin panel.
+
+- [x] **Refresh token rotation**
+  - Short-lived access tokens (15 min) and long-lived refresh tokens (7 days).
+  - Refresh token rotated on each use; old token invalidated immediately.
+  - Endpoint: `POST /api/auth/refresh`. Logout via `POST /api/auth/logout`.
+
+- [x] **Promotions & discount codes**
+  - Create time-limited or usage-limited discount codes (percentage or fixed amount).
+  - Assign minimum order amount and active date range per code.
+  - Customer enters promo code at checkout — discount shown in cart summary.
+  - View usage stats per code: used count vs. max uses.
+  - Admin panel page at `/discount-codes` with full CRUD.
+  - All code actions recorded in the audit log.
+
 ---
 
 ## 🔲 Upcoming Features
@@ -134,11 +152,6 @@
   - Item image upload directly from the admin panel instead of pasting a URL.
   - Duplicate item: copy an existing item as a starting point for a new one.
 
-- [ ] **Promotions & discount codes**
-  - Create time-limited or usage-limited discount codes (percentage or fixed amount).
-  - Assign promotions to specific categories, items, or all orders.
-  - View usage stats per promotion: how many times used, total discount given.
-
 - [ ] **Staff performance metrics**
   - Per-worker stats: orders accepted, avg acceptance time, declined count.
   - Leaderboard view for the current day / week.
@@ -153,10 +166,6 @@
   - View all submitted ratings and comments.
   - Flag or respond to feedback.
   - Summary score per item and per location.
-
-- [ ] **Audit log**
-  - Track which worker accepted, declined, or completed each order.
-  - Track admin actions: menu changes, worker account changes, promotions created.
 
 ---
 
@@ -177,29 +186,10 @@
   - Choose a pick-up time slot up to 2 hours in advance.
   - Order enters the queue only when the prep window approaches.
 
-- [ ] **Referral program**
-  - Each customer gets a unique referral code.
-  - Sharing the code gives both the referrer and the new customer a one-time discount.
-  - Referral stats visible on the profile screen.
-
 - [ ] **Allergen & dietary filter**
   - Tag menu items with allergen labels (gluten, dairy, nuts, etc.) and dietary badges (vegan, vegetarian).
   - Filter bar on the menu screen: "Show only vegan", "Hide nuts".
   - Managed from the admin menu panel.
-
-- [ ] **QR code location selection**
-  - Each café table or counter has a QR code that deep-links to the app and pre-selects the location.
-  - Eliminates the "Choose Location" step for in-café customers.
-  - Admin generates printable QR codes per location.
-
-- [ ] **Wallet / prepaid balance**
-  - Customer tops up an in-app balance (e.g. ₸5,000 blocks).
-  - Pay instantly at checkout using wallet — no Kaspi QR scan needed.
-  - Wallet top-up via Kaspi QR. Balance shown on profile and cart.
-
-- [ ] **Item availability notifications**
-  - Customer taps "Notify me" on an out-of-stock item.
-  - Push notification sent when the item becomes available again.
 
 - [ ] **Birthday reward**
   - Customer sets birthday in profile.
@@ -212,11 +202,6 @@
 ---
 
 ### Backend & Infrastructure
-
-- [ ] **Refresh token rotation**
-  - Issue short-lived access tokens (15 min) and long-lived refresh tokens (7 days).
-  - Rotate refresh token on each use; invalidate old token immediately.
-  - Endpoint: `POST /api/auth/refresh`.
 
 - [ ] **Background job queue**
   - Use Hangfire or a lightweight in-process queue for async work: sending push notifications, expiring promotions, generating daily analytics snapshots.

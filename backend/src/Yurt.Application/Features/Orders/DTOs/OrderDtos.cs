@@ -2,7 +2,7 @@ using Yurt.Domain.Enums;
 
 namespace Yurt.Application.Features.Orders.DTOs;
 
-public record CreateOrderDto(Guid LocationId, List<OrderItemInputDto> Items, PaymentMethod PaymentMethod);
+public record CreateOrderDto(Guid LocationId, List<OrderItemInputDto> Items, PaymentMethod PaymentMethod, string? DiscountCode = null);
 public record OrderItemInputDto(Guid MenuItemId, int Quantity, List<OrderItemToppingInputDto>? Toppings = null, string? Notes = null);
 public record OrderItemToppingInputDto(Guid ToppingId, string ToppingName, decimal Price);
 
@@ -27,7 +27,9 @@ public record OrderDto(
     PaymentStatus PaymentStatus,
     PaymentMethod? PaymentMethod,
     decimal Subtotal,
+    decimal DiscountAmount,
     decimal Total,
+    string? DiscountCode,
     List<OrderItemDto> Items);
 
 public record OrderItemDto(

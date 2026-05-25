@@ -59,3 +59,9 @@ public enum AdminRole
     Admin = 0,
     Worker = 1
 }
+
+public enum DiscountType
+{
+    Percentage = 0,
+    FixedAmount = 1
+}

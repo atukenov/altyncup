@@ -15,6 +15,7 @@ import {
   CustomerSummary,
   DashboardData,
   DeclineOrderRequest,
+  DiscountCode,
   GroupCart,
   Location,
   MenuCategory,
@@ -27,6 +28,7 @@ import {
   Promotion,
   UpdatePaymentRequest,
   UpdateStatusRequest,
+  ValidateDiscountCodeResponse,
   WorkerAccount,
 } from 'shared-models';
 
@@ -331,6 +333,27 @@ export class YurtApiService {
 
   deletePromotion(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/admin/promotions/${id}`);
+  }
+
+  // ── Discount Codes ──────────────────────────────────────────────────────────
+  getAdminDiscountCodes(): Observable<DiscountCode[]> {
+    return this.http.get<DiscountCode[]>(`${this.api}/admin/discount-codes`);
+  }
+
+  createDiscountCode(data: Partial<DiscountCode>): Observable<DiscountCode> {
+    return this.http.post<DiscountCode>(`${this.api}/admin/discount-codes`, data);
+  }
+
+  updateDiscountCode(id: string, data: Partial<DiscountCode>): Observable<DiscountCode> {
+    return this.http.put<DiscountCode>(`${this.api}/admin/discount-codes/${id}`, data);
+  }
+
+  deleteDiscountCode(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.api}/admin/discount-codes/${id}`);
+  }
+
+  validateDiscountCode(code: string, subtotal: number): Observable<ValidateDiscountCodeResponse> {
+    return this.http.post<ValidateDiscountCodeResponse>(`${this.api}/discount-codes/validate`, { code, subtotal });
   }
 
   // ── Audit Log ───────────────────────────────────────────────────────────────

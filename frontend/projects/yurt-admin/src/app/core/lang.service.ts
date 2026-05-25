@@ -82,6 +82,20 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.period': 'Period', 'analytics.today': 'Today',
     'analytics.week': 'Week', 'analytics.month': 'Month',
 
+    // Discount codes
+    'nav.discountCodes': 'Discount Codes',
+    'discountCodes.title': 'Discount Codes', 'discountCodes.subtitle': 'Promo codes customers enter at checkout',
+    'discountCodes.new': '+ New Code', 'discountCodes.addTitle': 'New Discount Code', 'discountCodes.editTitle': 'Edit Discount Code',
+    'discountCodes.noCodes': 'No discount codes yet', 'discountCodes.noCodesHint': 'Create a code to give customers a discount at checkout.',
+    'discountCodes.code': 'Code', 'discountCodes.titleCol': 'Title', 'discountCodes.discount': 'Discount',
+    'discountCodes.usage': 'Usage', 'discountCodes.expires': 'Expires', 'discountCodes.expired': 'Expired',
+    'discountCodes.limitReached': 'Limit Reached', 'discountCodes.activeLabel': 'Active',
+    'discountCodes.titleField': 'Title', 'discountCodes.titlePlaceholder': 'e.g. Summer sale 20% off',
+    'discountCodes.type': 'Type', 'discountCodes.percentage': 'Percentage (%)', 'discountCodes.fixedAmount': 'Fixed Amount (₸)',
+    'discountCodes.percent': 'Value (%)', 'discountCodes.amountTenge': 'Amount (₸)',
+    'discountCodes.maxUses': 'Max Uses', 'discountCodes.unlimited': 'Unlimited',
+    'discountCodes.minOrder': 'Min Order (₸)', 'discountCodes.startsAt': 'Starts At', 'discountCodes.expiresAt': 'Expires At',
+
     // Promotions
     'promotions.title': 'Promotions', 'promotions.add': 'Add Promotion',
     'promotions.subtitle': 'Pop-up ads shown to customers on app open',
@@ -220,6 +234,20 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.period': 'Период', 'analytics.today': 'Сегодня',
     'analytics.week': 'Эта неделя', 'analytics.month': 'Этот месяц',
 
+    // Discount codes
+    'nav.discountCodes': 'Промокоды',
+    'discountCodes.title': 'Промокоды', 'discountCodes.subtitle': 'Коды скидок для покупателей',
+    'discountCodes.new': '+ Новый код', 'discountCodes.addTitle': 'Новый промокод', 'discountCodes.editTitle': 'Изменить промокод',
+    'discountCodes.noCodes': 'Промокодов нет', 'discountCodes.noCodesHint': 'Создайте код для предоставления скидок.',
+    'discountCodes.code': 'Код', 'discountCodes.titleCol': 'Название', 'discountCodes.discount': 'Скидка',
+    'discountCodes.usage': 'Использований', 'discountCodes.expires': 'Истекает', 'discountCodes.expired': 'Истёк',
+    'discountCodes.limitReached': 'Лимит исчерпан', 'discountCodes.activeLabel': 'Активен',
+    'discountCodes.titleField': 'Название', 'discountCodes.titlePlaceholder': 'Напр. Летняя скидка 20%',
+    'discountCodes.type': 'Тип', 'discountCodes.percentage': 'Процент (%)', 'discountCodes.fixedAmount': 'Фиксированная сумма (₸)',
+    'discountCodes.percent': 'Значение (%)', 'discountCodes.amountTenge': 'Сумма (₸)',
+    'discountCodes.maxUses': 'Макс. использований', 'discountCodes.unlimited': 'Без ограничений',
+    'discountCodes.minOrder': 'Мин. сумма заказа (₸)', 'discountCodes.startsAt': 'Начало', 'discountCodes.expiresAt': 'Истекает',
+
     // Promotions
     'promotions.title': 'Акции', 'promotions.add': 'Добавить акцию',
     'promotions.subtitle': 'Поп-ап реклама при открытии приложения',
@@ -357,6 +385,20 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.noData': 'Кезең деректері жоқ',
     'analytics.period': 'Кезең', 'analytics.today': 'Бүгін',
     'analytics.week': 'Осы апта', 'analytics.month': 'Осы ай',
+
+    // Discount codes
+    'nav.discountCodes': 'Промокодтар',
+    'discountCodes.title': 'Промокодтар', 'discountCodes.subtitle': 'Тапсырыс берушілерге арналған жеңілдік кодтары',
+    'discountCodes.new': '+ Жаңа код', 'discountCodes.addTitle': 'Жаңа промокод', 'discountCodes.editTitle': 'Промокодты өзгерту',
+    'discountCodes.noCodes': 'Промокод жоқ', 'discountCodes.noCodesHint': 'Жеңілдік беру үшін код жасаңыз.',
+    'discountCodes.code': 'Код', 'discountCodes.titleCol': 'Атауы', 'discountCodes.discount': 'Жеңілдік',
+    'discountCodes.usage': 'Пайдаланылды', 'discountCodes.expires': 'Мерзімі', 'discountCodes.expired': 'Мерзімі өтті',
+    'discountCodes.limitReached': 'Шек толды', 'discountCodes.activeLabel': 'Белсенді',
+    'discountCodes.titleField': 'Атауы', 'discountCodes.titlePlaceholder': 'Мыс. Жазғы 20% жеңілдік',
+    'discountCodes.type': 'Түрі', 'discountCodes.percentage': 'Пайыз (%)', 'discountCodes.fixedAmount': 'Тіркелген сома (₸)',
+    'discountCodes.percent': 'Мән (%)', 'discountCodes.amountTenge': 'Сома (₸)',
+    'discountCodes.maxUses': 'Макс. қолданылу', 'discountCodes.unlimited': 'Шексіз',
+    'discountCodes.minOrder': 'Мин. тапсырыс (₸)', 'discountCodes.startsAt': 'Басталады', 'discountCodes.expiresAt': 'Мерзімі',
 
     // Promotions
     'promotions.title': 'Акциялар', 'promotions.add': 'Акция қосу',

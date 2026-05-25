@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Common.Models;
+using Yurt.Application.Features.DiscountCodes.Services;
 using Yurt.Application.Features.Orders.DTOs;
 using Yurt.Domain.Entities;
 using Yurt.Domain.Enums;
@@ -12,12 +13,14 @@ public class OrderService
     private readonly IApplicationDbContext _db;
     private readonly IOrdersHubService _hub;
     private readonly IAuditLogService _audit;
+    private readonly DiscountCodeService _discountCodes;
 
-    public OrderService(IApplicationDbContext db, IOrdersHubService hub, IAuditLogService audit)
+    public OrderService(IApplicationDbContext db, IOrdersHubService hub, IAuditLogService audit, DiscountCodeService discountCodes)
     {
         _db = db;
         _hub = hub;
         _audit = audit;
+        _discountCodes = discountCodes;
     }
 
     public async Task<Result<OrderDto>> CreateOrderAsync(
@@ -78,7 +81,27 @@ public class OrderService
         order.PaymentMethod = dto.PaymentMethod;
         order.Items = orderItems;
         order.Subtotal = orderItems.Sum(i => i.LineTotal);
-        order.Total = order.Subtotal; // no tax for now
+
+        // Apply discount code if provided
+        if (!string.IsNullOrWhiteSpace(dto.DiscountCode))
+        {
+            var normalizedCode = dto.DiscountCode.Trim().ToUpperInvariant();
+            var codeEntity = await _db.DiscountCodes
+                .FirstOrDefaultAsync(d => d.Code == normalizedCode && d.IsActive, ct);
+
+            if (codeEntity != null)
+            {
+                var validation = await _discountCodes.ValidateAsync(dto.DiscountCode, order.Subtotal, ct);
+                if (validation.IsValid)
+                {
+                    order.DiscountAmount = validation.DiscountAmount;
+                    order.DiscountCodeId = codeEntity.Id;
+                    codeEntity.UsedCount++;
+                }
+            }
+        }
+
+        order.Total = order.Subtotal - order.DiscountAmount;
 
         _db.Orders.Add(order);
         await _db.SaveChangesAsync(ct);
@@ -284,7 +307,9 @@ public class OrderService
             o.PaymentStatus,
             o.PaymentMethod,
             o.Subtotal,
+            o.DiscountAmount,
             o.Total,
+            o.DiscountCode?.Code,
             o.Items.Select(i => new OrderItemDto(
                 i.Id, i.MenuItemId, i.MenuItemName, i.Quantity, i.UnitPrice, i.LineTotal,
                 i.Toppings.Select(t => new OrderItemToppingDto(t.ToppingId, t.ToppingName, t.Price)).ToList(),

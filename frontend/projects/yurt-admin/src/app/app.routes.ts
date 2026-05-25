@@ -70,6 +70,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/audit-log/audit-log.component').then((m) => m.AuditLogComponent),
       },
+      {
+        path: 'discount-codes',
+        loadComponent: () =>
+          import('./features/discount-codes/discount-codes.component').then((m) => m.DiscountCodesComponent),
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },
