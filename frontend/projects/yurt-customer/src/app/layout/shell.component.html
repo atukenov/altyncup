@@ -1,4 +1,4 @@
-<div class="min-h-screen flex flex-col bg-stone-50 pb-20">
+<div class="min-h-screen flex flex-col bg-stone-50" style="padding-bottom: calc(5rem + env(safe-area-inset-bottom))">
   <main class="flex-1">
     <router-outlet />
   </main>
@@ -9,7 +9,7 @@
   <!-- Bottom Navigation -->
   <nav
     class="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 z-40"
-    style="box-shadow: 0 -1px 12px rgba(0, 0, 0, 0.06)"
+    style="box-shadow: 0 -1px 12px rgba(0, 0, 0, 0.06); padding-bottom: env(safe-area-inset-bottom)"
   >
     <div class="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
       <a

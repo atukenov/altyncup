@@ -1,5 +1,7 @@
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
 import {
   AuthStateService,
   NotificationService,
@@ -24,6 +26,11 @@ export class App implements OnInit, OnDestroy {
   private notifications = inject(NotificationService);
 
   ngOnInit(): void {
+    if (Capacitor.isNativePlatform()) {
+      StatusBar.setOverlaysWebView({ overlay: false });
+      StatusBar.setStyle({ style: Style.Dark });
+    }
+
     this.api.configure(environment.apiUrl);
     this.signalr.configure(environment.apiUrl);
 

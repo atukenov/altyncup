@@ -33,7 +33,10 @@
       "Bash(sips --resampleHeightWidth 1024 1024 /tmp/altyncup-icon-square.png --out /Users/amakenzi/Desktop/Dev/altyncup/frontend/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png)",
       "Bash(sips -g pixelWidth -g pixelHeight /Users/amakenzi/Desktop/Dev/altyncup/frontend/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png)",
       "Bash(rm /tmp/altyncup-icon-square.png)",
-      "Bash(./node_modules/.bin/nx build *)"
+      "Bash(./node_modules/.bin/nx build *)",
+      "Bash(npm install *)",
+      "Bash(npx cap *)",
+      "Bash(pod install *)"
     ],
     "additionalDirectories": [
       "/private/tmp"
