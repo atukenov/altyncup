@@ -18,6 +18,7 @@ import { TranslatePipe } from '../../core/translate.pipe';
 })
 export class MenuListComponent implements OnInit {
   private api = inject(YurtApiService);
+  private router = inject(Router);
   readonly cart = inject(CartService);
   private toast = inject(ToastService);
   readonly auth = inject(AuthStateService);
@@ -157,6 +158,10 @@ export class MenuListComponent implements OnInit {
   }
 
   addToCart(item: MenuItem): void {
+    if (!this.auth.isLoggedIn) {
+      this.router.navigate(['/auth/login']);
+      return;
+    }
     if (item.availableToppings?.length) {
       this.toppingModalItem.set(item);
       this.selectedToppingIds.set(new Set());

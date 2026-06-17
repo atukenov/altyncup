@@ -15,7 +15,6 @@ export const routes: Routes = [
   },
   {
     path: '',
-    canActivateChild: [authGuard],
     loadComponent: () => import('./layout/shell.component').then((m) => m.ShellComponent),
     children: [
       {
@@ -29,34 +28,41 @@ export const routes: Routes = [
       },
       {
         path: 'cart',
+        canActivate: [authGuard],
         loadComponent: () => import('./features/cart/cart.component').then((m) => m.CartComponent),
       },
       {
         path: 'orders',
+        canActivate: [authGuard],
         loadChildren: () => import('./features/orders/orders.routes').then((m) => m.ORDER_ROUTES),
       },
       {
         path: 'favorites',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/favorites/favorites.component').then((m) => m.FavoritesComponent),
       },
       {
         path: 'profile',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/profile/profile.component').then((m) => m.ProfileComponent),
       },
       {
         path: 'group-order/create',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/group-order/group-order-create.component').then((m) => m.GroupOrderCreateComponent),
       },
       {
         path: 'group-order/join',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/group-order/group-order-join.component').then((m) => m.GroupOrderJoinComponent),
       },
       {
         path: 'group-order/:id',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/group-order/group-order-view.component').then((m) => m.GroupOrderViewComponent),
       },

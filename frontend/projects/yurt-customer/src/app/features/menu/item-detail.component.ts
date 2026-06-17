@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal, computed, Input, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { YurtApiService } from 'shared-api';
+import { YurtApiService, AuthStateService } from 'shared-api';
 import { MenuItem, MenuTopping, OrderItemToppingInput } from 'shared-models';
 import { ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
@@ -19,6 +19,7 @@ export class ItemDetailComponent implements OnInit {
   @Input() id!: string;
 
   private api = inject(YurtApiService);
+  private auth = inject(AuthStateService);
   private cart = inject(CartService);
   private router = inject(Router);
   private toast = inject(ToastService);
@@ -111,6 +112,10 @@ export class ItemDetailComponent implements OnInit {
   decrementQty(): void { if (this.quantity() > 1) this.quantity.update((q) => q - 1); }
 
   addToCart(): void {
+    if (!this.auth.isLoggedIn) {
+      this.router.navigate(['/auth/login']);
+      return;
+    }
     const item = this.item();
     if (!item) return;
     const selectedToppings = (item.availableToppings ?? [])
