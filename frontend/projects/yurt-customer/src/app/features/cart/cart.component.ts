@@ -7,6 +7,7 @@ import { PaymentMethod } from 'shared-models';
 import { CartService } from './cart.service';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { TranslatePipe } from '../../core/translate.pipe';
+import { LocationService } from '../../core/location.service';
 
 @Component({
   selector: 'app-cart',
@@ -21,11 +22,12 @@ export class CartComponent {
   private router = inject(Router);
   private toast = inject(ToastService);
 
+  private locationSvc = inject(LocationService);
+  readonly locationName = this.locationSvc.locationName;
   readonly PaymentMethod = PaymentMethod;
 
   loading = signal(false);
   selectedPaymentMethod = signal<PaymentMethod | null>(null);
-  locationName = localStorage.getItem('yurt_location_name') ?? '';
   expandedNoteKeys = signal<Set<string>>(new Set());
 
   promoCodeInput = signal('');
@@ -75,7 +77,7 @@ export class CartComponent {
   }
 
   checkout(): void {
-    const locationId = localStorage.getItem('yurt_location_id');
+    const locationId = this.locationSvc.locationId();
     if (!locationId) {
       this.toast.warning('Please select a location first.');
       this.router.navigate(['/locations']);

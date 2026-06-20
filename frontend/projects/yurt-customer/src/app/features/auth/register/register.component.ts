@@ -89,7 +89,7 @@ export class RegisterComponent {
             displayName: res.displayName,
             userType: res.userType,
           });
-          this.toast.success('Account created! Welcome to Yurt ☕');
+          this.toast.success('Account created! Welcome to Altyncup ☕');
           this.router.navigate(['/locations']);
         },
         error: (err) => {

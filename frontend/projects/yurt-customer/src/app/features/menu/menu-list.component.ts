@@ -8,6 +8,7 @@ import { SkeletonCardComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
+import { LocationService } from '../../core/location.service';
 
 @Component({
   selector: 'app-menu-list',
@@ -23,6 +24,8 @@ export class MenuListComponent implements OnInit {
   private toast = inject(ToastService);
   readonly auth = inject(AuthStateService);
   readonly langService = inject(LangService);
+  private locationSvc = inject(LocationService);
+  readonly locationName = this.locationSvc.locationName;
 
   loading = signal(true);
   categories = signal<MenuCategory[]>([]);
@@ -30,7 +33,6 @@ export class MenuListComponent implements OnInit {
   promotions = signal<Promotion[]>([]);
   selectedCategoryId = signal<string | null>(null);
   search = '';
-  locationName = localStorage.getItem('yurt_location_name') ?? '';
   favoritedIds = signal<Set<string>>(new Set());
   failedImageIds = signal<Set<string>>(new Set());
 

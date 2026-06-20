@@ -6,8 +6,7 @@ import { Location } from 'shared-models';
 import { SkeletonCardComponent, ToastService } from 'shared-ui';
 import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
-
-const SELECTED_LOCATION_KEY = 'yurt_location_id';
+import { LocationService } from '../../core/location.service';
 
 @Component({
   selector: 'app-locations',
@@ -21,10 +20,11 @@ export class LocationsComponent {
   private router = inject(Router);
   private toast = inject(ToastService);
   private langService = inject(LangService);
+  private locationSvc = inject(LocationService);
 
   locations = signal<Location[]>([]);
   loading = signal(true);
-  selectedId = signal<string | null>(localStorage.getItem(SELECTED_LOCATION_KEY));
+  selectedId = signal<string | null>(this.locationSvc.locationId() || null);
 
   constructor() {
     effect(() => {
@@ -39,8 +39,7 @@ export class LocationsComponent {
 
   select(loc: Location): void {
     this.selectedId.set(loc.id);
-    localStorage.setItem(SELECTED_LOCATION_KEY, loc.id);
-    localStorage.setItem('yurt_location_name', loc.name);
+    this.locationSvc.setLocation(loc.id, loc.name);
   }
 
   confirm(): void {
