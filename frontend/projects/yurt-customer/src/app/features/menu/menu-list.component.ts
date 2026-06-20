@@ -32,6 +32,11 @@ export class MenuListComponent implements OnInit {
   search = '';
   locationName = localStorage.getItem('yurt_location_name') ?? '';
   favoritedIds = signal<Set<string>>(new Set());
+  failedImageIds = signal<Set<string>>(new Set());
+
+  onImageError(id: string): void {
+    this.failedImageIds.update((s) => new Set([...s, id]));
+  }
 
   private static readonly CATEGORY_EMOJIS: Record<string, string> = {
     coffee: '☕', кофе: '☕', қофе: '☕', 'cold drinks': '🧊',

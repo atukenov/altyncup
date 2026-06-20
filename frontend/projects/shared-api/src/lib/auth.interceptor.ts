@@ -23,7 +23,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
               return next(addToken(req, res.accessToken));
             }),
             catchError(refreshErr => {
-              auth.logout();
+              if (refreshErr.status === 401 || refreshErr.status === 403) {
+                auth.logout();
+              }
               return throwError(() => refreshErr);
             }),
           );

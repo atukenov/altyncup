@@ -94,8 +94,16 @@ export class MenuManagementComponent implements OnInit {
     this.api.adminGetToppings().subscribe((toppings) => this.toppings.set(toppings));
   }
 
+  localizedCatName(cat: MenuCategory): string {
+    const lang = this.langService.lang();
+    if (lang === 'ru') return cat.nameRu || cat.name;
+    if (lang === 'kk') return cat.nameKk || cat.nameRu || cat.name;
+    return cat.name;
+  }
+
   categoryName(id: string): string {
-    return this.categories().find((c) => c.id === id)?.name ?? '';
+    const cat = this.categories().find((c) => c.id === id);
+    return cat ? this.localizedCatName(cat) : '';
   }
 
   toppingCategoryNames(categoryIds: string[]): string {
@@ -175,7 +183,7 @@ export class MenuManagementComponent implements OnInit {
       descriptionRu: item?.descriptionRu ?? '',
       descriptionKk: item?.descriptionKk ?? '',
       price: item?.price ?? 0,
-      categoryId: item?.categoryId ?? this.categories()[0]?.id ?? '',
+      categoryId: item?.categoryId ?? (this.selectedCategoryId() || this.categories()[0]?.id) ?? '',
       imageUrl: item?.imageUrl ?? '',
       isAvailable: item?.isAvailable ?? true,
     });
@@ -261,6 +269,18 @@ export class MenuManagementComponent implements OnInit {
         this.toast.success(f.id ? 'Category updated' : 'Category created');
       },
       error: () => { this.saving.set(false); this.toast.error('Failed to save category'); },
+    });
+  }
+
+  deleteCat(cat: MenuCategory): void {
+    if (!confirm(`Delete category "${this.localizedCatName(cat)}"?`)) return;
+    this.api.adminDeleteCategory(cat.id).subscribe({
+      next: () => {
+        this.categories.update((list) => list.filter((c) => c.id !== cat.id));
+        if (this.selectedCategoryId() === cat.id) this.selectedCategoryId.set('');
+        this.toast.success('Category deleted');
+      },
+      error: () => this.toast.error('Failed to delete category'),
     });
   }
 

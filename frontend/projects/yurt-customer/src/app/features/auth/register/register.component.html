@@ -1,13 +1,14 @@
 <div class="min-h-screen bg-stone-50 flex flex-col">
   <div
-    class="bg-gradient-to-br from-amber-500 via-amber-400 to-orange-400 pt-16 pb-12 px-6 text-white text-center"
+    class="bg-gradient-to-br from-amber-500 via-amber-400 to-orange-400 pb-12 px-6 text-white text-center"
+    style="padding-top: calc(4rem + env(safe-area-inset-top))"
   >
     <div
       class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg"
     >
       ☕
     </div>
-    <h1 class="text-3xl font-bold">Yurt</h1>
+    <h1 class="text-3xl font-bold">Altyncup</h1>
     <p class="text-amber-100 mt-1.5 text-sm font-medium">{{ 'auth.createYourAccount' | t }}</p>
   </div>
 
@@ -125,6 +126,13 @@
       class="block w-full text-center py-3.5 rounded-2xl border-2 border-amber-400 text-amber-600 font-semibold text-base hover:bg-amber-50 transition-colors"
     >
       {{ 'auth.signIn' | t }}
+    </a>
+
+    <a
+      routerLink="/menu"
+      class="block w-full text-center py-3 mt-4 text-stone-400 text-sm font-medium hover:text-stone-600 transition-colors"
+    >
+      ← {{ 'nav.menu' | t }}
     </a>
   </div>
 </div>

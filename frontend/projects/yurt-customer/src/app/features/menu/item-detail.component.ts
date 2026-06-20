@@ -30,6 +30,11 @@ export class ItemDetailComponent implements OnInit {
   quantity = signal(1);
   isFav = signal(false);
   selectedToppingIds = signal<Set<string>>(new Set());
+  imageError = signal(false);
+
+  onImageError(): void {
+    this.imageError.set(true);
+  }
 
   constructor() {
     effect(() => {

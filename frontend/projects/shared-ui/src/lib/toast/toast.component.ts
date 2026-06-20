@@ -8,7 +8,7 @@ import { ToastService, ToastType } from './toast.service';
   imports: [CommonModule],
   template: `
     <div
-      class="fixed top-4 left-0 right-0 z-50 flex flex-col items-center gap-2 pointer-events-none px-4"
+      class="fixed top-4 right-0 z-50 flex flex-col items-end gap-2 pointer-events-none px-4"
     >
       @for (toast of toastService.toasts(); track toast.id) {
         <div

@@ -26,13 +26,21 @@
           "
           class="w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between group"
         >
-          <span class="truncate">{{ cat.name }}</span>
-          <button
-            (click)="$event.stopPropagation(); openCatDialog(cat)"
-            class="text-slate-400 hover:text-amber-600 opacity-0 group-hover:opacity-100 transition-all text-xs px-1"
-          >
-            ✎
-          </button>
+          <span class="truncate">{{ localizedCatName(cat) }}</span>
+          <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+            <button
+              (click)="$event.stopPropagation(); openCatDialog(cat)"
+              class="text-slate-400 hover:text-amber-600 transition-colors text-xs px-1"
+            >
+              ✎
+            </button>
+            <button
+              (click)="$event.stopPropagation(); deleteCat(cat)"
+              class="text-slate-400 hover:text-red-500 transition-colors text-xs px-1"
+            >
+              ×
+            </button>
+          </div>
         </button>
       }
     </div>
@@ -270,7 +278,7 @@
               class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
             >
               @for (cat of categories(); track cat.id) {
-                <option [value]="cat.id">{{ cat.name }}</option>
+                <option [value]="cat.id">{{ localizedCatName(cat) }}</option>
               }
             </select>
           </div>
@@ -390,7 +398,7 @@
                   (change)="toggleToppingCategory(cat.id)"
                   class="rounded border-slate-300 text-amber-500 focus:ring-amber-400"
                 />
-                <span class="text-sm text-slate-700">{{ cat.name }}</span>
+                <span class="text-sm text-slate-700">{{ localizedCatName(cat) }}</span>
               </label>
             }
           </div>

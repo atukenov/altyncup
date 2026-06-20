@@ -2,7 +2,7 @@
 
   <!-- ── Branded gradient header ─────────────────────────────────────────── -->
   <div class="bg-linear-to-br from-amber-500 to-amber-600 shadow-md">
-    <div class="px-4 pt-5 pb-4">
+    <div class="px-4 pb-4" style="padding-top: calc(0.75rem + env(safe-area-inset-top))">
       <div class="flex items-center justify-between mb-3">
         <div>
           <h1 class="text-lg font-bold text-white leading-snug">{{ greeting }}</h1>
@@ -108,19 +108,19 @@
     } @else {
       <div class="grid grid-cols-2 gap-3">
         @for (item of filteredItems(); track item.id) {
-          <div class="relative bg-white rounded-2xl border border-stone-100 overflow-hidden shadow-sm active:scale-[0.98] transition-all">
-            <a [routerLink]="['/menu/item', item.id]" class="block">
-              @if (item.imageUrl) {
-                <img [src]="item.imageUrl" [alt]="item.name" class="w-full h-40 object-cover" loading="lazy" />
+          <div class="relative bg-white rounded-2xl border border-stone-100 overflow-hidden shadow-sm active:scale-[0.98] transition-all flex flex-col">
+            <a [routerLink]="['/menu/item', item.id]" class="flex flex-col flex-1">
+              @if (item.imageUrl && !failedImageIds().has(item.id)) {
+                <img [src]="item.imageUrl" [alt]="item.name" class="w-full h-40 object-cover shrink-0" loading="lazy" (error)="onImageError(item.id)" />
               } @else {
-                <div class="w-full h-40 bg-linear-to-br from-amber-50 to-orange-50 flex items-center justify-center text-5xl">☕</div>
+                <div class="w-full h-40 bg-linear-to-br from-amber-50 to-orange-50 flex items-center justify-center text-5xl shrink-0">☕</div>
               }
-              <div class="p-3 pb-2">
+              <div class="p-3 pb-2 flex flex-col flex-1">
                 <h3 class="font-bold text-stone-800 text-sm leading-snug">{{ item.name }}</h3>
                 @if (item.description) {
                   <p class="text-stone-400 text-xs mt-0.5 line-clamp-2 leading-relaxed">{{ item.description }}</p>
                 }
-                <p class="text-amber-600 font-bold text-sm mt-2">{{ item.price | currency2 }}</p>
+                <p class="text-amber-600 font-bold text-sm mt-auto pt-2">{{ item.price | currency2 }}</p>
               </div>
             </a>
             <!-- Heart (top-left) -->
@@ -200,7 +200,8 @@
   @if (cartCount() > 0) {
     <button
       routerLink="/cart"
-      class="fixed bottom-20 right-4 z-30 w-14 h-14 bg-amber-500 hover:bg-amber-600 active:scale-95 rounded-full shadow-xl shadow-amber-300/60 flex items-center justify-center transition-all focus:outline-none"
+      class="fixed right-4 z-30 w-14 h-14 bg-amber-500 hover:bg-amber-600 active:scale-95 rounded-full shadow-xl shadow-amber-300/60 flex items-center justify-center transition-all focus:outline-none"
+      style="bottom: calc(5rem + env(safe-area-inset-bottom))"
       aria-label="View cart"
     >
       <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

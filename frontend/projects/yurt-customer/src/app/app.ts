@@ -27,8 +27,8 @@ export class App implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (Capacitor.isNativePlatform()) {
-      StatusBar.setOverlaysWebView({ overlay: false });
-      StatusBar.setStyle({ style: Style.Dark });
+      StatusBar.setOverlaysWebView({ overlay: true });
+      StatusBar.setStyle({ style: Style.Light });
     }
 
     this.api.configure(environment.apiUrl);
@@ -47,7 +47,11 @@ export class App implements OnInit, OnDestroy {
               userType: res.userType,
             });
           },
-          error: () => this.auth.logout(),
+          error: (err) => {
+            if (err.status === 401 || err.status === 403) {
+              this.auth.logout();
+            }
+          },
         });
       }
     }
@@ -63,8 +67,6 @@ export class App implements OnInit, OnDestroy {
         console.error('Failed to start SignalR connection:', error);
       });
 
-    // Request web notification permissions if running in browser
-    this.notifications.requestWebNotificationPermission();
   }
 
   ngOnDestroy(): void {
