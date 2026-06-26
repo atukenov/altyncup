@@ -6,6 +6,7 @@ import { MenuItem, MenuCategory, MenuTopping } from 'shared-models';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { AdminLangService } from '../../core/lang.service';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 
 interface MenuItemForm {
   id?: string;
@@ -49,9 +50,11 @@ interface CatInput {
 export class MenuManagementComponent implements OnInit {
   private api = inject(YurtApiService);
   private toast = inject(ToastService);
+  private confirmSvc = inject(ConfirmService);
   readonly langService = inject(AdminLangService);
 
   activeTab = signal<'items' | 'toppings'>('items');
+  mobileCatOpen = signal(false);
 
   items = signal<MenuItem[]>([]);
   categories = signal<MenuCategory[]>([]);
@@ -233,8 +236,8 @@ export class MenuManagementComponent implements OnInit {
     });
   }
 
-  deleteItem(item: MenuItem): void {
-    if (!confirm(`Delete "${item.name}"?`)) return;
+  async deleteItem(item: MenuItem): Promise<void> {
+    if (!await this.confirmSvc.confirm('Delete Item', `Delete "${item.name}"?`)) return;
     this.api.adminDeleteMenuItem(item.id).subscribe({
       next: () => {
         this.items.update((list) => list.filter((i) => i.id !== item.id));
@@ -272,8 +275,8 @@ export class MenuManagementComponent implements OnInit {
     });
   }
 
-  deleteCat(cat: MenuCategory): void {
-    if (!confirm(`Delete category "${this.localizedCatName(cat)}"?`)) return;
+  async deleteCat(cat: MenuCategory): Promise<void> {
+    if (!await this.confirmSvc.confirm('Delete Category', `Delete category "${this.localizedCatName(cat)}"?`)) return;
     this.api.adminDeleteCategory(cat.id).subscribe({
       next: () => {
         this.categories.update((list) => list.filter((c) => c.id !== cat.id));
@@ -355,8 +358,8 @@ export class MenuManagementComponent implements OnInit {
     });
   }
 
-  deleteTopping(topping: MenuTopping): void {
-    if (!confirm(`Delete topping "${topping.name}"?`)) return;
+  async deleteTopping(topping: MenuTopping): Promise<void> {
+    if (!await this.confirmSvc.confirm('Delete Topping', `Delete topping "${topping.name}"?`)) return;
     this.api.adminDeleteTopping(topping.id).subscribe({
       next: () => {
         this.toppings.update((list) => list.filter((t) => t.id !== topping.id));

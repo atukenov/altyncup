@@ -3,18 +3,29 @@ import { Injectable } from '@angular/core';
 @Injectable({ providedIn: 'root' })
 export class SoundService {
   private ctx: AudioContext | null = null;
+  private unlocked = false;
 
-  private getCtx(): AudioContext {
+  constructor() {
+    const unlock = () => {
+      if (this.unlocked) return;
+      this.unlocked = true;
+      this.getCtxAsync().catch(() => {});
+      document.removeEventListener('click', unlock, true);
+      document.removeEventListener('keydown', unlock, true);
+    };
+    document.addEventListener('click', unlock, true);
+    document.addEventListener('keydown', unlock, true);
+  }
+
+  private async getCtxAsync(): Promise<AudioContext> {
     if (!this.ctx) this.ctx = new AudioContext();
-    // Resume if suspended (browser autoplay policy)
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.ctx.state === 'suspended') await this.ctx.resume();
     return this.ctx;
   }
 
-  playNewOrder(): void {
+  async playNewOrder(): Promise<void> {
     try {
-      const ctx = this.getCtx();
-      // Two-tone chime: A5 then C#6
+      const ctx = await this.getCtxAsync();
       this.tone(ctx, 880,  0,    0.18);
       this.tone(ctx, 1108, 0.2,  0.22);
     } catch {

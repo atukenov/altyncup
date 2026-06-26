@@ -33,6 +33,8 @@ export class MenuListComponent implements OnInit {
   promotions = signal<Promotion[]>([]);
   selectedCategoryId = signal<string | null>(null);
   search = '';
+  searchHistory = signal<string[]>(this.loadSearchHistory());
+  showHistory = signal(false);
   favoritedIds = signal<Set<string>>(new Set());
   failedImageIds = signal<Set<string>>(new Set());
 
@@ -161,7 +163,44 @@ export class MenuListComponent implements OnInit {
   }
 
   onSearch(): void {
+    if (this.search.trim()) this.saveSearchHistory(this.search.trim());
+    this.showHistory.set(false);
     this.loadItems(this.search || undefined, this.langService.lang());
+  }
+
+  onSearchFocus(): void {
+    this.showHistory.set(true);
+  }
+
+  onSearchBlur(): void {
+    setTimeout(() => this.showHistory.set(false), 200);
+  }
+
+  selectHistory(term: string): void {
+    this.search = term;
+    this.showHistory.set(false);
+    this.loadItems(term, this.langService.lang());
+  }
+
+  removeHistory(term: string, event: Event): void {
+    event.stopPropagation();
+    const updated = this.searchHistory().filter((h) => h !== term);
+    this.searchHistory.set(updated);
+    localStorage.setItem('yurt_search_history', JSON.stringify(updated));
+  }
+
+  private loadSearchHistory(): string[] {
+    try {
+      return JSON.parse(localStorage.getItem('yurt_search_history') ?? '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  private saveSearchHistory(term: string): void {
+    const history = [term, ...this.searchHistory().filter((h) => h !== term)].slice(0, 5);
+    this.searchHistory.set(history);
+    localStorage.setItem('yurt_search_history', JSON.stringify(history));
   }
 
   addToCart(item: MenuItem): void {

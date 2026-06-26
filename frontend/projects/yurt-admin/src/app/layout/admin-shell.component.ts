@@ -21,7 +21,7 @@ export class AdminShellComponent {
   private router = inject(Router);
   private toast = inject(ToastService);
 
-  collapsed = signal(localStorage.getItem(SIDEBAR_KEY) === '1');
+  collapsed = signal(localStorage.getItem(SIDEBAR_KEY) === '1' || window.innerWidth < 768);
 
   toggleSidebar(): void {
     const next = !this.collapsed();

@@ -11,10 +11,12 @@ import {
 } from 'shared-api';
 import { ToastContainerComponent } from 'shared-ui';
 import { environment } from '../environments/environment';
+import { SplashComponent } from './features/loading/splash.component';
+import { AppStateService } from './core/app-state.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastContainerComponent],
+  imports: [RouterOutlet, ToastContainerComponent, SplashComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -24,6 +26,9 @@ export class App implements OnInit, OnDestroy {
   private signalr = inject(SignalrService);
   private orderNotifications = inject(OrderNotificationService);
   private notifications = inject(NotificationService);
+  private appState = inject(AppStateService);
+
+  readonly appReady = this.appState.refreshReady;
 
   ngOnInit(): void {
     if (Capacitor.isNativePlatform()) {
@@ -46,14 +51,20 @@ export class App implements OnInit, OnDestroy {
               displayName: res.displayName,
               userType: res.userType,
             });
+            this.appState.setReady();
           },
           error: (err) => {
             if (err.status === 401 || err.status === 403) {
               this.auth.logout();
             }
+            this.appState.setReady();
           },
         });
+      } else {
+        this.appState.setReady();
       }
+    } else {
+      this.appState.setReady();
     }
     this.notifications.initialize();
 

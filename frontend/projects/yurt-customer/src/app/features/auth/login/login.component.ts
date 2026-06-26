@@ -21,10 +21,37 @@ export class LoginComponent {
 
   readonly pinInputs = viewChildren<ElementRef>('pinInput');
 
-  phoneDigits = '';
+  phoneFormatted = '';
   pins: string[] = ['', '', '', ''];
   loading = signal(false);
   error = signal('');
+
+  get phoneDigits(): string {
+    return this.phoneFormatted.replace(/\D/g, '').slice(-10);
+  }
+
+  private formatPhone(raw: string): string {
+    let digits = raw.replace(/\D/g, '');
+    // If the input already has the +7 prefix, strip the leading country-code digit
+    if (raw.trimStart().startsWith('+')) {
+      digits = digits.slice(1);
+    } else if (digits.length > 10) {
+      // User pasted/typed a full number with country code prefix
+      digits = digits.slice(1);
+    }
+    const s = digits.slice(0, 10);
+    if (!s.length) return '';
+    if (s.length <= 3) return `+7 (${s}`;
+    if (s.length <= 6) return `+7 (${s.slice(0, 3)}) ${s.slice(3)}`;
+    return `+7 (${s.slice(0, 3)}) ${s.slice(3, 6)}-${s.slice(6)}`;
+  }
+
+  onPhoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const formatted = this.formatPhone(input.value);
+    this.phoneFormatted = formatted;
+    input.value = formatted;
+  }
 
   get pin4(): string {
     return this.pins.join('');

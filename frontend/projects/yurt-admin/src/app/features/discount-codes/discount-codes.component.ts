@@ -5,6 +5,7 @@ import { YurtApiService } from 'shared-api';
 import { ToastService } from 'shared-ui';
 import { DiscountCode } from 'shared-models';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 
 @Component({
   selector: 'app-discount-codes',
@@ -15,6 +16,7 @@ import { AdminTranslatePipe } from '../../core/translate.pipe';
 export class DiscountCodesComponent implements OnInit {
   private api = inject(YurtApiService);
   private toast = inject(ToastService);
+  private confirmSvc = inject(ConfirmService);
 
   codes = signal<DiscountCode[]>([]);
   loading = signal(true);
@@ -104,8 +106,8 @@ export class DiscountCodesComponent implements OnInit {
     });
   }
 
-  delete(code: DiscountCode): void {
-    if (!confirm(`Delete code "${code.code}"?`)) return;
+  async delete(code: DiscountCode): Promise<void> {
+    if (!await this.confirmSvc.confirm('Delete Code', `Delete code "${code.code}"?`)) return;
     this.api.deleteDiscountCode(code.id).subscribe({
       next: () => { this.toast.success('Deleted.'); this.load(); },
       error: () => this.toast.error('Failed to delete.'),

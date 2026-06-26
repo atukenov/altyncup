@@ -5,6 +5,7 @@ import { YurtApiService } from 'shared-api';
 import { Location } from 'shared-models';
 import { ButtonComponent, ToastService } from 'shared-ui';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 
 interface LocationForm {
   id?: string;
@@ -25,6 +26,7 @@ interface LocationForm {
 export class LocationsManagementComponent implements OnInit {
   private api = inject(YurtApiService);
   private toast = inject(ToastService);
+  private confirmSvc = inject(ConfirmService);
 
   locations = signal<Location[]>([]);
   loading = signal(true);
@@ -90,8 +92,8 @@ export class LocationsManagementComponent implements OnInit {
     });
   }
 
-  deleteLocation(loc: Location): void {
-    if (!confirm(`Delete "${loc.name}"?`)) return;
+  async deleteLocation(loc: Location): Promise<void> {
+    if (!await this.confirmSvc.confirm('Delete Location', `Delete "${loc.name}"?`)) return;
     this.api.deleteLocation(loc.id).subscribe({
       next: () => {
         this.locations.update((list) => list.filter((l) => l.id !== loc.id));

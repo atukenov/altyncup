@@ -5,6 +5,7 @@ import { YurtApiService } from 'shared-api';
 import { Promotion } from 'shared-models';
 import { ToastService } from 'shared-ui';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 
 interface PromotionForm {
   id?: string;
@@ -25,6 +26,7 @@ interface PromotionForm {
 export class PromotionsManagementComponent implements OnInit {
   private api = inject(YurtApiService);
   private toast = inject(ToastService);
+  private confirmSvc = inject(ConfirmService);
 
   promotions = signal<Promotion[]>([]);
   loading = signal(true);
@@ -100,8 +102,8 @@ export class PromotionsManagementComponent implements OnInit {
     });
   }
 
-  deletePromotion(promo: Promotion): void {
-    if (!confirm(`Delete "${promo.title}"?`)) return;
+  async deletePromotion(promo: Promotion): Promise<void> {
+    if (!await this.confirmSvc.confirm('Delete Promotion', `Delete "${promo.title}"?`)) return;
     this.api.deletePromotion(promo.id).subscribe({
       next: () => {
         this.promotions.update((list) => list.filter((p) => p.id !== promo.id));

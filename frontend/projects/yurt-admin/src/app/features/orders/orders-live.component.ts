@@ -113,7 +113,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
         this.signalr.orderCreated$.subscribe((o) => {
           this.orders.update((list) => [o, ...list]);
           this.toast.info(`New order #${o.id.slice(-6).toUpperCase()}`);
-          this.sound.playNewOrder();
+          void this.sound.playNewOrder();
         }),
         this.signalr.orderUpdated$.subscribe((o) => this.upsertOrder(o)),
         this.signalr.orderDeclined$.subscribe((o) => this.upsertOrder(o)),
