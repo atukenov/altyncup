@@ -29,6 +29,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
+    public DbSet<MenuItemLocation> MenuItemLocations => Set<MenuItemLocation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

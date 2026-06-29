@@ -123,16 +123,19 @@ export class YurtApiService {
     return this.http.get<MenuCategory[]>(`${this.api}/menu/categories`, { params });
   }
 
-  getMenuItems(categoryId?: string, search?: string, lang?: string): Observable<MenuItem[]> {
+  getMenuItems(categoryId?: string, search?: string, lang?: string, locationId?: string): Observable<MenuItem[]> {
     let params = new HttpParams();
     if (categoryId) params = params.set('categoryId', categoryId);
     if (search) params = params.set('search', search);
     if (lang) params = params.set('lang', lang);
+    if (locationId) params = params.set('locationId', locationId);
     return this.http.get<MenuItem[]>(`${this.api}/menu`, { params });
   }
 
-  getMenuItem(id: string, lang?: string): Observable<MenuItem> {
-    const params = lang ? new HttpParams().set('lang', lang) : undefined;
+  getMenuItem(id: string, lang?: string, locationId?: string): Observable<MenuItem> {
+    let params = new HttpParams();
+    if (lang) params = params.set('lang', lang);
+    if (locationId) params = params.set('locationId', locationId);
     return this.http.get<MenuItem>(`${this.api}/menu/items/${id}`, { params });
   }
 

@@ -7,6 +7,7 @@ import { ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
+import { LocationService } from '../../core/location.service';
 
 @Component({
   selector: 'app-item-detail',
@@ -24,6 +25,7 @@ export class ItemDetailComponent implements OnInit {
   private router = inject(Router);
   private toast = inject(ToastService);
   private langService = inject(LangService);
+  private locationSvc = inject(LocationService);
 
   item = signal<MenuItem | null>(null);
   loading = signal(true);
@@ -31,6 +33,13 @@ export class ItemDetailComponent implements OnInit {
   isFav = signal(false);
   selectedToppingIds = signal<Set<string>>(new Set());
   imageError = signal(false);
+
+  readonly unavailableAtLocation = computed(() => {
+    const item = this.item();
+    const locId = this.locationSvc.locationId();
+    if (!item?.locationIds?.length) return false;
+    return !item.locationIds.includes(locId);
+  });
 
   onImageError(): void {
     this.imageError.set(true);
@@ -45,7 +54,8 @@ export class ItemDetailComponent implements OnInit {
 
   private loadItem(lang: string): void {
     this.loading.set(true);
-    this.api.getMenuItem(this.id, lang).subscribe({
+    const locationId = this.locationSvc.locationId() || undefined;
+    this.api.getMenuItem(this.id, lang, locationId).subscribe({
       next: (item) => { this.item.set(item); this.loading.set(false); },
       error: () => { this.loading.set(false); this.toast.error('Failed to load item.'); },
     });

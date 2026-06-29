@@ -196,9 +196,18 @@
       class="fixed left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-stone-100 max-w-lg mx-auto"
       style="bottom: calc(4rem + env(safe-area-inset-bottom)); box-shadow: 0 -1px 16px rgba(0,0,0,0.08)"
     >
+      @if (unavailableAtLocation()) {
+        <div class="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm font-medium rounded-2xl px-4 py-3 mb-3">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          Not available at your selected location
+        </div>
+      }
       <button
         (click)="addToCart()"
-        class="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white font-bold rounded-2xl py-4 text-base flex items-center justify-between px-5 shadow-lg shadow-amber-200/60 transition-all focus:outline-none"
+        [disabled]="unavailableAtLocation()"
+        class="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white font-bold rounded-2xl py-4 text-base flex items-center justify-between px-5 shadow-lg shadow-amber-200/60 transition-all focus:outline-none disabled:opacity-40 disabled:pointer-events-none"
       >
         <span class="bg-white/20 rounded-xl w-7 h-7 flex items-center justify-center text-sm font-bold shrink-0">{{ quantity() }}</span>
         <span>{{ 'item.addToCart' | t }}</span>

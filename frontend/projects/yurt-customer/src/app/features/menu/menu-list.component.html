@@ -190,9 +190,9 @@
             <!-- Heart (top-left) -->
             <button
               (click)="toggleFav(item, $event)"
-              class="absolute top-2 left-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-sm transition-all active:scale-95"
-              [class.text-red-500]="isFav(item.id)"
-              [class.text-stone-300]="!isFav(item.id)"
+              class="absolute top-2 left-2 p-1.5 rounded-full bg-black/30 backdrop-blur-sm transition-all active:scale-95"
+              [class.text-red-400]="isFav(item.id)"
+              [class.text-white]="!isFav(item.id)"
               aria-label="Toggle favorite"
             >
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">

@@ -227,6 +227,18 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
     }
 }
 
+public class MenuItemLocationConfiguration : IEntityTypeConfiguration<MenuItemLocation>
+{
+    public void Configure(EntityTypeBuilder<MenuItemLocation> builder)
+    {
+        builder.HasKey(e => new { e.MenuItemId, e.LocationId });
+        builder.HasOne(e => e.MenuItem).WithMany(m => m.MenuItemLocations)
+            .HasForeignKey(e => e.MenuItemId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(e => e.Location).WithMany()
+            .HasForeignKey(e => e.LocationId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
 {
     public void Configure(EntityTypeBuilder<AuditLog> builder)

@@ -38,11 +38,16 @@ public class OrderService
         // Load menu items
         var itemIds = dto.Items.Select(i => i.MenuItemId).ToList();
         var menuItems = await _db.MenuItems
+            .Include(m => m.MenuItemLocations)
             .Where(m => itemIds.Contains(m.Id) && m.IsAvailable)
             .ToListAsync(ct);
 
         if (menuItems.Count != itemIds.Distinct().Count())
             return Result<OrderDto>.Failure("One or more menu items are unavailable.", 400);
+
+        foreach (var item in menuItems)
+            if (item.MenuItemLocations.Any() && !item.MenuItemLocations.Any(l => l.LocationId == dto.LocationId))
+                return Result<OrderDto>.Failure($"'{item.Name}' is not available at this location.", 400);
 
         // Build order
         var order = new Order

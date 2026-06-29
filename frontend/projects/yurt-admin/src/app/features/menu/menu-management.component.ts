@@ -2,7 +2,7 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
-import { MenuItem, MenuCategory, MenuTopping } from 'shared-models';
+import { MenuItem, MenuCategory, MenuTopping, Location } from 'shared-models';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { AdminLangService } from '../../core/lang.service';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
@@ -20,6 +20,7 @@ interface MenuItemForm {
   categoryId: string;
   imageUrl: string;
   isAvailable: boolean;
+  locationIds: string[];
 }
 
 interface ToppingForm {
@@ -59,6 +60,7 @@ export class MenuManagementComponent implements OnInit {
   items = signal<MenuItem[]>([]);
   categories = signal<MenuCategory[]>([]);
   toppings = signal<MenuTopping[]>([]);
+  locations = signal<Location[]>([]);
   loading = signal(true);
   saving = signal(false);
   showItemDialog = signal(false);
@@ -70,7 +72,7 @@ export class MenuManagementComponent implements OnInit {
   itemForm = signal<MenuItemForm>({
     name: '', nameRu: '', nameKk: '',
     description: '', descriptionRu: '', descriptionKk: '',
-    price: 0, categoryId: '', imageUrl: '', isAvailable: true,
+    price: 0, categoryId: '', imageUrl: '', isAvailable: true, locationIds: [],
   });
 
   toppingForm = signal<ToppingForm>({
@@ -95,6 +97,7 @@ export class MenuManagementComponent implements OnInit {
       error: () => this.loading.set(false),
     });
     this.api.adminGetToppings().subscribe((toppings) => this.toppings.set(toppings));
+    this.api.getAdminLocations().subscribe((locs) => this.locations.set(locs));
   }
 
   localizedCatName(cat: MenuCategory): string {
@@ -104,6 +107,20 @@ export class MenuManagementComponent implements OnInit {
     return cat.name;
   }
 
+  localizedItemName(item: MenuItem): string {
+    const lang = this.langService.lang();
+    if (lang === 'ru') return item.nameRu || item.name;
+    if (lang === 'kk') return item.nameKk || item.nameRu || item.name;
+    return item.name;
+  }
+
+  localizedToppingName(topping: MenuTopping): string {
+    const lang = this.langService.lang();
+    if (lang === 'ru') return topping.nameRu || topping.name;
+    if (lang === 'kk') return topping.nameKk || topping.nameRu || topping.name;
+    return topping.name;
+  }
+
   categoryName(id: string): string {
     const cat = this.categories().find((c) => c.id === id);
     return cat ? this.localizedCatName(cat) : '';
@@ -111,69 +128,6 @@ export class MenuManagementComponent implements OnInit {
 
   toppingCategoryNames(categoryIds: string[]): string {
     return categoryIds.map((id) => this.categoryName(id)).filter(Boolean).join(', ') || '—';
-  }
-
-  // Active-language field getters/setters for item form
-  getActiveItemName(): string {
-    const f = this.itemForm();
-    const lang = this.langService.lang();
-    if (lang === 'ru') return f.nameRu;
-    if (lang === 'kk') return f.nameKk;
-    return f.name;
-  }
-  setActiveItemName(val: string): void {
-    const lang = this.langService.lang();
-    if (lang === 'ru') this.patchItemForm('nameRu', val);
-    else if (lang === 'kk') this.patchItemForm('nameKk', val);
-    else this.patchItemForm('name', val);
-  }
-
-  getActiveItemDescription(): string {
-    const f = this.itemForm();
-    const lang = this.langService.lang();
-    if (lang === 'ru') return f.descriptionRu;
-    if (lang === 'kk') return f.descriptionKk;
-    return f.description;
-  }
-  setActiveItemDescription(val: string): void {
-    const lang = this.langService.lang();
-    if (lang === 'ru') this.patchItemForm('descriptionRu', val);
-    else if (lang === 'kk') this.patchItemForm('descriptionKk', val);
-    else this.patchItemForm('description', val);
-  }
-
-  // Active-language field getters/setters for topping form
-  getActiveToppingName(): string {
-    const f = this.toppingForm();
-    const lang = this.langService.lang();
-    if (lang === 'ru') return f.nameRu;
-    if (lang === 'kk') return f.nameKk;
-    return f.name;
-  }
-  setActiveToppingName(val: string): void {
-    const lang = this.langService.lang();
-    if (lang === 'ru') this.patchToppingForm('nameRu', val);
-    else if (lang === 'kk') this.patchToppingForm('nameKk', val);
-    else this.patchToppingForm('name', val);
-  }
-
-  // Active-language field getters/setters for category input
-  getActiveCatName(): string {
-    const f = this.catInput();
-    const lang = this.langService.lang();
-    if (lang === 'ru') return f.nameRu;
-    if (lang === 'kk') return f.nameKk;
-    return f.name;
-  }
-  setActiveCatName(val: string): void {
-    const lang = this.langService.lang();
-    if (lang === 'ru') this.catInput.update((f) => ({ ...f, nameRu: val }));
-    else if (lang === 'kk') this.catInput.update((f) => ({ ...f, nameKk: val }));
-    else this.catInput.update((f) => ({ ...f, name: val }));
-  }
-
-  langLabel(): string {
-    return this.langService.lang().toUpperCase();
   }
 
   openItemDialog(item?: MenuItem): void {
@@ -189,8 +143,22 @@ export class MenuManagementComponent implements OnInit {
       categoryId: item?.categoryId ?? (this.selectedCategoryId() || this.categories()[0]?.id) ?? '',
       imageUrl: item?.imageUrl ?? '',
       isAvailable: item?.isAvailable ?? true,
+      locationIds: item?.locationIds ? [...item.locationIds] : [],
     });
     this.showItemDialog.set(true);
+  }
+
+  isItemLocationSelected(locId: string): boolean {
+    return this.itemForm().locationIds.includes(locId);
+  }
+
+  toggleItemLocation(locId: string): void {
+    this.itemForm.update((f) => {
+      const ids = f.locationIds.includes(locId)
+        ? f.locationIds.filter((id) => id !== locId)
+        : [...f.locationIds, locId];
+      return { ...f, locationIds: ids };
+    });
   }
 
   patchItemForm(field: keyof MenuItemForm, value: unknown): void {
@@ -199,8 +167,8 @@ export class MenuManagementComponent implements OnInit {
 
   saveItem(): void {
     const f = this.itemForm();
-    if (!f.name && !f.nameRu) {
-      this.toast.error('Name is required');
+    if (!f.name || !f.nameRu || !f.nameKk) {
+      this.toast.error('Name in all 3 languages is required (EN, RU, KZ)');
       return;
     }
     if (!f.price) {
@@ -209,16 +177,17 @@ export class MenuManagementComponent implements OnInit {
     }
     this.saving.set(true);
     const payload = {
-      name: f.name || f.nameRu,
-      nameRu: f.nameRu || undefined,
-      nameKk: f.nameKk || undefined,
-      description: f.description || f.descriptionRu,
+      name: f.name,
+      nameRu: f.nameRu,
+      nameKk: f.nameKk,
+      description: f.description || undefined,
       descriptionRu: f.descriptionRu || undefined,
       descriptionKk: f.descriptionKk || undefined,
       price: f.price,
       categoryId: f.categoryId,
       imageUrl: f.imageUrl || undefined,
       isAvailable: f.isAvailable,
+      locationIds: f.locationIds,
     };
     const obs = f.id ? this.api.adminUpdateMenuItem(f.id, payload) : this.api.adminCreateMenuItem(payload);
     obs.subscribe({
@@ -249,13 +218,15 @@ export class MenuManagementComponent implements OnInit {
 
   saveCat(): void {
     const f = this.catInput();
-    const name = f.name.trim() || f.nameRu.trim();
-    if (!name) return;
+    if (!f.name.trim() || !f.nameRu.trim() || !f.nameKk.trim()) {
+      this.toast.error('Category name in all 3 languages is required (EN, RU, KZ)');
+      return;
+    }
     this.saving.set(true);
     const payload = {
-      name,
-      nameRu: f.nameRu || undefined,
-      nameKk: f.nameKk || undefined,
+      name: f.name.trim(),
+      nameRu: f.nameRu.trim(),
+      nameKk: f.nameKk.trim(),
     };
     const obs = f.id
       ? this.api.adminUpdateCategory(f.id, payload)
@@ -330,13 +301,15 @@ export class MenuManagementComponent implements OnInit {
 
   saveTopping(): void {
     const f = this.toppingForm();
-    const name = f.name || f.nameRu;
-    if (!name) { this.toast.error('Topping name is required'); return; }
+    if (!f.name || !f.nameRu || !f.nameKk) {
+      this.toast.error('Topping name in all 3 languages is required (EN, RU, KZ)');
+      return;
+    }
     this.saving.set(true);
     const payload = {
-      name,
-      nameRu: f.nameRu || undefined,
-      nameKk: f.nameKk || undefined,
+      name: f.name,
+      nameRu: f.nameRu,
+      nameKk: f.nameKk,
       price: f.price,
       isAvailable: f.isAvailable,
       categoryIds: f.categoryIds,

@@ -25,6 +25,7 @@ public interface IApplicationDbContext
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<DiscountCode> DiscountCodes { get; }
+    DbSet<MenuItemLocation> MenuItemLocations { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

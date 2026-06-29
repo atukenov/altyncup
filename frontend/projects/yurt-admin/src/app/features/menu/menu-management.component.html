@@ -137,7 +137,7 @@
           <tbody class="bg-white divide-y divide-slate-50">
             @for (item of filteredItems(); track item.id) {
               <tr class="hover:bg-slate-50 transition-colors">
-                <td class="px-6 py-3 font-medium text-slate-800">{{ item.name }}</td>
+                <td class="px-6 py-3 font-medium text-slate-800">{{ localizedItemName(item) }}</td>
                 <td class="px-6 py-3 text-slate-500">{{ categoryName(item.categoryId) }}</td>
                 <td class="px-6 py-3 text-right font-semibold text-amber-600">
                   {{ item.price | currency2 }}
@@ -193,7 +193,7 @@
         <tbody class="bg-white divide-y divide-slate-50">
           @for (topping of toppings(); track topping.id) {
             <tr class="hover:bg-slate-50 transition-colors">
-              <td class="px-6 py-3 font-medium text-slate-800">{{ topping.name }}</td>
+              <td class="px-6 py-3 font-medium text-slate-800">{{ localizedToppingName(topping) }}</td>
               <td class="px-6 py-3 text-slate-500 text-xs">
                 @if (topping.group) {
                   <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full capitalize">{{ topping.group }}</span>
@@ -254,26 +254,50 @@
       </h3>
       <div class="space-y-3">
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">
-            {{ 'label.name' | t }} ({{ langLabel() }}) *
-          </label>
-          <input
-            type="text"
-            [ngModel]="getActiveItemName()"
-            (ngModelChange)="setActiveItemName($event)"
-            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
-          />
+          <label class="block text-xs font-medium text-slate-600 mb-1.5">{{ 'label.name' | t }} *</label>
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-400 w-7 shrink-0">EN</span>
+              <input type="text" [ngModel]="itemForm().name" (ngModelChange)="patchItemForm('name', $event)"
+                placeholder="Name in English"
+                class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-400 w-7 shrink-0">RU</span>
+              <input type="text" [ngModel]="itemForm().nameRu" (ngModelChange)="patchItemForm('nameRu', $event)"
+                placeholder="Название на русском"
+                class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-400 w-7 shrink-0">KZ</span>
+              <input type="text" [ngModel]="itemForm().nameKk" (ngModelChange)="patchItemForm('nameKk', $event)"
+                placeholder="Қазақша атауы"
+                class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none" />
+            </div>
+          </div>
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">
-            {{ 'label.description' | t }} ({{ langLabel() }})
-          </label>
-          <textarea
-            [ngModel]="getActiveItemDescription()"
-            (ngModelChange)="setActiveItemDescription($event)"
-            rows="2"
-            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none resize-none"
-          ></textarea>
+          <label class="block text-xs font-medium text-slate-600 mb-1.5">{{ 'label.description' | t }}</label>
+          <div class="space-y-2">
+            <div class="flex gap-2">
+              <span class="text-xs font-semibold text-slate-400 w-7 shrink-0 pt-2">EN</span>
+              <textarea [ngModel]="itemForm().description" (ngModelChange)="patchItemForm('description', $event)"
+                rows="2" placeholder="Description in English"
+                class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none resize-none"></textarea>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-xs font-semibold text-slate-400 w-7 shrink-0 pt-2">RU</span>
+              <textarea [ngModel]="itemForm().descriptionRu" (ngModelChange)="patchItemForm('descriptionRu', $event)"
+                rows="2" placeholder="Описание на русском"
+                class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none resize-none"></textarea>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-xs font-semibold text-slate-400 w-7 shrink-0 pt-2">KZ</span>
+              <textarea [ngModel]="itemForm().descriptionKk" (ngModelChange)="patchItemForm('descriptionKk', $event)"
+                rows="2" placeholder="Қазақша сипаттамасы"
+                class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none resize-none"></textarea>
+            </div>
+          </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -309,6 +333,23 @@
             class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
           />
         </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Restrict to locations</label>
+          <p class="text-xs text-slate-400 mb-2">Leave empty to show at all locations</p>
+          <div class="space-y-2 max-h-32 overflow-y-auto border border-slate-100 rounded-xl p-3">
+            @for (loc of locations(); track loc.id) {
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  [checked]="isItemLocationSelected(loc.id)"
+                  (change)="toggleItemLocation(loc.id)"
+                  class="rounded border-slate-300 text-amber-500 focus:ring-amber-400"
+                />
+                <span class="text-sm text-slate-700">{{ loc.name }}</span>
+              </label>
+            }
+          </div>
+        </div>
         <div class="flex items-center gap-2">
           <input
             type="checkbox"
@@ -339,16 +380,27 @@
       <h3 class="text-lg font-bold text-slate-800 mb-4">
         {{ catInput().id ? ('menu.editCategoryTitle' | t) : ('menu.addCategoryTitle' | t) }}
       </h3>
-      <label class="block text-xs font-medium text-slate-600 mb-1">
-        {{ 'menu.categoryName' | t }} ({{ langLabel() }})
-      </label>
-      <input
-        type="text"
-        [ngModel]="getActiveCatName()"
-        (ngModelChange)="setActiveCatName($event)"
-        [placeholder]="'menu.categoryName' | t"
-        class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
-      />
+      <label class="block text-xs font-medium text-slate-600 mb-1.5">{{ 'menu.categoryName' | t }} *</label>
+      <div class="space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-slate-400 w-7 shrink-0">EN</span>
+          <input type="text" [ngModel]="catInput().name" (ngModelChange)="catInput.update(f => ({...f, name: $event}))"
+            placeholder="Category in English"
+            class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none" />
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-slate-400 w-7 shrink-0">RU</span>
+          <input type="text" [ngModel]="catInput().nameRu" (ngModelChange)="catInput.update(f => ({...f, nameRu: $event}))"
+            placeholder="Категория на русском"
+            class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none" />
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-slate-400 w-7 shrink-0">KZ</span>
+          <input type="text" [ngModel]="catInput().nameKk" (ngModelChange)="catInput.update(f => ({...f, nameKk: $event}))"
+            placeholder="Қазақша санаты"
+            class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none" />
+        </div>
+      </div>
       <div class="flex gap-3 mt-4">
         <yurt-button variant="ghost" size="md" [fullWidth]="true" (clicked)="showCatDialog.set(false)">
           {{ 'action.cancel' | t }}
@@ -370,16 +422,27 @@
       </h3>
       <div class="space-y-3">
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">
-            {{ 'label.name' | t }} ({{ langLabel() }}) *
-          </label>
-          <input
-            type="text"
-            [ngModel]="getActiveToppingName()"
-            (ngModelChange)="setActiveToppingName($event)"
-            placeholder="e.g. Oat Milk, Extra Hot"
-            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
-          />
+          <label class="block text-xs font-medium text-slate-600 mb-1.5">{{ 'label.name' | t }} *</label>
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-400 w-7 shrink-0">EN</span>
+              <input type="text" [ngModel]="toppingForm().name" (ngModelChange)="patchToppingForm('name', $event)"
+                placeholder="e.g. Oat Milk"
+                class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-400 w-7 shrink-0">RU</span>
+              <input type="text" [ngModel]="toppingForm().nameRu" (ngModelChange)="patchToppingForm('nameRu', $event)"
+                placeholder="напр. Овсяное молоко"
+                class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-400 w-7 shrink-0">KZ</span>
+              <input type="text" [ngModel]="toppingForm().nameKk" (ngModelChange)="patchToppingForm('nameKk', $event)"
+                placeholder="мыс. Сұлы сүті"
+                class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none" />
+            </div>
+          </div>
         </div>
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'menu.priceZeroFree' | t }}</label>

@@ -45,7 +45,7 @@ public class AdminMenuController : ApiControllerBase
 
     [HttpGet("items/{id:guid}")]
     public async Task<IActionResult> GetItem(Guid id, CancellationToken ct)
-        => ToResult(await _menuService.GetItemByIdAsync(id, "en", ct));
+        => ToResult(await _menuService.GetItemByIdAsync(id, "en", null, ct));
 
     [HttpPost("items")]
     public async Task<IActionResult> CreateItem(

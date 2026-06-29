@@ -13,6 +13,7 @@ public record MenuItemDto(
     decimal Price,
     bool IsAvailable,
     string? ImageUrl,
+    List<Guid>? LocationIds = null,
     List<MenuToppingDto>? AvailableToppings = null);
 
 public record MenuToppingDto(Guid Id, string Name, decimal Price, bool IsAvailable, List<Guid> CategoryIds, string? Group = null);
@@ -34,6 +35,7 @@ public record AdminMenuItemDto(
     decimal Price,
     bool IsAvailable,
     string? ImageUrl,
+    List<Guid>? LocationIds = null,
     List<MenuToppingDto>? AvailableToppings = null);
 
 public record AdminMenuToppingDto(
@@ -61,7 +63,8 @@ public record CreateMenuItemDto(
     string? DescriptionKk,
     decimal Price,
     bool IsAvailable,
-    string? ImageUrl);
+    string? ImageUrl,
+    List<Guid>? LocationIds = null);
 
 public record UpdateMenuItemDto(
     Guid CategoryId,
@@ -73,7 +76,8 @@ public record UpdateMenuItemDto(
     string? DescriptionKk,
     decimal Price,
     bool IsAvailable,
-    string? ImageUrl);
+    string? ImageUrl,
+    List<Guid>? LocationIds = null);
 
 public record CreateToppingDto
 {

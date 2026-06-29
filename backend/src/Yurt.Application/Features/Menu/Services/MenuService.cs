@@ -30,10 +30,11 @@ public class MenuService
             .ToListAsync(ct);
 
     public async Task<List<MenuItemDto>> GetItemsAsync(
-        Guid? categoryId, string? search, string lang = "ru", CancellationToken ct = default)
+        Guid? categoryId, string? search, string lang = "ru", Guid? locationId = null, CancellationToken ct = default)
     {
         var query = _db.MenuItems
             .Include(i => i.Category)
+            .Include(i => i.MenuItemLocations)
             .Where(i => i.IsAvailable)
             .AsQueryable();
 
@@ -43,6 +44,11 @@ public class MenuService
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(i =>
                 i.Name.Contains(search) || i.Description.Contains(search));
+
+        if (locationId.HasValue)
+            query = query.Where(i =>
+                !i.MenuItemLocations.Any() ||
+                i.MenuItemLocations.Any(l => l.LocationId == locationId.Value));
 
         var items = await query
             .OrderBy(i => i.Category.SortOrder).ThenBy(i => i.Name)
@@ -55,13 +61,18 @@ public class MenuService
             toppingsByCategory.TryGetValue(i.CategoryId, out var t) ? t : null)).ToList();
     }
 
-    public async Task<Result<MenuItemDto>> GetItemByIdAsync(Guid id, string lang = "ru", CancellationToken ct = default)
+    public async Task<Result<MenuItemDto>> GetItemByIdAsync(Guid id, string lang = "ru", Guid? locationId = null, CancellationToken ct = default)
     {
         var item = await _db.MenuItems
             .Include(i => i.Category)
+            .Include(i => i.MenuItemLocations)
             .FirstOrDefaultAsync(i => i.Id == id, ct);
 
         if (item == null) return Result<MenuItemDto>.NotFound();
+
+        if (locationId.HasValue && item.MenuItemLocations.Any() &&
+            !item.MenuItemLocations.Any(l => l.LocationId == locationId.Value))
+            return Result<MenuItemDto>.Failure("This item is not available at your selected location.", 403);
 
         var toppingsByCategory = await GetToppingsByCategoryIdsAsync([item.CategoryId], lang, ct);
         toppingsByCategory.TryGetValue(item.CategoryId, out var toppings);
@@ -101,6 +112,7 @@ public class MenuService
     {
         var items = await _db.MenuItems
             .Include(i => i.Category)
+            .Include(i => i.MenuItemLocations)
             .OrderBy(i => i.Category.SortOrder).ThenBy(i => i.Name)
             .ToListAsync(ct);
 
@@ -189,9 +201,14 @@ public class MenuService
             ImageUrl = dto.ImageUrl
         };
         _db.MenuItems.Add(item);
+
+        foreach (var locId in dto.LocationIds?.Distinct() ?? [])
+            _db.MenuItemLocations.Add(new MenuItemLocation { MenuItemId = item.Id, LocationId = locId });
+
         await _db.SaveChangesAsync(ct);
 
         item.Category = cat;
+        item.MenuItemLocations = [.. (dto.LocationIds?.Distinct().Select(l => new MenuItemLocation { MenuItemId = item.Id, LocationId = l }) ?? [])];
         await _audit.LogAsync("MenuItemCreated", "MenuItem", item.Id.ToString(), item.Name, ct);
         return Result<AdminMenuItemDto>.Success(MapAdminItemToDto(item), 201);
     }
@@ -201,6 +218,7 @@ public class MenuService
     {
         var item = await _db.MenuItems
             .Include(i => i.Category)
+            .Include(i => i.MenuItemLocations)
             .FirstOrDefaultAsync(i => i.Id == id, ct);
 
         if (item == null) return Result<AdminMenuItemDto>.NotFound();
@@ -216,6 +234,12 @@ public class MenuService
         item.IsAvailable = dto.IsAvailable;
         item.ImageUrl = dto.ImageUrl;
         item.UpdatedAt = DateTime.UtcNow;
+
+        foreach (var link in item.MenuItemLocations.ToList())
+            _db.MenuItemLocations.Remove(link);
+
+        foreach (var locId in dto.LocationIds?.Distinct() ?? [])
+            _db.MenuItemLocations.Add(new MenuItemLocation { MenuItemId = item.Id, LocationId = locId });
 
         await _db.SaveChangesAsync(ct);
         await _audit.LogAsync("MenuItemUpdated", "MenuItem", id.ToString(), item.Name, ct);
@@ -339,14 +363,20 @@ public class MenuService
     }
 
     private static MenuItemDto MapItemToDto(MenuItem i, string lang, List<MenuToppingDto>? toppings = null)
-        => new(i.Id, i.CategoryId, i.Category?.Name ?? "",
+    {
+        var locationIds = i.MenuItemLocations?.Select(l => l.LocationId).ToList();
+        return new(i.Id, i.CategoryId, i.Category?.Name ?? "",
                LocalizationHelper.Localize(i.Name, i.NameRu, i.NameKk, lang),
                LocalizationHelper.Localize(i.Description, i.DescriptionRu, i.DescriptionKk, lang),
-               i.Price, i.IsAvailable, i.ImageUrl, toppings);
+               i.Price, i.IsAvailable, i.ImageUrl, locationIds, toppings);
+    }
 
     private static AdminMenuItemDto MapAdminItemToDto(MenuItem i, List<MenuToppingDto>? toppings = null)
-        => new(i.Id, i.CategoryId, i.Category?.Name ?? "",
+    {
+        var locationIds = i.MenuItemLocations?.Select(l => l.LocationId).ToList();
+        return new(i.Id, i.CategoryId, i.Category?.Name ?? "",
                i.Name, i.NameRu, i.NameKk,
                i.Description, i.DescriptionRu, i.DescriptionKk,
-               i.Price, i.IsAvailable, i.ImageUrl, toppings);
+               i.Price, i.IsAvailable, i.ImageUrl, locationIds, toppings);
+    }
 }

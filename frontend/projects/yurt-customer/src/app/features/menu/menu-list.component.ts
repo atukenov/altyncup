@@ -71,6 +71,7 @@ export class MenuListComponent implements OnInit {
   constructor() {
     effect(() => {
       const lang = this.langService.lang();
+      this.locationSvc.locationId(); // track location changes
       this.api.getCategories(lang).subscribe((cats) => this.categories.set(cats));
       this.api.getActivePromotions().subscribe((promos) => this.promotions.set(promos));
       this.loadItems(this.search || undefined, lang);
@@ -145,7 +146,8 @@ export class MenuListComponent implements OnInit {
 
   loadItems(search?: string, lang?: string): void {
     this.loading.set(true);
-    this.api.getMenuItems(this.selectedCategoryId() ?? undefined, search, lang ?? this.langService.lang()).subscribe({
+    const locationId = this.locationSvc.locationId() || undefined;
+    this.api.getMenuItems(this.selectedCategoryId() ?? undefined, search, lang ?? this.langService.lang(), locationId).subscribe({
       next: (items) => {
         this.allItems.set(items);
         this.loading.set(false);
