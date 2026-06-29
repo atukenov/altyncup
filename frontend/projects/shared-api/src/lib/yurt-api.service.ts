@@ -156,6 +156,10 @@ export class YurtApiService {
     return this.http.delete<void>(`${this.api}/admin/menu/items/${id}`);
   }
 
+  adminGetCategories(): Observable<MenuCategory[]> {
+    return this.http.get<MenuCategory[]>(`${this.api}/admin/menu/categories`);
+  }
+
   adminCreateCategory(data: Partial<MenuCategory>): Observable<MenuCategory> {
     return this.http.post<MenuCategory>(`${this.api}/admin/menu/categories`, data);
   }

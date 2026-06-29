@@ -91,7 +91,7 @@ export class MenuManagementComponent implements OnInit {
 
   loadAll(): void {
     this.loading.set(true);
-    this.api.getCategories().subscribe((cats) => this.categories.set(cats));
+    this.api.adminGetCategories().subscribe((cats) => this.categories.set(cats));
     this.api.adminGetMenuItems().subscribe({
       next: (items) => { this.items.set(items); this.loading.set(false); },
       error: () => this.loading.set(false),
