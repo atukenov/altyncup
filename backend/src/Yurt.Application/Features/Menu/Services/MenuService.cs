@@ -193,7 +193,7 @@ public class MenuService
             Name = dto.Name,
             NameRu = dto.NameRu,
             NameKk = dto.NameKk,
-            Description = dto.Description,
+            Description = dto.Description ?? string.Empty,
             DescriptionRu = dto.DescriptionRu,
             DescriptionKk = dto.DescriptionKk,
             Price = dto.Price,
@@ -227,7 +227,7 @@ public class MenuService
         item.Name = dto.Name;
         item.NameRu = dto.NameRu;
         item.NameKk = dto.NameKk;
-        item.Description = dto.Description;
+        item.Description = dto.Description ?? string.Empty;
         item.DescriptionRu = dto.DescriptionRu;
         item.DescriptionKk = dto.DescriptionKk;
         item.Price = dto.Price;
