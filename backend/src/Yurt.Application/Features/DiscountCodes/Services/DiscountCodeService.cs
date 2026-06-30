@@ -49,8 +49,8 @@ public class DiscountCodeService
             DiscountValue = dto.DiscountValue,
             MaxUses = dto.MaxUses,
             MinOrderAmount = dto.MinOrderAmount,
-            StartsAt = dto.StartsAt,
-            ExpiresAt = dto.ExpiresAt,
+            StartsAt = ToUtc(dto.StartsAt),
+            ExpiresAt = ToUtc(dto.ExpiresAt),
             IsActive = dto.IsActive
         };
         _db.DiscountCodes.Add(code);
@@ -79,8 +79,8 @@ public class DiscountCodeService
         code.DiscountValue = dto.DiscountValue;
         code.MaxUses = dto.MaxUses;
         code.MinOrderAmount = dto.MinOrderAmount;
-        code.StartsAt = dto.StartsAt;
-        code.ExpiresAt = dto.ExpiresAt;
+        code.StartsAt = ToUtc(dto.StartsAt);
+        code.ExpiresAt = ToUtc(dto.ExpiresAt);
         code.IsActive = dto.IsActive;
         await _db.SaveChangesAsync(ct);
         await _audit.LogAsync("DiscountCodeUpdated", "DiscountCode", id.ToString(), code.Code, ct);
@@ -134,6 +134,9 @@ public class DiscountCodeService
             return Math.Round(subtotal * code.DiscountValue / 100, 2);
         return Math.Min(code.DiscountValue, subtotal);
     }
+
+    private static DateTime? ToUtc(DateTime? dt) =>
+        dt.HasValue ? DateTime.SpecifyKind(dt.Value, DateTimeKind.Utc) : null;
 
     private static DiscountCodeDto MapToDto(DiscountCode d) => new(
         d.Id, d.Code, d.Title,

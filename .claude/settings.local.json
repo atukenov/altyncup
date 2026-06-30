@@ -36,7 +36,11 @@
       "Bash(./node_modules/.bin/nx build *)",
       "Bash(npm install *)",
       "Bash(npx cap *)",
-      "Bash(pod install *)"
+      "Bash(pod install *)",
+      "Bash(dotnet run *)",
+      "Bash(curl -s http://localhost:5000/health)",
+      "Bash(curl -s http://localhost:5001/health)",
+      "Bash(curl -s http://localhost:5000/api/v1/menu/categories)"
     ],
     "additionalDirectories": [
       "/private/tmp"
