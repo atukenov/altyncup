@@ -80,9 +80,28 @@ export class MenuManagementComponent implements OnInit {
     price: 0, isAvailable: true, categoryIds: [], group: '',
   });
 
+  itemSearch = signal('');
+  toppingSearch = signal('');
+
   filteredItems = computed(() => {
     const catId = this.selectedCategoryId();
-    return catId ? this.items().filter((i) => i.categoryId === catId) : this.items();
+    const q = this.itemSearch().toLowerCase().trim();
+    let list = catId ? this.items().filter((i) => i.categoryId === catId) : this.items();
+    if (q) list = list.filter((i) =>
+      i.name.toLowerCase().includes(q) ||
+      (i.nameRu ?? '').toLowerCase().includes(q) ||
+      (i.nameKk ?? '').toLowerCase().includes(q));
+    return list;
+  });
+
+  filteredToppings = computed(() => {
+    const q = this.toppingSearch().toLowerCase().trim();
+    if (!q) return this.toppings();
+    return this.toppings().filter((t) =>
+      t.name.toLowerCase().includes(q) ||
+      (t.nameRu ?? '').toLowerCase().includes(q) ||
+      (t.nameKk ?? '').toLowerCase().includes(q) ||
+      (t.group ?? '').toLowerCase().includes(q));
   });
 
   ngOnInit(): void {
