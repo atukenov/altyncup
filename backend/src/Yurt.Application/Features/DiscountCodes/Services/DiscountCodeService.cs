@@ -135,8 +135,18 @@ public class DiscountCodeService
         return Math.Min(code.DiscountValue, subtotal);
     }
 
-    private static DateTime? ToUtc(DateTime? dt) =>
-        dt.HasValue ? DateTime.SpecifyKind(dt.Value, DateTimeKind.Utc) : null;
+    private static readonly TimeZoneInfo BusinessTimeZone =
+        TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty");
+
+    // Admin sends a plain wall-clock value (datetime-local input, no offset).
+    // It represents business-local time, so convert it to true UTC rather than
+    // just relabeling the Kind (which would leave it ~5 hours off).
+    private static DateTime? ToUtc(DateTime? dt)
+    {
+        if (!dt.HasValue) return null;
+        var unspecified = DateTime.SpecifyKind(dt.Value, DateTimeKind.Unspecified);
+        return TimeZoneInfo.ConvertTimeToUtc(unspecified, BusinessTimeZone);
+    }
 
     private static DiscountCodeDto MapToDto(DiscountCode d) => new(
         d.Id, d.Code, d.Title,
