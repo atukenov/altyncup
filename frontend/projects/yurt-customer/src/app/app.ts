@@ -9,7 +9,6 @@ import {
   SignalrService,
   YurtApiService,
 } from 'shared-api';
-import { ToastContainerComponent } from 'shared-ui';
 import { environment } from '../environments/environment';
 import { SplashComponent } from './features/loading/splash.component';
 import { AppStateService } from './core/app-state.service';
@@ -17,7 +16,7 @@ import { AppResumeService } from './core/app-resume.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastContainerComponent, SplashComponent],
+  imports: [RouterOutlet, SplashComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

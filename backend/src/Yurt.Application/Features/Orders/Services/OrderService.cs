@@ -111,8 +111,9 @@ public class OrderService
         _db.Orders.Add(order);
         await _db.SaveChangesAsync(ct);
 
-        // Reload with location for DTO
+        // Attach navigation properties needed by MapToDto and the hub notification
         order.Location = location;
+        order.CustomerUser = await _db.CustomerUsers.FindAsync([customerId], ct);
         await _hub.NotifyOrderCreatedAsync(order, ct);
 
         return Result<OrderDto>.Success(MapToDto(order), 201);
