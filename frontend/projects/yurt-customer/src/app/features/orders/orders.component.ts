@@ -1,6 +1,7 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { YurtApiService } from 'shared-api';
 import { Order, OrderStatus } from 'shared-models';
 import {
@@ -11,6 +12,8 @@ import {
   Currency2Pipe,
 } from 'shared-ui';
 import { TranslatePipe } from '../../core/translate.pipe';
+import { AppResumeService } from '../../core/app-resume.service';
+import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 
 @Component({
   selector: 'app-orders',
@@ -23,13 +26,16 @@ import { TranslatePipe } from '../../core/translate.pipe';
     OrderStatusColorPipe,
     Currency2Pipe,
     TranslatePipe,
+    PullToRefreshDirective,
   ],
   templateUrl: './orders.component.html',
   styleUrl: './orders.component.css',
 })
-export class OrdersComponent implements OnInit {
+export class OrdersComponent implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
   private toast = inject(ToastService);
+  private appResume = inject(AppResumeService);
+  private resumeSub?: Subscription;
 
   loading = signal(true);
   activeOrders = signal<Order[]>([]);
@@ -59,6 +65,11 @@ export class OrdersComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.resumeSub = this.appResume.resumed$.subscribe(() => this.loadOrders());
+    this.loadOrders();
+  }
+
+  loadOrders(): void {
     Promise.all([
       this.api.getActiveOrders().toPromise(),
       this.api.getOrderHistory().toPromise(),
@@ -74,5 +85,9 @@ export class OrdersComponent implements OnInit {
         this.loading.set(false);
         this.toast.error('Failed to load orders.');
       });
+  }
+
+  ngOnDestroy(): void {
+    this.resumeSub?.unsubscribe();
   }
 }

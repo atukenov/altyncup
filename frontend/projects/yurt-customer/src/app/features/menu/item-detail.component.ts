@@ -8,11 +8,12 @@ import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { LocationService } from '../../core/location.service';
+import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 
 @Component({
   selector: 'app-item-detail',
   standalone: true,
-  imports: [CommonModule, Currency2Pipe, TranslatePipe],
+  imports: [CommonModule, Currency2Pipe, TranslatePipe, PullToRefreshDirective],
   templateUrl: './item-detail.component.html',
   styleUrl: './item-detail.component.css',
 })
@@ -52,6 +53,10 @@ export class ItemDetailComponent implements OnInit {
     });
   }
 
+  reload(): void {
+    this.loadItem(this.langService.lang());
+  }
+
   private loadItem(lang: string): void {
     this.loading.set(true);
     const locationId = this.locationSvc.locationId() || undefined;
@@ -83,7 +88,10 @@ export class ItemDetailComponent implements OnInit {
         extras.push(t);
       }
     }
-    const groupLabels: Record<string, string> = { milk: 'Milk', syrup: 'Syrup' };
+    const groupLabels: Record<string, string> = {
+      size: 'Size', milk: 'Milk', syrup: 'Syrup',
+      'side-dishes': 'Side Dishes', sauces: 'Sauces', bread: 'Bread',
+    };
     const result: { label: string; toppings: MenuTopping[] }[] = [];
     groupMap.forEach((toppings, key) => result.push({ label: groupLabels[key] ?? key, toppings }));
     if (extras.length) result.push({ label: 'Extras', toppings: extras });

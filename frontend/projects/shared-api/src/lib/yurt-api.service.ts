@@ -28,6 +28,7 @@ import {
   Promotion,
   UpdatePaymentRequest,
   UpdateStatusRequest,
+  UserReport,
   ValidateDiscountCodeResponse,
   WorkerAccount,
 } from 'shared-models';
@@ -118,8 +119,10 @@ export class YurtApiService {
   }
 
   // ── Menu ───────────────────────────────────────────────────────────────────
-  getCategories(lang?: string): Observable<MenuCategory[]> {
-    const params = lang ? new HttpParams().set('lang', lang) : undefined;
+  getCategories(lang?: string, locationId?: string): Observable<MenuCategory[]> {
+    let params = new HttpParams();
+    if (lang) params = params.set('lang', lang);
+    if (locationId) params = params.set('locationId', locationId);
     return this.http.get<MenuCategory[]>(`${this.api}/menu/categories`, { params });
   }
 
@@ -406,5 +409,19 @@ export class YurtApiService {
 
   checkoutGroupOrder(id: string): Observable<Order> {
     return this.http.post<Order>(`${this.api}/group-orders/${id}/checkout`, {});
+  }
+
+  submitReport(text: string): Observable<void> {
+    return this.http.post<void>(`${this.api}/reports`, { text });
+  }
+
+  getAdminReports(resolved = false): Observable<UserReport[]> {
+    return this.http.get<UserReport[]>(`${this.api}/admin/reports`, {
+      params: { resolved: String(resolved) },
+    });
+  }
+
+  resolveReport(id: string): Observable<void> {
+    return this.http.post<void>(`${this.api}/admin/reports/${id}/resolve`, {});
   }
 }

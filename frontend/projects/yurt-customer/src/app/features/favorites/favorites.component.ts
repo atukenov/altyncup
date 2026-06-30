@@ -7,11 +7,12 @@ import { ToastService, Currency2Pipe, SkeletonCardComponent } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
+import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 
 @Component({
   selector: 'app-favorites',
   standalone: true,
-  imports: [CommonModule, RouterLink, Currency2Pipe, SkeletonCardComponent, TranslatePipe],
+  imports: [CommonModule, RouterLink, Currency2Pipe, SkeletonCardComponent, TranslatePipe, PullToRefreshDirective],
   templateUrl: './favorites.component.html',
   styleUrl: './favorites.component.css',
 })
@@ -27,17 +28,21 @@ export class FavoritesComponent {
   constructor() {
     effect(() => {
       const lang = this.langService.lang();
-      this.loading.set(true);
-      this.api.getFavorites(lang).subscribe({
-        next: (items) => {
-          this.items.set(items);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.loading.set(false);
-          this.toast.error('Failed to load favorites.');
-        },
-      });
+      this.loadFavorites(lang);
+    });
+  }
+
+  loadFavorites(lang?: string): void {
+    this.loading.set(true);
+    this.api.getFavorites(lang ?? this.langService.lang()).subscribe({
+      next: (items) => {
+        this.items.set(items);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.toast.error('Failed to load favorites.');
+      },
     });
   }
 

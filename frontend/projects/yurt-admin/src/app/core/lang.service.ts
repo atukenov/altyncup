@@ -83,7 +83,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.week': 'Week', 'analytics.month': 'Month',
 
     // Discount codes
-    'nav.discountCodes': 'Discount Codes',
+    'nav.discountCodes': 'Discount Codes', 'nav.reports': 'Reports',
     'discountCodes.title': 'Discount Codes', 'discountCodes.subtitle': 'Promo codes customers enter at checkout',
     'discountCodes.new': '+ New Code', 'discountCodes.addTitle': 'New Discount Code', 'discountCodes.editTitle': 'Edit Discount Code',
     'discountCodes.noCodes': 'No discount codes yet', 'discountCodes.noCodesHint': 'Create a code to give customers a discount at checkout.',
@@ -235,7 +235,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.week': 'Эта неделя', 'analytics.month': 'Этот месяц',
 
     // Discount codes
-    'nav.discountCodes': 'Промокоды',
+    'nav.discountCodes': 'Промокоды', 'nav.reports': 'Отчёты',
     'discountCodes.title': 'Промокоды', 'discountCodes.subtitle': 'Коды скидок для покупателей',
     'discountCodes.new': '+ Новый код', 'discountCodes.addTitle': 'Новый промокод', 'discountCodes.editTitle': 'Изменить промокод',
     'discountCodes.noCodes': 'Промокодов нет', 'discountCodes.noCodesHint': 'Создайте код для предоставления скидок.',
@@ -387,7 +387,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.week': 'Осы апта', 'analytics.month': 'Осы ай',
 
     // Discount codes
-    'nav.discountCodes': 'Промокодтар',
+    'nav.discountCodes': 'Промокодтар', 'nav.reports': 'Есептер',
     'discountCodes.title': 'Промокодтар', 'discountCodes.subtitle': 'Тапсырыс берушілерге арналған жеңілдік кодтары',
     'discountCodes.new': '+ Жаңа код', 'discountCodes.addTitle': 'Жаңа промокод', 'discountCodes.editTitle': 'Промокодты өзгерту',
     'discountCodes.noCodes': 'Промокод жоқ', 'discountCodes.noCodesHint': 'Жеңілдік беру үшін код жасаңыз.',

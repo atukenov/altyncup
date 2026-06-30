@@ -18,6 +18,7 @@ import {
 } from 'shared-ui';
 import { environment } from '../../../environments/environment';
 import { TranslatePipe } from '../../core/translate.pipe';
+import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 
 @Component({
   selector: 'app-order-detail',
@@ -29,6 +30,7 @@ import { TranslatePipe } from '../../core/translate.pipe';
     OrderStatusColorPipe,
     Currency2Pipe,
     TranslatePipe,
+    PullToRefreshDirective,
   ],
   templateUrl: './order-detail.component.html',
   styleUrl: './order-detail.component.css',
@@ -68,6 +70,12 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   ];
 
   ngOnInit(): void {
+    this.loadOrder();
+
+    this.signalr.configure(environment.apiUrl);
+  }
+
+  loadOrder(): void {
     this.api.getOrder(this.id).subscribe({
       next: (o) => {
         this.order.set(o);
@@ -78,14 +86,11 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
         this.toast.error('Order not found.');
       },
     });
-
-    this.signalr.configure(environment.apiUrl);
     this.signalr.startConnection().then(() => {
       this.subs.push(
         this.signalr.orderUpdated$.subscribe((o) => {
           if (o.id === this.id) {
             this.order.set(o);
-            this.toast.info(`Order ${o.status}`);
             if (localStorage.getItem('yurt_push_enabled') !== 'false') {
               this.notif.sendNotification({
                 title: 'Order Update',
@@ -98,7 +103,6 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
         this.signalr.orderDeclined$.subscribe((o) => {
           if (o.id === this.id) {
             this.order.set(o);
-            this.toast.error('Order declined');
             if (localStorage.getItem('yurt_push_enabled') !== 'false') {
               this.notif.sendNotification({
                 title: 'Order Declined',

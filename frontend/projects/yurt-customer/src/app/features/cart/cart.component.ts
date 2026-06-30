@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { YurtApiService } from 'shared-api';
+import { YurtApiService, AuthStateService } from 'shared-api';
 import { PaymentMethod } from 'shared-models';
 import { CartService } from './cart.service';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
@@ -22,6 +22,7 @@ export class CartComponent {
   private router = inject(Router);
   private toast = inject(ToastService);
 
+  private auth = inject(AuthStateService);
   private locationSvc = inject(LocationService);
   readonly locationName = this.locationSvc.locationName;
   readonly PaymentMethod = PaymentMethod;
@@ -77,6 +78,10 @@ export class CartComponent {
   }
 
   checkout(): void {
+    if (!this.auth.isLoggedIn) {
+      this.router.navigate(['/auth/login']);
+      return;
+    }
     const locationId = this.locationSvc.locationId();
     if (!locationId) {
       this.toast.warning('Please select a location first.');

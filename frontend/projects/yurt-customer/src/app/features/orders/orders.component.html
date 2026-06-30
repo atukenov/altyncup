@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-stone-50">
+<div class="min-h-screen bg-stone-50" pullToRefresh (refreshed)="loadOrders()">
   <div class="bg-white border-b border-stone-100 px-4 py-4">
     <h1 class="text-xl font-bold text-stone-800">{{ 'orders.title' | t }}</h1>
   </div>

@@ -9,11 +9,12 @@ import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { LocationService } from '../../core/location.service';
+import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 
 @Component({
   selector: 'app-menu-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, SkeletonCardComponent, Currency2Pipe, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, SkeletonCardComponent, Currency2Pipe, TranslatePipe, PullToRefreshDirective],
   templateUrl: './menu-list.component.html',
   styleUrl: './menu-list.component.css',
 })
@@ -71,8 +72,8 @@ export class MenuListComponent implements OnInit {
   constructor() {
     effect(() => {
       const lang = this.langService.lang();
-      this.locationSvc.locationId(); // track location changes
-      this.api.getCategories(lang).subscribe((cats) => this.categories.set(cats));
+      const locationId = this.locationSvc.locationId() || undefined;
+      this.api.getCategories(lang, locationId).subscribe((cats) => this.categories.set(cats));
       this.api.getActivePromotions().subscribe((promos) => this.promotions.set(promos));
       this.loadItems(this.search || undefined, lang);
     });
@@ -109,7 +110,10 @@ export class MenuListComponent implements OnInit {
     }
 
     const result: { label: string; toppings: MenuTopping[] }[] = [];
-    const groupLabels: Record<string, string> = { milk: 'Milk', syrup: 'Syrup' };
+    const groupLabels: Record<string, string> = {
+      size: 'Size', milk: 'Milk', syrup: 'Syrup',
+      'side-dishes': 'Side Dishes', sauces: 'Sauces', bread: 'Bread',
+    };
     groupMap.forEach((toppings, key) =>
       result.push({ label: groupLabels[key] ?? key, toppings }),
     );

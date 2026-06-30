@@ -20,6 +20,7 @@ using Yurt.Application.Features.Payments.Services;
 using Yurt.Application.Features.Promotions.Services;
 using Yurt.Application.Features.DiscountCodes.Services;
 using Yurt.Application.Features.AuditLog.Services;
+using Yurt.Application.Features.Reports;
 using Yurt.Infrastructure.Hubs;
 using Yurt.Infrastructure.Payments;
 using Yurt.Infrastructure.Persistence;
@@ -71,6 +72,7 @@ public static class DependencyInjection
         services.AddScoped<CustomerService>();
         services.AddScoped<WorkerService>();
         services.AddScoped<GroupOrderService>();
+        services.AddScoped<ReportService>();
 
         // Background services
         services.AddHostedService<OrderArchivalService>();

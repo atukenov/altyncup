@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-stone-50">
+<div class="min-h-screen bg-stone-50" pullToRefresh (refreshed)="reload()">
 
   <!-- ── Loading skeleton ──────────────────────────────────────────────────── -->
   @if (loading()) {

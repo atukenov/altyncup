@@ -61,6 +61,7 @@
                 (ngModelChange)="cart.updateNotes(item, $event)"
                 [placeholder]="'cart.notePlaceholder' | t"
                 rows="2"
+                style="font-size: 16px"
                 class="mt-1.5 w-full text-xs rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-stone-700 placeholder-stone-300 resize-none focus:outline-none focus:ring-2 focus:ring-amber-300"
               ></textarea>
             }
@@ -103,6 +104,7 @@
               (ngModelChange)="promoCodeInput.set($event)"
               [placeholder]="'cart.promoPlaceholder' | t"
               (keydown.enter)="applyPromoCode()"
+              style="font-size: 16px"
               class="flex-1 text-sm rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-stone-700 placeholder-stone-300 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-300"
             />
             <button

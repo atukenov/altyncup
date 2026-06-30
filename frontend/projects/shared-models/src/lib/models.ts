@@ -460,3 +460,14 @@ export interface AuditLogEntry {
   ipAddress?: string;
   createdAt: string;
 }
+
+export interface UserReport {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  text: string;
+  isResolved: boolean;
+  resolvedAt?: string;
+  createdAt: string;
+}

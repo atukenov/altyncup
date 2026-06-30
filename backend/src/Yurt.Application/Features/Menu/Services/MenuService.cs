@@ -20,14 +20,26 @@ public class MenuService
 
     // ── Customer endpoints (localized) ────────────────────────────────────────
 
-    public async Task<List<MenuCategoryDto>> GetCategoriesAsync(string lang = "ru", CancellationToken ct = default)
-        => await _db.MenuCategories
+    public async Task<List<MenuCategoryDto>> GetCategoriesAsync(
+        string lang = "ru", Guid? locationId = null, CancellationToken ct = default)
+    {
+        var query = _db.MenuCategories.AsQueryable();
+
+        if (locationId.HasValue)
+        {
+            query = query.Where(c => c.Items.Any(i =>
+                i.IsAvailable &&
+                (!i.MenuItemLocations.Any() || i.MenuItemLocations.Any(l => l.LocationId == locationId.Value))));
+        }
+
+        return await query
             .OrderBy(c => c.SortOrder).ThenBy(c => c.Name)
             .Select(c => new MenuCategoryDto(
                 c.Id,
                 LocalizationHelper.Localize(c.Name, c.NameRu, c.NameKk, lang),
                 c.SortOrder))
             .ToListAsync(ct);
+    }
 
     public async Task<List<MenuItemDto>> GetItemsAsync(
         Guid? categoryId, string? search, string lang = "ru", Guid? locationId = null, CancellationToken ct = default)

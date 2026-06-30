@@ -14,11 +14,11 @@ public class MenuController : ApiControllerBase
 
     public MenuController(MenuService menuService) => _menuService = menuService;
 
-    /// <summary>Get all menu categories.</summary>
+    /// <summary>Get all menu categories, optionally filtered to those with items at a location.</summary>
     [HttpGet("categories")]
     public async Task<IActionResult> GetCategories(
-        [FromQuery] string lang = "ru", CancellationToken ct = default)
-        => Ok(await _menuService.GetCategoriesAsync(lang, ct));
+        [FromQuery] string lang = "ru", [FromQuery] Guid? locationId = null, CancellationToken ct = default)
+        => Ok(await _menuService.GetCategoriesAsync(lang, locationId, ct));
 
     /// <summary>Get menu items, optionally filtered by categoryId, search term, and locationId.</summary>
     [HttpGet]

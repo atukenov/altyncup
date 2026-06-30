@@ -7,11 +7,12 @@ import { CustomerProfile, CustomerStats } from 'shared-models';
 import { ButtonComponent, ToastService } from 'shared-ui';
 import { LangService, Lang } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
+import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, TranslatePipe, PullToRefreshDirective],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })
@@ -48,7 +49,16 @@ export class ProfileComponent implements OnInit {
   // Notifications
   notificationsEnabled = signal(localStorage.getItem('yurt_push_enabled') !== 'false');
 
+  // Report a Problem
+  showReportModal = signal(false);
+  reportText = '';
+  reportLoading = signal(false);
+
   ngOnInit(): void {
+    this.loadProfile();
+  }
+
+  loadProfile(): void {
     this.api.me().subscribe({ next: (p) => this.profile.set(p), error: () => {} });
     this.api.getCustomerStats().subscribe({ next: (s) => this.stats.set(s), error: () => {} });
   }
@@ -131,5 +141,23 @@ export class ProfileComponent implements OnInit {
     this.auth.logout();
     this.toast.info('Signed out');
     this.router.navigate(['/auth/login']);
+  }
+
+  submitReport(): void {
+    const text = this.reportText.trim();
+    if (!text) return;
+    this.reportLoading.set(true);
+    this.api.submitReport(text).subscribe({
+      next: () => {
+        this.reportLoading.set(false);
+        this.reportText = '';
+        this.showReportModal.set(false);
+        this.toast.success(this.langService.t('profile.reportSuccess'));
+      },
+      error: () => {
+        this.reportLoading.set(false);
+        this.toast.error('Failed to send report. Please try again.');
+      },
+    });
   }
 }

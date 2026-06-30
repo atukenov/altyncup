@@ -252,3 +252,16 @@ public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         builder.Property(e => e.IpAddress).HasMaxLength(50);
     }
 }
+
+public class UserReportConfiguration : IEntityTypeConfiguration<UserReport>
+{
+    public void Configure(EntityTypeBuilder<UserReport> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Text).HasMaxLength(2000).IsRequired();
+        builder.HasOne(e => e.Customer)
+               .WithMany()
+               .HasForeignKey(e => e.CustomerId)
+               .OnDelete(DeleteBehavior.Cascade);
+    }
+}

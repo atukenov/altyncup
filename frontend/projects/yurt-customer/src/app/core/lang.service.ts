@@ -49,6 +49,9 @@ const T: Record<Lang, Record<string, string>> = {
     'profile.dangerZone': 'Danger Zone', 'profile.deleteAccount': 'Delete Account',
     'profile.deleteConfirm': 'Are you sure? This cannot be undone.', 'profile.delete': 'Delete', 'profile.deleting': 'Deleting…',
     'profile.memberSince': 'Member since', 'profile.language': 'Language', 'profile.firstName': 'First Name', 'profile.lastName': 'Last Name',
+    'profile.report': 'Report a Problem', 'profile.reportTitle': 'Report a Problem',
+    'profile.reportPlaceholder': 'Describe the issue you encountered…',
+    'profile.reportSubmit': 'Send Report', 'profile.reportSuccess': 'Report sent. Thank you!',
   },
   ru: {
     'nav.menu': 'Меню', 'nav.cart': 'Корзина', 'nav.orders': 'Заказы', 'nav.saved': 'Избранное', 'nav.profile': 'Профиль',
@@ -96,6 +99,9 @@ const T: Record<Lang, Record<string, string>> = {
     'profile.dangerZone': 'Опасная зона', 'profile.deleteAccount': 'Удалить аккаунт',
     'profile.deleteConfirm': 'Вы уверены? Это нельзя отменить.', 'profile.delete': 'Удалить', 'profile.deleting': 'Удаление…',
     'profile.memberSince': 'Участник с', 'profile.language': 'Язык', 'profile.firstName': 'Имя', 'profile.lastName': 'Фамилия',
+    'profile.report': 'Сообщить о проблеме', 'profile.reportTitle': 'Сообщить о проблеме',
+    'profile.reportPlaceholder': 'Опишите проблему, с которой вы столкнулись…',
+    'profile.reportSubmit': 'Отправить', 'profile.reportSuccess': 'Сообщение отправлено. Спасибо!',
   },
   kk: {
     'nav.menu': 'Мәзір', 'nav.cart': 'Себет', 'nav.orders': 'Тапсырыстар', 'nav.saved': 'Сақталған', 'nav.profile': 'Профиль',
@@ -143,6 +149,9 @@ const T: Record<Lang, Record<string, string>> = {
     'profile.dangerZone': 'Қауіпті аймақ', 'profile.deleteAccount': 'Тіркелгіні жою',
     'profile.deleteConfirm': 'Сенімдісіз бе? Болдырмау мүмкін емес.', 'profile.delete': 'Жою', 'profile.deleting': 'Жою…',
     'profile.memberSince': 'Мүше болды', 'profile.language': 'Тіл', 'profile.firstName': 'Аты', 'profile.lastName': 'Тегі',
+    'profile.report': 'Мәселе туралы хабарлау', 'profile.reportTitle': 'Мәселе туралы хабарлау',
+    'profile.reportPlaceholder': 'Кездескен мәселені сипаттаңыз…',
+    'profile.reportSubmit': 'Жіберу', 'profile.reportSuccess': 'Хабарлама жіберілді. Рахмет!',
   },
 };
 
