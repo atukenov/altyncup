@@ -173,7 +173,11 @@
                 <td class="px-6 py-3 font-medium text-slate-800">{{ localizedItemName(item) }}</td>
                 <td class="px-6 py-3 text-slate-500">{{ categoryName(item.categoryId) }}</td>
                 <td class="px-6 py-3 text-right font-semibold text-amber-600">
-                  {{ item.price | currency2 }}
+                  @if (item.variants && item.variants.length > 0) {
+                    from {{ (item.variants | slice:0:1)[0].price | currency2 }}
+                  } @else {
+                    {{ item.price | currency2 }}
+                  }
                 </td>
                 <td class="px-6 py-3 text-center">
                   <span
@@ -357,6 +361,44 @@
             </select>
           </div>
         </div>
+        <!-- Size Variants -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-medium text-slate-600">Size Variants (optional)</label>
+            <button type="button" (click)="addVariantRow()"
+              class="text-xs text-amber-600 hover:text-amber-700 font-semibold">+ Add size</button>
+          </div>
+          <p class="text-xs text-slate-400 mb-2">Use for items sold in multiple sizes (e.g. 250ml / 350ml / 450ml). Each size has its own full price. If set, these replace the base price above.</p>
+          @if (itemForm().variants.length > 0) {
+            <div class="space-y-2 border border-slate-100 rounded-xl p-3 max-h-56 overflow-y-auto">
+              @for (v of itemForm().variants; track $index) {
+                <div class="grid grid-cols-[1fr_1fr_1fr_auto_auto_auto] gap-1.5 items-center">
+                  <input type="text" [ngModel]="v.label" (ngModelChange)="patchVariantRow($index, 'label', $event)"
+                    placeholder="EN label (e.g. 250ml)"
+                    class="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 outline-none" />
+                  <input type="text" [ngModel]="v.labelRu" (ngModelChange)="patchVariantRow($index, 'labelRu', $event)"
+                    placeholder="RU label"
+                    class="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 outline-none" />
+                  <input type="number" [ngModel]="v.price" (ngModelChange)="patchVariantRow($index, 'price', +$event)"
+                    placeholder="Price ₸" min="0"
+                    class="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 outline-none" />
+                  <label class="flex items-center gap-1 text-xs text-slate-500 whitespace-nowrap cursor-pointer">
+                    <input type="radio" name="variantDefault" [checked]="v.isDefault" (change)="setVariantDefault($index)"
+                      class="text-amber-500 focus:ring-amber-400" />
+                    Default
+                  </label>
+                  <button type="button" (click)="removeVariantRow($index)"
+                    class="text-red-400 hover:text-red-600 text-sm font-bold px-1">×</button>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl py-3 text-center">
+              No size variants — click "+ Add size" to define sizes with individual prices
+            </div>
+          }
+        </div>
+
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'label.imageUrl' | t }}</label>
           <input

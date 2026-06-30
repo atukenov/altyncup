@@ -2,7 +2,7 @@ import { Component, inject, OnInit, signal, computed, Input, effect } from '@ang
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { YurtApiService, AuthStateService } from 'shared-api';
-import { MenuItem, MenuTopping, OrderItemToppingInput } from 'shared-models';
+import { MenuItem, MenuTopping, MenuItemVariant, OrderItemToppingInput } from 'shared-models';
 import { ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
@@ -33,7 +33,12 @@ export class ItemDetailComponent implements OnInit {
   quantity = signal(1);
   isFav = signal(false);
   selectedToppingIds = signal<Set<string>>(new Set());
+  selectedVariant = signal<MenuItemVariant | null>(null);
   imageError = signal(false);
+
+  readonly effectivePrice = computed(() =>
+    this.selectedVariant()?.price ?? this.item()?.price ?? 0
+  );
 
   readonly unavailableAtLocation = computed(() => {
     const item = this.item();
@@ -61,7 +66,12 @@ export class ItemDetailComponent implements OnInit {
     this.loading.set(true);
     const locationId = this.locationSvc.locationId() || undefined;
     this.api.getMenuItem(this.id, lang, locationId).subscribe({
-      next: (item) => { this.item.set(item); this.loading.set(false); },
+      next: (item) => {
+        this.item.set(item);
+        const def = item.variants?.find((v) => v.isDefault) ?? item.variants?.[0] ?? null;
+        this.selectedVariant.set(def);
+        this.loading.set(false);
+      },
       error: () => { this.loading.set(false); this.toast.error('Failed to load item.'); },
     });
   }
@@ -105,7 +115,7 @@ export class ItemDetailComponent implements OnInit {
   });
 
   readonly lineTotal = computed(() =>
-    (this.item()?.price ?? 0 + this.toppingTotal()) * this.quantity()
+    (this.effectivePrice() + this.toppingTotal()) * this.quantity()
   );
 
   isToppingSelected(id: string): boolean {
@@ -139,16 +149,23 @@ export class ItemDetailComponent implements OnInit {
     }
     const item = this.item();
     if (!item) return;
+    const variant = this.selectedVariant();
+    if (item.variants?.length && !variant) {
+      this.toast.warning('Please select a size');
+      return;
+    }
     const selectedToppings = (item.availableToppings ?? [])
       .filter((t) => this.selectedToppingIds().has(t.id))
       .map<OrderItemToppingInput>((t) => ({ toppingId: t.id, toppingName: t.name, price: t.price }));
     this.cart.addItem({
       menuItemId: item.id,
       name: item.name,
-      price: item.price,
+      price: this.effectivePrice(),
       quantity: this.quantity(),
       imageUrl: item.imageUrl,
       selectedToppings: selectedToppings.length ? selectedToppings : undefined,
+      variantId: variant?.id,
+      variantLabel: variant?.label,
     });
     this.toast.success(`${this.quantity()}x ${item.name} added to cart`);
     this.router.navigate(['/menu']);

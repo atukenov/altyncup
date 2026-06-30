@@ -4,6 +4,8 @@ namespace Yurt.Application.Features.Menu.DTOs;
 
 public record MenuCategoryDto(Guid Id, string Name, int SortOrder);
 
+public record MenuItemVariantDto(Guid Id, string Label, decimal Price, int SortOrder, bool IsDefault);
+
 public record MenuItemDto(
     Guid Id,
     Guid CategoryId,
@@ -14,13 +16,17 @@ public record MenuItemDto(
     bool IsAvailable,
     string? ImageUrl,
     List<Guid>? LocationIds = null,
-    List<MenuToppingDto>? AvailableToppings = null);
+    List<MenuToppingDto>? AvailableToppings = null,
+    List<MenuItemVariantDto>? Variants = null);
 
 public record MenuToppingDto(Guid Id, string Name, decimal Price, bool IsAvailable, List<Guid> CategoryIds, string? Group = null);
 
 // ── Admin-facing read DTOs (all language fields exposed) ─────────────────────
 
 public record AdminMenuCategoryDto(Guid Id, string Name, string? NameRu, string? NameKk, int SortOrder);
+
+public record AdminMenuItemVariantDto(Guid Id, string Label, string? LabelRu, string? LabelKk, decimal Price, int SortOrder, bool IsDefault);
+public record CreateMenuItemVariantDto(string Label, string? LabelRu, string? LabelKk, decimal Price, int SortOrder, bool IsDefault);
 
 public record AdminMenuItemDto(
     Guid Id,
@@ -36,7 +42,8 @@ public record AdminMenuItemDto(
     bool IsAvailable,
     string? ImageUrl,
     List<Guid>? LocationIds = null,
-    List<MenuToppingDto>? AvailableToppings = null);
+    List<MenuToppingDto>? AvailableToppings = null,
+    List<AdminMenuItemVariantDto>? Variants = null);
 
 public record AdminMenuToppingDto(
     Guid Id,
@@ -64,7 +71,8 @@ public record CreateMenuItemDto(
     decimal Price,
     bool IsAvailable,
     string? ImageUrl,
-    List<Guid>? LocationIds = null);
+    List<Guid>? LocationIds = null,
+    List<CreateMenuItemVariantDto>? Variants = null);
 
 public record UpdateMenuItemDto(
     Guid CategoryId,
@@ -77,7 +85,8 @@ public record UpdateMenuItemDto(
     decimal Price,
     bool IsAvailable,
     string? ImageUrl,
-    List<Guid>? LocationIds = null);
+    List<Guid>? LocationIds = null,
+    List<CreateMenuItemVariantDto>? Variants = null);
 
 public record CreateToppingDto
 {

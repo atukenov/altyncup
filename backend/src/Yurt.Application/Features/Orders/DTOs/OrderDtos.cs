@@ -3,7 +3,7 @@ using Yurt.Domain.Enums;
 namespace Yurt.Application.Features.Orders.DTOs;
 
 public record CreateOrderDto(Guid LocationId, List<OrderItemInputDto> Items, PaymentMethod PaymentMethod, string? DiscountCode = null);
-public record OrderItemInputDto(Guid MenuItemId, int Quantity, List<OrderItemToppingInputDto>? Toppings = null, string? Notes = null);
+public record OrderItemInputDto(Guid MenuItemId, int Quantity, List<OrderItemToppingInputDto>? Toppings = null, string? Notes = null, Guid? VariantId = null);
 public record OrderItemToppingInputDto(Guid ToppingId, string ToppingName, decimal Price);
 
 public record AcceptOrderDto(int EtaMinutes);
@@ -40,6 +40,7 @@ public record OrderItemDto(
     decimal UnitPrice,
     decimal LineTotal,
     List<OrderItemToppingDto> Toppings,
-    string? Notes = null);
+    string? Notes = null,
+    string? VariantLabel = null);
 
 public record OrderItemToppingDto(Guid ToppingId, string ToppingName, decimal Price);

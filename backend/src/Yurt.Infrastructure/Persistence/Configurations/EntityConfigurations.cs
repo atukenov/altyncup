@@ -253,6 +253,20 @@ public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
     }
 }
 
+public class MenuItemVariantConfiguration : IEntityTypeConfiguration<MenuItemVariant>
+{
+    public void Configure(EntityTypeBuilder<MenuItemVariant> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Label).HasMaxLength(100).IsRequired();
+        builder.Property(e => e.LabelRu).HasMaxLength(100);
+        builder.Property(e => e.LabelKk).HasMaxLength(100);
+        builder.Property(e => e.Price).HasPrecision(10, 2);
+        builder.HasOne(e => e.MenuItem).WithMany(m => m.Variants)
+            .HasForeignKey(e => e.MenuItemId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class UserReportConfiguration : IEntityTypeConfiguration<UserReport>
 {
     public void Configure(EntityTypeBuilder<UserReport> builder)

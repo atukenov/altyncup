@@ -105,6 +105,16 @@ export interface MenuTopping {
   group?: string | null;
 }
 
+export interface MenuItemVariant {
+  id?: string;
+  label: string;
+  labelRu?: string;
+  labelKk?: string;
+  price: number;
+  sortOrder: number;
+  isDefault: boolean;
+}
+
 export interface MenuItem {
   id: string;
   categoryId: string;
@@ -120,6 +130,7 @@ export interface MenuItem {
   imageUrl?: string;
   locationIds?: string[];
   availableToppings?: MenuTopping[];
+  variants?: MenuItemVariant[];
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────
@@ -135,6 +146,7 @@ export interface OrderItemInput {
   quantity: number;
   toppings?: OrderItemToppingInput[];
   notes?: string;
+  variantId?: string;
 }
 
 export interface CreateOrderRequest {
@@ -194,6 +206,7 @@ export interface OrderItem {
   lineTotal: number;
   toppings: OrderItemTopping[];
   notes?: string;
+  variantLabel?: string;
 }
 
 export interface Order {
@@ -232,6 +245,8 @@ export interface CartItem {
   imageUrl?: string;
   selectedToppings?: OrderItemToppingInput[];
   notes?: string;
+  variantId?: string;
+  variantLabel?: string;
 }
 
 // ── Admin DTOs ───────────────────────────────────────────────────────────────

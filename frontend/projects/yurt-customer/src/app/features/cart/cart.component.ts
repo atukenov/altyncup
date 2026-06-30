@@ -107,6 +107,7 @@ export class CartComponent {
         quantity: i.quantity,
         toppings: i.selectedToppings ?? [],
         notes: i.notes,
+        variantId: i.variantId,
       }));
 
     const discountCode = this.cart.appliedDiscount()?.code;

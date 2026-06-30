@@ -28,7 +28,8 @@ export class CartService {
 
   itemKey(item: CartItem): string {
     const toppingIds = (item.selectedToppings ?? []).map((t) => t.toppingId).sort().join(',');
-    return toppingIds ? `${item.menuItemId}:${toppingIds}` : item.menuItemId;
+    const base = item.variantId ? `${item.menuItemId}@${item.variantId}` : item.menuItemId;
+    return toppingIds ? `${base}:${toppingIds}` : base;
   }
 
   applyDiscount(code: string, result: ValidateDiscountCodeResponse): void {

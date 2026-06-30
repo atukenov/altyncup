@@ -68,11 +68,42 @@
         <!-- Title + price row -->
         <div class="flex items-start justify-between gap-3 mb-3">
           <h2 class="text-2xl font-bold text-stone-800 leading-tight flex-1">{{ i.name }}</h2>
-          <span class="text-2xl font-bold text-amber-600 shrink-0 mt-0.5">{{ i.price | currency2 }}</span>
+          <span class="text-2xl font-bold text-amber-600 shrink-0 mt-0.5">
+            @if (i.variants && i.variants.length > 0) {
+              {{ effectivePrice() | currency2 }}
+            } @else {
+              {{ i.price | currency2 }}
+            }
+          </span>
         </div>
 
         @if (i.description) {
           <p class="text-stone-500 text-sm leading-relaxed mb-5">{{ i.description }}</p>
+        }
+
+        <!-- ── Size picker (variants) ────────────────────────────────────── -->
+        @if (i.variants && i.variants.length > 0) {
+          <div class="mb-5">
+            <div class="flex items-center gap-2 mb-3">
+              <p class="text-xs font-bold text-stone-400 uppercase tracking-widest">{{ 'item.size' | t }}</p>
+              <span class="text-[10px] bg-stone-100 text-stone-400 rounded-full px-2 py-0.5 font-medium">{{ 'item.chooseOne' | t }}</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              @for (v of i.variants; track v.id) {
+                @let sel = selectedVariant()?.id === v.id;
+                <button
+                  (click)="selectedVariant.set(v)"
+                  class="flex flex-col items-center px-4 py-2.5 rounded-2xl border-2 text-sm font-semibold transition-all active:scale-95"
+                  [class]="sel
+                    ? 'border-amber-400 bg-amber-50 text-amber-700'
+                    : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300'"
+                >
+                  <span>{{ v.label }}</span>
+                  <span class="text-xs font-bold mt-0.5" [class]="sel ? 'text-amber-600' : 'text-stone-400'">{{ v.price | currency2 }}</span>
+                </button>
+              }
+            </div>
+          </div>
         }
 
         <!-- ── Toppings ──────────────────────────────────────────────────── -->
@@ -191,7 +222,6 @@
 
   <!-- ── Sticky add-to-cart footer ──────────────────────────────────────── -->
   @if (item()) {
-    @let i = item()!;
     <div
       class="fixed left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-stone-100 max-w-lg mx-auto"
       style="bottom: calc(4rem + env(safe-area-inset-bottom)); box-shadow: 0 -1px 16px rgba(0,0,0,0.08)"
@@ -211,7 +241,7 @@
       >
         <span class="bg-white/20 rounded-xl w-7 h-7 flex items-center justify-center text-sm font-bold shrink-0">{{ quantity() }}</span>
         <span>{{ 'item.addToCart' | t }}</span>
-        <span class="shrink-0">{{ (i.price + toppingTotal()) * quantity() | currency2 }}</span>
+        <span class="shrink-0">{{ lineTotal() | currency2 }}</span>
       </button>
     </div>
   }

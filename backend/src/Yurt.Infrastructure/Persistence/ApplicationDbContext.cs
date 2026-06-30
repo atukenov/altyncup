@@ -30,6 +30,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
     public DbSet<MenuItemLocation> MenuItemLocations => Set<MenuItemLocation>();
+    public DbSet<MenuItemVariant> MenuItemVariants => Set<MenuItemVariant>();
     public DbSet<UserReport> UserReports => Set<UserReport>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -57,19 +57,32 @@ public class OrderService
             Status = OrderStatus.Created
         };
 
+        var variantIds = dto.Items
+            .Where(i => i.VariantId.HasValue)
+            .Select(i => i.VariantId!.Value)
+            .ToList();
+
+        var variants = variantIds.Count > 0
+            ? await _db.MenuItemVariants.Where(v => variantIds.Contains(v.Id)).ToListAsync(ct)
+            : [];
+
         var orderItems = dto.Items.Select(i =>
         {
             var menuItem = menuItems.First(m => m.Id == i.MenuItemId);
+            var variant = i.VariantId.HasValue ? variants.FirstOrDefault(v => v.Id == i.VariantId.Value && v.MenuItemId == i.MenuItemId) : null;
+            var basePrice = variant?.Price ?? menuItem.Price;
             var toppingTotal = i.Toppings?.Sum(t => t.Price) ?? 0m;
-            var lineTotal = (menuItem.Price + toppingTotal) * i.Quantity;
+            var lineTotal = (basePrice + toppingTotal) * i.Quantity;
             var orderItem = new OrderItem
             {
                 OrderId = order.Id,
                 MenuItemId = i.MenuItemId,
                 MenuItemName = menuItem.Name,
                 Quantity = i.Quantity,
-                UnitPrice = menuItem.Price + toppingTotal,
+                UnitPrice = basePrice + toppingTotal,
                 LineTotal = lineTotal,
+                VariantId = variant?.Id,
+                VariantLabel = variant?.Label,
                 Notes = i.Notes
             };
             if (i.Toppings is { Count: > 0 })
@@ -319,7 +332,7 @@ public class OrderService
             o.Items.Select(i => new OrderItemDto(
                 i.Id, i.MenuItemId, i.MenuItemName, i.Quantity, i.UnitPrice, i.LineTotal,
                 i.Toppings.Select(t => new OrderItemToppingDto(t.ToppingId, t.ToppingName, t.Price)).ToList(),
-                i.Notes
+                i.Notes, i.VariantLabel
             )).ToList());
     }
 }

@@ -2,11 +2,20 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
-import { MenuItem, MenuCategory, MenuTopping, Location } from 'shared-models';
+import { MenuItem, MenuCategory, MenuTopping, Location, MenuItemVariant } from 'shared-models';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { AdminLangService } from '../../core/lang.service';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+
+interface VariantRow {
+  label: string;
+  labelRu: string;
+  labelKk: string;
+  price: number;
+  sortOrder: number;
+  isDefault: boolean;
+}
 
 interface MenuItemForm {
   id?: string;
@@ -21,6 +30,7 @@ interface MenuItemForm {
   imageUrl: string;
   isAvailable: boolean;
   locationIds: string[];
+  variants: VariantRow[];
 }
 
 interface ToppingForm {
@@ -72,7 +82,7 @@ export class MenuManagementComponent implements OnInit {
   itemForm = signal<MenuItemForm>({
     name: '', nameRu: '', nameKk: '',
     description: '', descriptionRu: '', descriptionKk: '',
-    price: 0, categoryId: '', imageUrl: '', isAvailable: true, locationIds: [],
+    price: 0, categoryId: '', imageUrl: '', isAvailable: true, locationIds: [], variants: [],
   });
 
   toppingForm = signal<ToppingForm>({
@@ -163,8 +173,47 @@ export class MenuManagementComponent implements OnInit {
       imageUrl: item?.imageUrl ?? '',
       isAvailable: item?.isAvailable ?? true,
       locationIds: item?.locationIds ? [...item.locationIds] : [],
+      variants: item?.variants
+        ? item.variants.map((v: MenuItemVariant) => ({
+            label: v.label, labelRu: (v as any).labelRu ?? '', labelKk: (v as any).labelKk ?? '',
+            price: v.price, sortOrder: v.sortOrder, isDefault: v.isDefault,
+          }))
+        : [],
     });
     this.showItemDialog.set(true);
+  }
+
+  addVariantRow(): void {
+    this.itemForm.update((f) => ({
+      ...f,
+      variants: [
+        ...f.variants,
+        { label: '', labelRu: '', labelKk: '', price: 0, sortOrder: f.variants.length, isDefault: f.variants.length === 0 },
+      ],
+    }));
+  }
+
+  removeVariantRow(index: number): void {
+    this.itemForm.update((f) => {
+      const variants = f.variants.filter((_, i) => i !== index)
+        .map((v, i) => ({ ...v, sortOrder: i }));
+      if (variants.length > 0 && !variants.some((v) => v.isDefault)) variants[0].isDefault = true;
+      return { ...f, variants };
+    });
+  }
+
+  setVariantDefault(index: number): void {
+    this.itemForm.update((f) => ({
+      ...f,
+      variants: f.variants.map((v, i) => ({ ...v, isDefault: i === index })),
+    }));
+  }
+
+  patchVariantRow(index: number, field: keyof VariantRow, value: unknown): void {
+    this.itemForm.update((f) => ({
+      ...f,
+      variants: f.variants.map((v, i) => (i === index ? { ...v, [field]: value } : v)),
+    }));
   }
 
   isItemLocationSelected(locId: string): boolean {
@@ -190,8 +239,12 @@ export class MenuManagementComponent implements OnInit {
       this.toast.error('Name in all 3 languages is required (EN, RU, KZ)');
       return;
     }
-    if (!f.price) {
-      this.toast.error('Price is required');
+    if (!f.price && f.variants.length === 0) {
+      this.toast.error('Enter a price or add size variants');
+      return;
+    }
+    if (f.variants.some((v) => !v.label || !v.price)) {
+      this.toast.error('Each size variant must have a label and price');
       return;
     }
     this.saving.set(true);
@@ -207,6 +260,12 @@ export class MenuManagementComponent implements OnInit {
       imageUrl: f.imageUrl || undefined,
       isAvailable: f.isAvailable,
       locationIds: f.locationIds,
+      variants: f.variants.length > 0
+        ? f.variants.map((v, i) => ({
+            label: v.label, labelRu: v.labelRu || undefined, labelKk: v.labelKk || undefined,
+            price: v.price, sortOrder: i, isDefault: v.isDefault,
+          }))
+        : undefined,
     };
     const obs = f.id ? this.api.adminUpdateMenuItem(f.id, payload) : this.api.adminCreateMenuItem(payload);
     obs.subscribe({

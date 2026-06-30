@@ -183,7 +183,11 @@
                   </p>
                 }
                 <p class="text-amber-600 font-bold text-sm mt-auto pt-2">
-                  {{ item.price | currency2 }}
+                  @if (item.variants && item.variants.length > 0) {
+                    from {{ item.variants[0].price | currency2 }}
+                  } @else {
+                    {{ item.price | currency2 }}
+                  }
                 </p>
               </div>
             </a>
