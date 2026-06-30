@@ -52,6 +52,9 @@ const T: Record<Lang, Record<string, string>> = {
     'profile.report': 'Report a Problem', 'profile.reportTitle': 'Report a Problem',
     'profile.reportPlaceholder': 'Describe the issue you encountered…',
     'profile.reportSubmit': 'Send Report', 'profile.reportSuccess': 'Report sent. Thank you!',
+    'topping.size': 'Size', 'topping.milk': 'Milk', 'topping.syrup': 'Syrup',
+    'topping.side-dishes': 'Side Dishes', 'topping.sauces': 'Sauces', 'topping.bread': 'Bread',
+    'topping.extras': 'Extras',
   },
   ru: {
     'nav.menu': 'Меню', 'nav.cart': 'Корзина', 'nav.orders': 'Заказы', 'nav.saved': 'Избранное', 'nav.profile': 'Профиль',
@@ -102,6 +105,9 @@ const T: Record<Lang, Record<string, string>> = {
     'profile.report': 'Сообщить о проблеме', 'profile.reportTitle': 'Сообщить о проблеме',
     'profile.reportPlaceholder': 'Опишите проблему, с которой вы столкнулись…',
     'profile.reportSubmit': 'Отправить', 'profile.reportSuccess': 'Сообщение отправлено. Спасибо!',
+    'topping.size': 'Размер', 'topping.milk': 'Молоко', 'topping.syrup': 'Сироп',
+    'topping.side-dishes': 'Гарниры', 'topping.sauces': 'Соусы', 'topping.bread': 'Хлеб',
+    'topping.extras': 'Дополнения',
   },
   kk: {
     'nav.menu': 'Мәзір', 'nav.cart': 'Себет', 'nav.orders': 'Тапсырыстар', 'nav.saved': 'Сақталған', 'nav.profile': 'Профиль',
@@ -152,6 +158,9 @@ const T: Record<Lang, Record<string, string>> = {
     'profile.report': 'Мәселе туралы хабарлау', 'profile.reportTitle': 'Мәселе туралы хабарлау',
     'profile.reportPlaceholder': 'Кездескен мәселені сипаттаңыз…',
     'profile.reportSubmit': 'Жіберу', 'profile.reportSuccess': 'Хабарлама жіберілді. Рахмет!',
+    'topping.size': 'Өлшем', 'topping.milk': 'Сүт', 'topping.syrup': 'Шәрбат',
+    'topping.side-dishes': 'Гарнирлер', 'topping.sauces': 'Соустар', 'topping.bread': 'Нан',
+    'topping.extras': 'Қосымшалар',
   },
 };
 

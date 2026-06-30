@@ -88,13 +88,11 @@ export class ItemDetailComponent implements OnInit {
         extras.push(t);
       }
     }
-    const groupLabels: Record<string, string> = {
-      size: 'Size', milk: 'Milk', syrup: 'Syrup',
-      'side-dishes': 'Side Dishes', sauces: 'Sauces', bread: 'Bread',
-    };
     const result: { label: string; toppings: MenuTopping[] }[] = [];
-    groupMap.forEach((toppings, key) => result.push({ label: groupLabels[key] ?? key, toppings }));
-    if (extras.length) result.push({ label: 'Extras', toppings: extras });
+    groupMap.forEach((toppings, key) =>
+      result.push({ label: this.langService.t(`topping.${key}`), toppings })
+    );
+    if (extras.length) result.push({ label: this.langService.t('topping.extras'), toppings: extras });
     return result;
   }
 
