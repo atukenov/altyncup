@@ -163,6 +163,7 @@ public class OrderService
         return await _db.Orders
             .Include(o => o.Location)
             .Include(o => o.Items).ThenInclude(i => i.Toppings)
+            .Include(o => o.DiscountCode)
             .Where(o => o.CustomerUserId == customerId && activeStatuses.Contains(o.Status) && !o.IsArchived)
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => MapToDto(o))
@@ -174,6 +175,7 @@ public class OrderService
         => await _db.Orders
             .Include(o => o.Location)
             .Include(o => o.Items).ThenInclude(i => i.Toppings)
+            .Include(o => o.DiscountCode)
             .Where(o => o.CustomerUserId == customerId && o.Status == OrderStatus.Completed && !o.IsArchived)
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => MapToDto(o))
@@ -184,6 +186,7 @@ public class OrderService
         => await _db.Orders
             .Include(o => o.Location)
             .Include(o => o.Items).ThenInclude(i => i.Toppings)
+            .Include(o => o.DiscountCode)
             .Where(o => o.CustomerUserId == customerId && o.Status == OrderStatus.Declined && !o.IsArchived)
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => MapToDto(o))
@@ -196,6 +199,7 @@ public class OrderService
             .Include(o => o.Location)
             .Include(o => o.CustomerUser)
             .Include(o => o.Items).ThenInclude(i => i.Toppings)
+            .Include(o => o.DiscountCode)
             .Where(o => !o.IsArchived)
             .AsQueryable();
 
@@ -298,6 +302,7 @@ public class OrderService
             .Include(o => o.Location)
             .Include(o => o.CustomerUser)
             .Include(o => o.Items).ThenInclude(i => i.Toppings)
+            .Include(o => o.DiscountCode)
             .FirstOrDefaultAsync(o => o.Id == id, ct);
 
     public static OrderDto MapToDto(Order o)
