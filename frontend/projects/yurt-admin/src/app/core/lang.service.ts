@@ -40,7 +40,10 @@ const T: Record<AdminLang, Record<string, string>> = {
     'menu.nameLabel': 'Name', 'menu.categoryName': 'Category name',
     'menu.priceStar': 'Price *', 'menu.selectionType': 'Selection type',
     'menu.freePick': 'Free pick (checkbox)', 'menu.showForCats': 'Show for categories',
-    'menu.priceZeroFree': 'Price (0 = free)',
+    'menu.priceZeroFree': 'Price (0 = free)', 'menu.pickOne': 'pick one',
+    'topping.size': 'Size', 'topping.milk': 'Milk', 'topping.syrup': 'Syrup',
+    'topping.side-dishes': 'Side Dishes', 'topping.sauces': 'Sauces',
+    'topping.bread': 'Bread', 'topping.extras': 'Extras',
 
     // Live Orders
     'orders.title': 'Live Orders', 'orders.noOrders': 'No orders',
@@ -193,7 +196,10 @@ const T: Record<AdminLang, Record<string, string>> = {
     'menu.nameLabel': 'Название', 'menu.categoryName': 'Название категории',
     'menu.priceStar': 'Цена *', 'menu.selectionType': 'Тип выбора',
     'menu.freePick': 'Свободный выбор (checkbox)', 'menu.showForCats': 'Показывать для категорий',
-    'menu.priceZeroFree': 'Цена (0 = бесплатно)',
+    'menu.priceZeroFree': 'Цена (0 = бесплатно)', 'menu.pickOne': 'выбрать один',
+    'topping.size': 'Размер', 'topping.milk': 'Молоко', 'topping.syrup': 'Сироп',
+    'topping.side-dishes': 'Гарниры', 'topping.sauces': 'Соусы',
+    'topping.bread': 'Хлеб', 'topping.extras': 'Дополнения',
 
     // Live Orders
     'orders.title': 'Заказы (Live)', 'orders.noOrders': 'Нет заказов',
@@ -346,7 +352,10 @@ const T: Record<AdminLang, Record<string, string>> = {
     'menu.nameLabel': 'Атауы', 'menu.categoryName': 'Санат атауы',
     'menu.priceStar': 'Баға *', 'menu.selectionType': 'Таңдау түрі',
     'menu.freePick': 'Еркін таңдау (checkbox)', 'menu.showForCats': 'Санаттар үшін көрсету',
-    'menu.priceZeroFree': 'Баға (0 = тегін)',
+    'menu.priceZeroFree': 'Баға (0 = тегін)', 'menu.pickOne': 'бірін таңдаңыз',
+    'topping.size': 'Өлшем', 'topping.milk': 'Сүт', 'topping.syrup': 'Шәрбат',
+    'topping.side-dishes': 'Гарнирлер', 'topping.sauces': 'Соустар',
+    'topping.bread': 'Нан', 'topping.extras': 'Қосымшалар',
 
     // Live Orders
     'orders.title': 'Тапсырыстар (Live)', 'orders.noOrders': 'Тапсырыстар жоқ',

@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-stone-50" pullToRefresh (refreshed)="loadItems()">
+<div class="min-h-screen bg-stone-50" pullToRefresh [enabled]="!toppingModalItem()" (refreshed)="loadItems()">
   <!-- ── Branded gradient header ─────────────────────────────────────────── -->
   <div class="bg-linear-to-br from-amber-500 to-amber-600 shadow-md">
     <div class="px-4 pb-4" style="padding-top: 1rem">
@@ -208,7 +208,7 @@
             <!-- Add button -->
             <div class="px-3 pb-3">
               <button
-                (click)="addToCart(item)"
+                (click)="addToCart(item, $event)"
                 class="w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-sm font-bold rounded-xl py-2 transition-colors focus:outline-none"
               >
                 {{ 'menu.addIcon' | t }}
@@ -224,13 +224,37 @@
   @if (toppingModalItem()) {
     <div class="fixed inset-0 bg-black/50 z-50 flex items-end" (click)="dismissToppingModal()">
       <div
-        class="bg-white w-full rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto"
+        class="bg-white w-full rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto sheet-panel"
         (click)="$event.stopPropagation()"
+        (touchstart)="onSheetTouchStart($event)"
+        (touchend)="onSheetTouchEnd($event)"
       >
         <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-5"></div>
         <h3 class="font-bold text-stone-800 text-lg mb-1">{{ 'menu.customise' | t }}</h3>
         <p class="text-stone-500 text-sm mb-4">{{ toppingModalItem()!.name }}</p>
         <div class="space-y-4 mb-6">
+          <!-- Size variants -->
+          @if (toppingModalItem()!.variants && toppingModalItem()!.variants!.length > 0) {
+            <div class="mb-5">
+              <div class="flex items-center gap-2 mb-3">
+                <p class="text-xs font-bold text-stone-400 uppercase tracking-widest">{{ 'item.size' | t }}</p>
+                <span class="text-[10px] bg-stone-100 text-stone-400 rounded-full px-2 py-0.5 font-medium">{{ 'item.chooseOne' | t }}</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                @for (v of toppingModalItem()!.variants!; track v.id) {
+                  @let sel = selectedVariant()?.id === v.id;
+                  <button
+                    (click)="selectedVariant.set(v)"
+                    class="flex flex-col items-center px-4 py-2.5 rounded-2xl border-2 text-sm font-semibold transition-all active:scale-95"
+                    [class]="sel ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-stone-200 bg-white text-stone-600'"
+                  >
+                    <span>{{ v.label }}</span>
+                    <span class="text-xs font-bold mt-0.5" [class]="sel ? 'text-amber-600' : 'text-stone-400'">{{ v.price | currency2 }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
           @for (group of groupedToppings; track group.label) {
             <div class="mb-5">
               <div class="flex items-center gap-2 mb-3">
@@ -297,10 +321,12 @@
           }
         </div>
         <button
-          (click)="confirmToppings()"
-          class="w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold rounded-2xl py-4 transition-colors focus:outline-none"
+          (click)="confirmToppings($event)"
+          class="w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold rounded-2xl py-4 transition-colors focus:outline-none flex items-center justify-between px-5"
         >
-          {{ 'menu.addToCart' | t }}
+          <span class="w-16"></span>
+          <span>{{ 'menu.addToCart' | t }}</span>
+          <span class="w-16 text-right text-sm font-bold opacity-90">{{ modalTotal | currency2 }}</span>
         </button>
       </div>
     </div>
@@ -310,7 +336,7 @@
   @if (cartCount() > 0) {
     <button
       routerLink="/cart"
-      class="fixed right-4 z-30 w-14 h-14 bg-amber-500 hover:bg-amber-600 active:scale-95 rounded-full shadow-xl shadow-amber-300/60 flex items-center justify-center transition-all focus:outline-none"
+      class="cart-fly-target fixed right-4 z-30 w-14 h-14 bg-amber-500 hover:bg-amber-600 active:scale-95 rounded-full shadow-xl shadow-amber-300/60 flex items-center justify-center transition-all focus:outline-none"
       style="bottom: calc(5rem + env(safe-area-inset-bottom))"
       aria-label="View cart"
     >

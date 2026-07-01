@@ -233,7 +233,7 @@
               <td class="px-6 py-3 font-medium text-slate-800">{{ localizedToppingName(topping) }}</td>
               <td class="px-6 py-3 text-slate-500 text-xs">
                 @if (topping.group) {
-                  <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full capitalize">{{ topping.group }}</span>
+                  <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{{ ('topping.' + topping.group) | t }}</span>
                 } @else {
                   <span class="text-slate-300">—</span>
                 }
@@ -538,12 +538,12 @@
             class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
           >
             <option value="">{{ 'menu.freePick' | t }}</option>
-            <option value="size">Size — pick one</option>
-            <option value="milk">Milk — pick one</option>
-            <option value="syrup">Syrup — pick one</option>
-            <option value="side-dishes">Side Dishes — pick one</option>
-            <option value="sauces">Sauces — pick one</option>
-            <option value="bread">Bread — pick one</option>
+            <option value="size">{{ 'topping.size' | t }} — {{ 'menu.pickOne' | t }}</option>
+            <option value="milk">{{ 'topping.milk' | t }} — {{ 'menu.pickOne' | t }}</option>
+            <option value="syrup">{{ 'topping.syrup' | t }} — {{ 'menu.pickOne' | t }}</option>
+            <option value="side-dishes">{{ 'topping.side-dishes' | t }} — {{ 'menu.pickOne' | t }}</option>
+            <option value="sauces">{{ 'topping.sauces' | t }} — {{ 'menu.pickOne' | t }}</option>
+            <option value="bread">{{ 'topping.bread' | t }} — {{ 'menu.pickOne' | t }}</option>
           </select>
         </div>
         <div>

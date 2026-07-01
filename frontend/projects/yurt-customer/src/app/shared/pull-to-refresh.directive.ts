@@ -3,6 +3,7 @@ import {
   ElementRef,
   EventEmitter,
   HostListener,
+  Input,
   OnDestroy,
   OnInit,
   Output,
@@ -16,6 +17,7 @@ const THRESHOLD = 72;
   standalone: true,
 })
 export class PullToRefreshDirective implements OnInit, OnDestroy {
+  @Input() enabled = true;
   @Output() refreshed = new EventEmitter<void>();
 
   private startY = 0;
@@ -49,6 +51,7 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
 
   @HostListener('touchstart', ['$event'])
   onTouchStart(e: TouchEvent): void {
+    if (!this.enabled) return;
     if (window.scrollY === 0) {
       this.startY = e.touches[0].clientY;
       this.pulling = true;
@@ -57,7 +60,7 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
 
   @HostListener('touchmove', ['$event'])
   onTouchMove(e: TouchEvent): void {
-    if (!this.pulling) return;
+    if (!this.enabled || !this.pulling) return;
     const dy = e.touches[0].clientY - this.startY;
     if (dy > 10 && window.scrollY === 0) {
       const ratio = Math.min(dy / THRESHOLD, 1);
@@ -70,7 +73,7 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
 
   @HostListener('touchend', ['$event'])
   onTouchEnd(e: TouchEvent): void {
-    if (!this.pulling) return;
+    if (!this.enabled || !this.pulling) return;
     const dy = e.changedTouches[0].clientY - this.startY;
     this.renderer.setStyle(this.indicator, 'opacity', '0');
     this.pulling = false;
