@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { YurtApiService } from 'shared-api';
 import { Promotion } from 'shared-models';
@@ -11,36 +11,108 @@ import { environment } from '../../environments/environment';
   templateUrl: './promo-popup.component.html',
   styleUrl: './promo-popup.component.css',
 })
-export class PromoPopupComponent implements OnInit {
+export class PromoPopupComponent implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
+
+  private readonly SEEN_KEY = 'yurt_seen_promos';
+  private autoTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly STORY_DURATION = 5000;
 
   promotions = signal<Promotion[]>([]);
   currentIndex = signal(0);
   visible = signal(false);
+  progress = signal(0);
 
   ngOnInit(): void {
     this.api.configure(environment.apiUrl);
     this.api.getActivePromotions().subscribe({
-      next: (promos) => {
-        if (promos.length > 0) {
-          this.promotions.set(promos);
+      next: (all) => {
+        const seen = this.loadSeen();
+        const unseen = all.filter((p) => !seen.has(p.id));
+        if (unseen.length > 0) {
+          this.promotions.set(unseen);
           this.visible.set(true);
+          this.startTimer();
         }
       },
     });
   }
 
-  get current(): Promotion | null {
-    const promos = this.promotions();
-    return promos[this.currentIndex()] ?? null;
+  ngOnDestroy(): void {
+    this.clearTimer();
   }
 
-  close(): void {
-    const nextIndex = this.currentIndex() + 1;
-    if (nextIndex < this.promotions().length) {
-      this.currentIndex.set(nextIndex);
+  get current(): Promotion | null {
+    return this.promotions()[this.currentIndex()] ?? null;
+  }
+
+  segmentWidth(i: number): number {
+    const cur = this.currentIndex();
+    if (i < cur) return 100;
+    if (i === cur) return this.progress();
+    return 0;
+  }
+
+  onTap(event: MouseEvent): void {
+    event.clientX > window.innerWidth / 2 ? this.next() : this.prev();
+  }
+
+  prev(): void {
+    const i = this.currentIndex();
+    if (i > 0) {
+      this.clearTimer();
+      this.currentIndex.set(i - 1);
+      this.startTimer();
+    }
+  }
+
+  next(): void {
+    const promos = this.promotions();
+    const i = this.currentIndex();
+    this.markSeen(promos[i].id);
+    this.clearTimer();
+    if (i + 1 < promos.length) {
+      this.currentIndex.set(i + 1);
+      this.startTimer();
     } else {
       this.visible.set(false);
     }
+  }
+
+  closeAll(): void {
+    this.promotions().forEach((p) => this.markSeen(p.id));
+    this.clearTimer();
+    this.visible.set(false);
+  }
+
+  private startTimer(): void {
+    this.progress.set(0);
+    let elapsed = 0;
+    this.autoTimer = setInterval(() => {
+      elapsed += 50;
+      this.progress.set(Math.min((elapsed / this.STORY_DURATION) * 100, 100));
+      if (elapsed >= this.STORY_DURATION) this.next();
+    }, 50);
+  }
+
+  private clearTimer(): void {
+    if (this.autoTimer) {
+      clearInterval(this.autoTimer);
+      this.autoTimer = null;
+    }
+  }
+
+  private loadSeen(): Set<string> {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(this.SEEN_KEY) ?? '[]'));
+    } catch {
+      return new Set();
+    }
+  }
+
+  private markSeen(id: string): void {
+    const seen = this.loadSeen();
+    seen.add(id);
+    localStorage.setItem(this.SEEN_KEY, JSON.stringify([...seen]));
   }
 }

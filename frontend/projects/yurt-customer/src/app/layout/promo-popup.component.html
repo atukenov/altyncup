@@ -1,49 +1,76 @@
 @if (visible() && current) {
-  <div class="promo-overlay" (click)="close()">
-    <div class="promo-card" (click)="$event.stopPropagation()">
-      <!-- Close button -->
-      <button (click)="close()" class="promo-close" aria-label="Close promotion">
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+  <div
+    class="fixed inset-0 z-9998 bg-black select-none"
+    (click)="onTap($event)"
+  >
+    <!-- Background image or gradient -->
+    @if (current.imageUrl) {
+      <img
+        [src]="current.imageUrl"
+        [alt]="current.title"
+        class="absolute inset-0 w-full h-full object-cover"
+      />
+    } @else {
+      <div
+        class="absolute inset-0 bg-linear-to-br from-amber-400 to-orange-500"
+      ></div>
+    }
 
-      <!-- Image -->
-      @if (current.imageUrl) {
-        <div class="promo-image-wrap">
-          <img [src]="current.imageUrl" [alt]="current.title" class="promo-image" />
-        </div>
-      } @else {
-        <div class="promo-icon-wrap">
-          <span class="promo-icon">☕</span>
+    <!-- Gradient overlays for readability -->
+    <div
+      class="absolute inset-0 bg-linear-to-b from-black/50 via-transparent to-black/70"
+    ></div>
+
+    <!-- Progress segments -->
+    <div
+      class="absolute left-0 right-0 flex gap-1 px-3"
+      style="top: calc(env(safe-area-inset-top) + 10px)"
+    >
+      @for (p of promotions(); track p.id; let i = $index) {
+        <div class="h-0.75 flex-1 bg-white/30 rounded-full overflow-hidden">
+          <div
+            class="h-full bg-white rounded-full"
+            [style.width.%]="segmentWidth(i)"
+          ></div>
         </div>
       }
+    </div>
 
-      <!-- Content -->
-      <div class="promo-body">
-        <h2 class="promo-title">{{ current.title }}</h2>
-        @if (current.description) {
-          <p class="promo-desc">{{ current.description }}</p>
-        }
-      </div>
+    <!-- X close button -->
+    <button
+      (click)="$event.stopPropagation(); closeAll()"
+      class="absolute right-4 text-white active:opacity-70 transition-opacity"
+      style="top: calc(env(safe-area-inset-top) + 24px)"
+      aria-label="Close"
+    >
+      <svg
+        class="w-7 h-7"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M6 18L18 6M6 6l12 12"
+        />
+      </svg>
+    </button>
 
-      <!-- Counter -->
-      @if (promotions().length > 1) {
-        <div class="promo-counter">{{ currentIndex() + 1 }} / {{ promotions().length }}</div>
+    <!-- Bottom content -->
+    <div
+      class="absolute bottom-0 left-0 right-0 px-5"
+      style="padding-bottom: calc(env(safe-area-inset-bottom) + 36px)"
+    >
+      <h2 class="text-white text-xl font-bold leading-snug mb-2 drop-shadow">
+        {{ current.title }}
+      </h2>
+      @if (current.description) {
+        <p class="text-white/80 text-sm leading-relaxed drop-shadow">
+          {{ current.description }}
+        </p>
       }
-
-      <!-- Action -->
-      <div class="promo-action">
-        <button (click)="close()" class="promo-btn">
-          {{ currentIndex() + 1 < promotions().length ? 'Next' : 'Got it!' }}
-        </button>
-      </div>
     </div>
   </div>
 }

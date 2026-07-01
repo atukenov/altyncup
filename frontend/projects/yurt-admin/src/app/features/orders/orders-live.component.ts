@@ -94,6 +94,10 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
     });
   });
 
+  totalQty(order: Order): number {
+    return order.items.reduce((s, i) => s + i.quantity, 0);
+  }
+
   countForStatus(tab: string): number {
     if (tab === 'active')
       return this.orders().filter((o) => this.activeStatuses.includes(o.status as OrderStatus))
