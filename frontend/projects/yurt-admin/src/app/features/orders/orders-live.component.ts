@@ -44,6 +44,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   selectedOrder = signal<Order | null>(null);
   activeTab = signal<string>('active');
   selectedLocationId = '';
+  private readonly LOC_KEY = 'yurt_orders_location';
 
   etaInput = 10;
   etaPresetValue = '10';
@@ -108,7 +109,13 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   private subs: Subscription[] = [];
 
   ngOnInit(): void {
-    this.api.getAdminLocations().subscribe((locs) => this.locations.set(locs));
+    this.api.getAdminLocations().subscribe((locs) => {
+      this.locations.set(locs);
+      const saved = localStorage.getItem(this.LOC_KEY) ?? '';
+      if (saved && locs.some((l) => l.id === saved)) {
+        this.selectedLocationId = saved;
+      }
+    });
     this.loadOrders();
 
     this.signalr.configure(environment.apiUrl);
@@ -132,6 +139,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   }
 
   loadOrders(): void {
+    localStorage.setItem(this.LOC_KEY, this.selectedLocationId);
     this.loading.set(true);
     this.api.getAdminOrders(undefined, this.selectedLocationId || undefined).subscribe({
       next: (orders) => {

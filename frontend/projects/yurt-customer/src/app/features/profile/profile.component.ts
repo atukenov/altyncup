@@ -26,7 +26,7 @@ export class ProfileComponent implements OnInit {
   readonly langs: { code: Lang; label: string }[] = [
     { code: 'en', label: 'EN' },
     { code: 'ru', label: 'RU' },
-    { code: 'kk', label: 'ҚАЗ' },
+    { code: 'kk', label: 'KZ' },
   ];
 
   profile = signal<CustomerProfile | null>(null);

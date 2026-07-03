@@ -16,10 +16,11 @@ public class AdminAnalyticsController : ControllerBase
     public AdminAnalyticsController(AnalyticsService analyticsService)
         => _analyticsService = analyticsService;
 
-    /// <summary>Get analytics data for the specified period.</summary>
+    /// <summary>Get analytics data for the specified period and optional location.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAnalytics(
         [FromQuery] string period = "month",
+        [FromQuery] Guid? locationId = null,
         CancellationToken ct = default)
-        => Ok(await _analyticsService.GetAnalyticsAsync(period, ct));
+        => Ok(await _analyticsService.GetAnalyticsAsync(period, locationId, ct));
 }

@@ -25,38 +25,61 @@
   } @else {
     <div class="p-4 space-y-3 max-w-lg mx-auto mb-44">
       @for (item of cart.items(); track cart.itemKey(item)) {
-        <div
-          class="bg-white rounded-2xl border border-stone-100 p-4 flex items-center gap-3 shadow-sm"
-        >
-          @if (item.imageUrl) {
-            <img
-              [src]="item.imageUrl"
-              [alt]="item.name"
-              class="w-16 h-16 rounded-xl object-cover shrink-0"
-            />
-          } @else {
-            <div
-              class="w-16 h-16 rounded-xl bg-linear-to-br from-amber-50 to-orange-50 flex items-center justify-center text-2xl shrink-0"
-            >
-              ☕
-            </div>
-          }
-          <div class="flex-1 min-w-0">
-            <h3 class="font-bold text-stone-800 truncate">
-              {{ item.name }}
-              @if (item.variantLabel) {
-                <span class="font-normal text-stone-400"> · {{ item.variantLabel }}</span>
-              }
-            </h3>
-            @if (item.selectedToppings?.length) {
-              <p class="text-stone-400 text-xs mt-0.5 truncate">
-                {{ item.selectedToppings!.map(t => t.toppingName).join(', ') }}
-              </p>
+        <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+          <!-- Main row -->
+          <div class="flex items-center gap-3">
+            @if (item.imageUrl) {
+              <img
+                [src]="item.imageUrl"
+                [alt]="item.name"
+                class="w-16 h-16 rounded-xl object-cover shrink-0"
+              />
+            } @else {
+              <div
+                class="w-16 h-16 rounded-xl bg-linear-to-br from-amber-50 to-orange-50 flex items-center justify-center text-2xl shrink-0"
+              >
+                ☕
+              </div>
             }
-            <p class="text-amber-600 font-semibold text-sm mt-0.5">{{ item.price | currency2 }}</p>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold text-stone-800 truncate">
+                {{ langService.lang() === 'ru' && item.nameRu ? item.nameRu
+                 : langService.lang() === 'kk' && item.nameKk ? item.nameKk
+                 : item.name }}
+                @if (item.variantLabel) {
+                  <span class="font-normal text-stone-400"> · {{ item.variantLabel }}</span>
+                }
+              </h3>
+              @if (item.selectedToppings?.length) {
+                <p class="text-stone-400 text-xs mt-0.5 truncate">
+                  {{ item.selectedToppings!.map(t => t.toppingName).join(', ') }}
+                </p>
+              }
+              <p class="text-amber-600 font-semibold text-sm mt-0.5">{{ item.price | currency2 }}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button
+                (click)="cart.updateQty(item, item.quantity - 1)"
+                class="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 active:scale-95 flex items-center justify-center text-base font-bold transition-all"
+                aria-label="Decrease"
+              >
+                −
+              </button>
+              <span class="w-6 text-center font-bold text-stone-800">{{ item.quantity }}</span>
+              <button
+                (click)="cart.updateQty(item, item.quantity + 1)"
+                class="w-8 h-8 rounded-full bg-amber-100 hover:bg-amber-200 active:scale-95 flex items-center justify-center text-base font-bold text-amber-700 transition-all"
+                aria-label="Increase"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          <!-- Full-width note section -->
+          <div class="mt-2 pt-2 border-t border-stone-50">
             <button
               (click)="toggleNote(cart.itemKey(item))"
-              class="mt-1 text-xs text-stone-400 hover:text-amber-500 transition-colors"
+              class="text-xs text-stone-400 hover:text-amber-500 transition-colors"
             >
               {{ isNoteExpanded(cart.itemKey(item)) ? ('cart.hideNote' | t) : ('cart.addNote' | t) }}
             </button>
@@ -71,23 +94,6 @@
               ></textarea>
             }
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button
-              (click)="cart.updateQty(item, item.quantity - 1)"
-              class="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 active:scale-95 flex items-center justify-center text-base font-bold transition-all"
-              aria-label="Decrease"
-            >
-              −
-            </button>
-            <span class="w-6 text-center font-bold text-stone-800">{{ item.quantity }}</span>
-            <button
-              (click)="cart.updateQty(item, item.quantity + 1)"
-              class="w-8 h-8 rounded-full bg-amber-100 hover:bg-amber-200 active:scale-95 flex items-center justify-center text-base font-bold text-amber-700 transition-all"
-              aria-label="Increase"
-            >
-              +
-            </button>
-          </div>
         </div>
       }
 
@@ -98,6 +104,7 @@
             <div>
               <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">{{ discount.code }}</span>
               <span class="text-xs text-stone-500 ml-2">{{ discount.description }}</span>
+              <span class="text-xs text-emerald-600 ml-1 font-semibold">− {{ discount.discountAmount | currency2 }}</span>
             </div>
             <button (click)="removePromoCode()" class="text-xs text-red-400 hover:text-red-600 transition-colors">✕ {{ 'cart.removePromo' | t }}</button>
           </div>
@@ -121,26 +128,6 @@
             </button>
           </div>
         }
-      </div>
-
-      <!-- Summary -->
-      <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
-        <div class="flex justify-between text-stone-500 text-sm mb-2">
-          <span>{{ 'cart.subtotal' | t }} ({{ cart.items().length }})</span>
-          <span>{{ cart.subtotal() | currency2 }}</span>
-        </div>
-        @if (cart.appliedDiscount(); as discount) {
-          <div class="flex justify-between text-emerald-600 text-sm mb-2">
-            <span>{{ 'cart.discount' | t }} ({{ discount.description }})</span>
-            <span>− {{ discount.discountAmount | currency2 }}</span>
-          </div>
-        }
-        <div
-          class="flex justify-between font-bold text-stone-800 text-base border-t border-stone-100 pt-3 mt-1"
-        >
-          <span>{{ 'cart.total' | t }}</span>
-          <span class="text-amber-600 text-lg">{{ cart.total() | currency2 }}</span>
-        </div>
       </div>
 
       <!-- Payment method selection -->

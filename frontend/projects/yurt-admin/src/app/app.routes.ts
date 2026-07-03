@@ -45,11 +45,7 @@ export const routes: Routes = [
             (m) => m.PromotionsManagementComponent,
           ),
       },
-      {
-        path: 'dashboard',
-        loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
-      },
+      { path: 'dashboard', redirectTo: 'orders', pathMatch: 'full' },
       {
         path: 'customers',
         loadComponent: () =>
@@ -80,7 +76,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/reports/reports.component').then((m) => m.ReportsComponent),
       },
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: '', redirectTo: 'orders', pathMatch: 'full' },
     ],
   },
   { path: '**', redirectTo: 'auth/login' },

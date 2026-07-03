@@ -319,8 +319,9 @@ export class YurtApiService {
   }
 
   // ── Analytics ───────────────────────────────────────────────────────────────
-  getAnalytics(period: string): Observable<AnalyticsResponse> {
-    const params = new HttpParams().set('period', period);
+  getAnalytics(period: string, locationId?: string): Observable<AnalyticsResponse> {
+    let params = new HttpParams().set('period', period);
+    if (locationId) params = params.set('locationId', locationId);
     return this.http.get<AnalyticsResponse>(`${this.api}/admin/analytics`, { params });
   }
 

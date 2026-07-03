@@ -23,7 +23,7 @@
       >
         <option value="">{{ 'orders.allLocations' | t }}</option>
         @for (loc of locations(); track loc.id) {
-          <option [value]="loc.id">{{ loc.name }}</option>
+          <option [value]="loc.id">{{ loc.name }}{{ loc.address ? ' — ' + loc.address : '' }}</option>
         }
       </select>
     </div>

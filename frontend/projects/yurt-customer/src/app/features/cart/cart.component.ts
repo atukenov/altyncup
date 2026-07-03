@@ -8,6 +8,7 @@ import { CartService } from './cart.service';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { LocationService } from '../../core/location.service';
+import { LangService } from '../../core/lang.service';
 
 @Component({
   selector: 'app-cart',
@@ -18,6 +19,7 @@ import { LocationService } from '../../core/location.service';
 })
 export class CartComponent {
   readonly cart = inject(CartService);
+  readonly langService = inject(LangService);
   private api = inject(YurtApiService);
   private router = inject(Router);
   private toast = inject(ToastService);

@@ -12,7 +12,7 @@ public class AnalyticsService
     public AnalyticsService(IApplicationDbContext db) => _db = db;
 
     public async Task<AnalyticsResponse> GetAnalyticsAsync(
-        string period, CancellationToken ct = default)
+        string period, Guid? locationId = null, CancellationToken ct = default)
     {
         var fromDate = GetFromDate(period);
 
@@ -21,6 +21,9 @@ public class AnalyticsService
             .Include(o => o.Items)
             .Where(o => o.CreatedAt >= fromDate)
             .AsQueryable();
+
+        if (locationId.HasValue)
+            orders = orders.Where(o => o.LocationId == locationId.Value);
 
         var allOrders = await orders.ToListAsync(ct);
 
@@ -122,6 +125,7 @@ public class AnalyticsService
 
     private static DateTime GetFromDate(string period) => period.ToLowerInvariant() switch
     {
+        "today" => DateTime.UtcNow.Date,
         "week" => DateTime.UtcNow.AddDays(-7),
         "month" => DateTime.UtcNow.AddMonths(-1),
         "6months" => DateTime.UtcNow.AddMonths(-6),

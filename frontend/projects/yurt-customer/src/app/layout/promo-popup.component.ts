@@ -1,8 +1,9 @@
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { YurtApiService } from 'shared-api';
 import { Promotion } from 'shared-models';
 import { environment } from '../../environments/environment';
+import { PromoViewerService } from '../core/promo-viewer.service';
 
 @Component({
   selector: 'app-promo-popup',
@@ -13,6 +14,7 @@ import { environment } from '../../environments/environment';
 })
 export class PromoPopupComponent implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
+  private promoViewer = inject(PromoViewerService);
 
   private readonly SEEN_KEY = 'yurt_seen_promos';
   private autoTimer: ReturnType<typeof setInterval> | null = null;
@@ -22,6 +24,24 @@ export class PromoPopupComponent implements OnInit, OnDestroy {
   currentIndex = signal(0);
   visible = signal(false);
   progress = signal(0);
+
+  private swipeStartY = 0;
+  private isDragging = false;
+
+  constructor() {
+    effect(() => {
+      const req = this.promoViewer.openRequest();
+      if (req) {
+        this.clearTimer();
+        this.promotions.set(req.promos);
+        this.currentIndex.set(req.startIndex);
+        this.progress.set(0);
+        this.visible.set(true);
+        this.startTimer();
+        this.promoViewer.openRequest.set(null);
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.api.configure(environment.apiUrl);
@@ -53,7 +73,22 @@ export class PromoPopupComponent implements OnInit, OnDestroy {
     return 0;
   }
 
+  onSwipeStart(e: TouchEvent): void {
+    this.swipeStartY = e.touches[0].clientY;
+    this.isDragging = false;
+  }
+
+  onSwipeMove(e: TouchEvent): void {
+    if (e.touches[0].clientY - this.swipeStartY > 10) this.isDragging = true;
+  }
+
+  onSwipeEnd(e: TouchEvent): void {
+    const dy = e.changedTouches[0].clientY - this.swipeStartY;
+    if (dy > 80) this.closeAll();
+  }
+
   onTap(event: MouseEvent): void {
+    if (this.isDragging) return;
     event.clientX > window.innerWidth / 2 ? this.next() : this.prev();
   }
 

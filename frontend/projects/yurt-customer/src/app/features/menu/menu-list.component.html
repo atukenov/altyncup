@@ -22,14 +22,16 @@
             </button>
           }
         </div>
-        <!-- Profile avatar -->
-        <a
-          routerLink="/profile"
-          class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-sm shrink-0 hover:bg-white/30 transition-colors active:scale-95"
-          aria-label="Profile"
+        <!-- Search icon -->
+        <button
+          (click)="focusSearch()"
+          class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white shrink-0 hover:bg-white/30 transition-colors active:scale-95"
+          aria-label="Search"
         >
-          {{ (auth.currentUser?.displayName ?? '?').slice(0, 2).toUpperCase() }}
-        </a>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
       </div>
       <!-- Search bar -->
       <div class="relative">
@@ -47,6 +49,7 @@
           />
         </svg>
         <input
+          #searchInput
           type="search"
           [(ngModel)]="search"
           (ngModelChange)="onSearch()"
@@ -87,8 +90,9 @@
         {{ 'menu.specials' | t }}
       </p>
       <div class="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-1">
-        @for (promo of promotions(); track promo.id) {
-          <div class="shrink-0 w-52 h-28 rounded-2xl overflow-hidden relative shadow-sm">
+        @for (promo of promotions(); track promo.id; let i = $index) {
+          <div class="shrink-0 w-52 h-28 rounded-2xl overflow-hidden relative shadow-sm cursor-pointer active:scale-[0.97] transition-transform"
+               (click)="openPromo(i)">
             @if (promo.imageUrl) {
               <img
                 [src]="promo.imageUrl"
@@ -140,85 +144,100 @@
   </div>
 
   <!-- ── Items grid ──────────────────────────────────────────────────────── -->
-  <div class="px-4 pb-36">
+  <div class="pb-36">
     @if (loading()) {
-      <div class="grid grid-cols-2 gap-3">
-        @for (i of [1, 2, 3, 4]; track i) {
+      <div class="grid grid-cols-3 gap-2 px-4">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
           <yurt-skeleton-card />
         }
       </div>
-    } @else if (!filteredItems().length) {
-      <div class="text-center py-20">
-        <div class="text-5xl mb-3">🔍</div>
-        <p class="text-stone-600 font-medium">{{ 'menu.nothingFound' | t }}</p>
-        <p class="text-stone-400 text-sm mt-1">{{ 'menu.tryDifferent' | t }}</p>
-      </div>
+    } @else if (searchTerm() || selectedCategoryId()) {
+      @if (!filteredItems().length) {
+        <div class="text-center py-20">
+          <div class="text-5xl mb-3">🔍</div>
+          <p class="text-stone-600 font-medium">{{ 'menu.nothingFound' | t }}</p>
+          <p class="text-stone-400 text-sm mt-1">{{ 'menu.tryDifferent' | t }}</p>
+        </div>
+      } @else {
+        <div class="grid grid-cols-3 gap-2 px-4">
+          @for (item of filteredItems(); track item.id) {
+            <ng-container *ngTemplateOutlet="itemCard; context: { $implicit: item }" />
+          }
+        </div>
+      }
     } @else {
-      <div class="grid grid-cols-2 gap-3">
-        @for (item of filteredItems(); track item.id) {
-          <div
-            class="relative bg-white rounded-2xl border border-stone-100 overflow-hidden shadow-sm active:scale-[0.98] transition-all flex flex-col"
-          >
-            <a [routerLink]="['/menu/item', item.id]" class="flex flex-col flex-1">
-              @if (item.imageUrl && !failedImageIds().has(item.id)) {
-                <img
-                  [src]="item.imageUrl"
-                  [alt]="item.name"
-                  class="w-full h-40 object-cover shrink-0"
-                  loading="lazy"
-                  (error)="onImageError(item.id)"
-                />
-              } @else {
-                <div
-                  class="w-full h-40 bg-linear-to-br from-amber-50 to-orange-50 flex items-center justify-center text-5xl shrink-0"
-                >
-                  ☕
-                </div>
-              }
-              <div class="p-3 pb-2 flex flex-col flex-1">
-                <h3 class="font-bold text-stone-800 text-sm leading-snug">{{ item.name }}</h3>
-                @if (item.description) {
-                  <p class="text-stone-400 text-xs mt-0.5 line-clamp-2 leading-relaxed">
-                    {{ item.description }}
-                  </p>
-                }
-                <p class="text-amber-600 font-bold text-sm mt-auto pt-2">
-                  @if (item.variants && item.variants.length > 0) {
-                    from {{ item.variants[0].price | currency2 }}
-                  } @else {
-                    {{ item.price | currency2 }}
-                  }
-                </p>
-              </div>
-            </a>
-            <!-- Heart (top-left) -->
-            <button
-              (click)="toggleFav(item, $event)"
-              class="absolute top-2 left-2 p-1.5 rounded-full bg-black/30 backdrop-blur-sm transition-all active:scale-95"
-              [class.text-red-400]="isFav(item.id)"
-              [class.text-white]="!isFav(item.id)"
-              aria-label="Toggle favorite"
-            >
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"
-                />
-              </svg>
-            </button>
-            <!-- Add button -->
-            <div class="px-3 pb-3">
-              <button
-                (click)="addToCart(item, $event)"
-                class="w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-sm font-bold rounded-xl py-2 transition-colors focus:outline-none"
-              >
-                {{ 'menu.addIcon' | t }}
-              </button>
-            </div>
+      @for (group of groupedItems(); track group.category.id) {
+        <div class="mb-5">
+          <h2 class="text-sm font-bold text-stone-700 px-4 mb-2 pt-1">
+            {{ categoryEmoji(group.category.name) }} {{ group.category.name }}
+          </h2>
+          <div class="grid grid-cols-3 gap-2 px-4">
+            @for (item of group.items; track item.id) {
+              <ng-container *ngTemplateOutlet="itemCard; context: { $implicit: item }" />
+            }
           </div>
-        }
-      </div>
+        </div>
+      }
     }
   </div>
+
+  <!-- Item card template -->
+  <ng-template #itemCard let-item>
+    <div
+      class="relative bg-white rounded-2xl border border-stone-100 overflow-hidden shadow-sm active:scale-[0.98] transition-all flex flex-col"
+    >
+      <a [routerLink]="['/menu/item', item.id]" class="flex flex-col flex-1">
+        @if (item.imageUrl && !failedImageIds().has(item.id)) {
+          <img
+            [src]="item.imageUrl"
+            [alt]="item.name"
+            class="w-full h-24 object-cover shrink-0"
+            loading="lazy"
+            (error)="onImageError(item.id)"
+          />
+        } @else {
+          <div
+            class="w-full h-24 bg-linear-to-br from-amber-50 to-orange-50 flex items-center justify-center text-3xl shrink-0"
+          >
+            ☕
+          </div>
+        }
+        <div class="p-2 pb-1 flex flex-col flex-1">
+          <h3 class="font-bold text-stone-800 text-xs leading-snug line-clamp-2">{{ item.name }}</h3>
+          <p class="text-amber-600 font-bold text-xs mt-auto pt-1">
+            @if (item.variants && item.variants.length > 0) {
+              from {{ item.variants[0].price | currency2 }}
+            } @else {
+              {{ item.price | currency2 }}
+            }
+          </p>
+        </div>
+      </a>
+      <!-- Heart (top-left) -->
+      <button
+        (click)="toggleFav(item, $event)"
+        class="absolute top-1.5 left-1.5 p-1 rounded-full bg-black/30 backdrop-blur-sm transition-all active:scale-95"
+        [class.text-red-400]="isFav(item.id)"
+        [class.text-white]="!isFav(item.id)"
+        aria-label="Toggle favorite"
+      >
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+          <path
+            d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"
+          />
+        </svg>
+      </button>
+      <!-- Add button -->
+      <div class="px-2 pb-2">
+        <button
+          (click)="addToCart(item, $event)"
+          class="w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-xs font-bold rounded-xl py-1.5 transition-colors focus:outline-none"
+        >
+          {{ 'menu.addIcon' | t }}
+        </button>
+      </div>
+    </div>
+  </ng-template>
 
   <!-- ── Topping selector bottom sheet ──────────────────────────────────── -->
   @if (toppingModalItem()) {

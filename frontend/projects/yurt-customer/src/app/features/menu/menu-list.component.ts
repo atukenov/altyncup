@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthStateService, YurtApiService } from 'shared-api';
@@ -16,6 +16,7 @@ import { LangService } from '../../core/lang.service';
 import { LocationService } from '../../core/location.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
+import { PromoViewerService } from '../../core/promo-viewer.service';
 import { CartService } from '../cart/cart.service';
 
 @Component({
@@ -41,7 +42,10 @@ export class MenuListComponent implements OnInit {
   readonly auth = inject(AuthStateService);
   readonly langService = inject(LangService);
   private locationSvc = inject(LocationService);
+  private promoViewer = inject(PromoViewerService);
   readonly locationName = this.locationSvc.locationName;
+
+  @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
 
   loading = signal(true);
   categories = signal<MenuCategory[]>([]);
@@ -111,6 +115,17 @@ export class MenuListComponent implements OnInit {
       this.loadItems(lang);
     });
   }
+
+  readonly groupedItems = computed(() => {
+    const items = this.allItems();
+    const cats = this.categories();
+    const map = new Map<string, MenuItem[]>();
+    for (const item of items) {
+      if (!map.has(item.categoryId)) map.set(item.categoryId, []);
+      map.get(item.categoryId)!.push(item);
+    }
+    return cats.filter((c) => map.has(c.id)).map((c) => ({ category: c, items: map.get(c.id)! }));
+  });
 
   readonly filteredItems = computed(() => {
     const q = this.searchTerm().toLowerCase().trim();
@@ -219,6 +234,7 @@ export class MenuListComponent implements OnInit {
   }
 
   loadItems(lang?: string): void {
+    this.api.getActivePromotions().subscribe({ next: (p) => this.promotions.set(p), error: () => {} });
     this.loading.set(true);
     const locationId = this.locationSvc.locationId() || undefined;
     this.api
@@ -233,6 +249,14 @@ export class MenuListComponent implements OnInit {
           this.toast.error('Failed to load menu.');
         },
       });
+  }
+
+  openPromo(index: number): void {
+    this.promoViewer.openRequest.set({ promos: this.promotions(), startIndex: index });
+  }
+
+  focusSearch(): void {
+    setTimeout(() => this.searchInputRef?.nativeElement.focus(), 50);
   }
 
   selectCategory(id: string | null): void {
@@ -397,6 +421,8 @@ export class MenuListComponent implements OnInit {
     this.cart.addItem({
       menuItemId: item.id,
       name: item.name,
+      nameRu: item.nameRu,
+      nameKk: item.nameKk,
       price: variant?.price ?? item.price,
       quantity: 1,
       imageUrl: item.imageUrl,

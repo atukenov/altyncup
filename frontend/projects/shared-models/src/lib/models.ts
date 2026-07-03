@@ -240,6 +240,8 @@ export interface Favorite extends MenuItem {}
 export interface CartItem {
   menuItemId: string;
   name: string;
+  nameRu?: string;
+  nameKk?: string;
   price: number;
   quantity: number;
   imageUrl?: string;

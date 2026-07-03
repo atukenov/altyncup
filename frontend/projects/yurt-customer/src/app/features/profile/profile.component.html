@@ -13,21 +13,29 @@
     }
   </div>
 
-  <!-- Avatar card -->
   <div class="px-4 pt-6 pb-2 max-w-sm mx-auto">
+
+    <!-- Avatar card -->
     <div
-      class="bg-gradient-to-br from-amber-400 to-orange-400 rounded-3xl p-6 text-white text-center shadow-lg shadow-amber-200/50 mb-5"
+      class="bg-linear-to-br from-amber-400 to-orange-400 rounded-3xl p-6 text-white text-center shadow-lg shadow-amber-200/50 mb-5"
     >
       @if (profile()) {
         @let p = profile()!;
+        <!-- Initials circle -->
+        <div class="w-16 h-16 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center mx-auto mb-3">
+          <span class="text-2xl font-bold text-white">
+            {{ (p.firstName || p.mobileNumber).slice(0, 1).toUpperCase() }}
+          </span>
+        </div>
         @if (p.firstName) {
-          <h2 class="text-lg font-bold">{{ p.firstName }} {{ p.lastName }}</h2>
-          <p class="text-amber-100 text-xs mt-0.5">{{ p.mobileNumber }}</p>
+          <h2 class="text-xl font-bold leading-tight">{{ p.firstName }} {{ p.lastName }}</h2>
+          <p class="text-amber-100 text-sm mt-1">{{ p.mobileNumber }}</p>
         } @else {
-          <h2 class="text-lg font-bold">{{ p.mobileNumber }}</h2>
+          <h2 class="text-xl font-bold">{{ p.mobileNumber }}</h2>
         }
-        <p class="text-amber-100 text-xs mt-1">{{ 'profile.memberSince' | t }} {{ p.createdAt | date: 'MMM yyyy' }}</p>
+        <p class="text-amber-100/80 text-xs mt-2">{{ 'profile.memberSince' | t }} {{ p.createdAt | date: 'MMMM yyyy' }}</p>
       } @else {
+        <div class="w-16 h-16 rounded-full bg-white/20 mx-auto mb-3 animate-pulse"></div>
         <div class="h-5 bg-white/20 rounded w-32 mx-auto mb-1 animate-pulse"></div>
         <div class="h-3 bg-white/20 rounded w-24 mx-auto animate-pulse"></div>
       }
@@ -77,77 +85,30 @@
       </div>
     }
 
-    <!-- Nav links -->
-    <div class="space-y-2">
-      <a
-        routerLink="/orders"
-        class="flex items-center gap-4 bg-white rounded-2xl border border-stone-100 p-4 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
-      >
-        <div
-          class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-xl shrink-0"
-        >
-          📋
-        </div>
-        <div class="flex-1">
-          <p class="font-bold text-stone-800 text-sm">{{ 'profile.myOrders' | t }}</p>
-          <p class="text-stone-400 text-xs mt-0.5">{{ 'profile.viewHistory' | t }}</p>
-        </div>
-        <svg
-          class="w-4 h-4 text-stone-300"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </a>
-
-      <a
-        routerLink="/favorites"
-        class="flex items-center gap-4 bg-white rounded-2xl border border-stone-100 p-4 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
-      >
-        <div
-          class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-xl shrink-0"
-        >
-          ♥
-        </div>
-        <div class="flex-1">
-          <p class="font-bold text-stone-800 text-sm">{{ 'profile.savedItems' | t }}</p>
-          <p class="text-stone-400 text-xs mt-0.5">{{ 'profile.favSubtitle' | t }}</p>
-        </div>
-        <svg
-          class="w-4 h-4 text-stone-300"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </a>
-    </div>
-
     <!-- Stats -->
     @if (stats()) {
       @let s = stats()!;
-      <div class="mt-4 bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 mb-4">
         <p class="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">{{ 'profile.lifeStats' | t }}</p>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-3 gap-3">
           <div class="bg-amber-50 rounded-xl p-3 text-center">
             <p class="text-2xl font-bold text-amber-600">{{ s.totalOrders }}</p>
             <p class="text-xs text-stone-500 mt-0.5">{{ 'profile.orders' | t }}</p>
           </div>
           <div class="bg-amber-50 rounded-xl p-3 text-center">
-            <p class="text-2xl font-bold text-amber-600">{{ s.totalSpent | number: '1.0-0' }}</p>
+            <p class="text-xl font-bold text-amber-600">{{ s.totalSpent | number: '1.0-0' }}</p>
             <p class="text-xs text-stone-500 mt-0.5">{{ 'profile.totalSpent' | t }}</p>
+          </div>
+          <div class="bg-teal-50 rounded-xl p-3 text-center">
+            <p class="text-xl font-bold text-teal-600">0.00 ₸</p>
+            <p class="text-xs text-stone-500 mt-0.5">{{ 'profile.bonuses' | t }}</p>
           </div>
         </div>
       </div>
     }
 
     <!-- Language switcher -->
-    <div class="mt-4 bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+    <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 mb-4">
       <p class="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">{{ 'profile.language' | t }}</p>
       <div class="flex gap-2">
         @for (l of langs; track l.code) {
@@ -163,7 +124,7 @@
     </div>
 
     <!-- Settings -->
-    <div class="mt-4 bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+    <div class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden mb-4">
       <div class="px-4 py-3 border-b border-stone-50">
         <p class="text-xs font-bold text-stone-400 uppercase tracking-wider">{{ 'profile.settings' | t }}</p>
       </div>
@@ -173,25 +134,6 @@
           <p class="text-stone-800 text-sm font-semibold">{{ 'profile.phone' | t }}</p>
           <p class="text-stone-400 text-xs">{{ profile()?.mobileNumber ?? '—' }}</p>
         </div>
-      </div>
-
-      <!-- Notifications toggle -->
-      <div class="flex items-center gap-4 px-4 py-3.5 border-b border-stone-50">
-        <div class="w-9 h-9 rounded-xl bg-stone-100 flex items-center justify-center text-lg shrink-0">🔔</div>
-        <div class="flex-1">
-          <p class="text-stone-800 text-sm font-semibold">{{ 'profile.notifications' | t }}</p>
-          <p class="text-stone-400 text-xs">{{ 'profile.notifSubtitle' | t }}</p>
-        </div>
-        <button
-          (click)="toggleNotifications()"
-          class="relative w-11 h-6 rounded-full transition-colors focus:outline-none"
-          [class]="notificationsEnabled() ? 'bg-amber-500' : 'bg-stone-200'"
-        >
-          <span
-            class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"
-            [class]="notificationsEnabled() ? 'translate-x-5' : 'translate-x-0'"
-          ></span>
-        </button>
       </div>
 
       <!-- Change PIN -->
@@ -237,7 +179,17 @@
       </div>
     </div>
 
-    <div class="mt-4">
+    <div class="mb-4">
+      <!-- Achievements -->
+      <a routerLink="/achievements"
+         class="flex items-center gap-3 w-full bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3.5 mb-3 text-stone-700 hover:bg-stone-50 transition-colors">
+        <span class="text-xl">🏆</span>
+        <span class="font-semibold text-sm flex-1">Achievements</span>
+        <svg class="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+
       <button
         (click)="showReportModal.set(true)"
         class="w-full text-center text-sm text-stone-500 hover:text-stone-700 border border-stone-200 rounded-xl py-2.5 transition-colors mb-3"
@@ -247,28 +199,39 @@
       <yurt-button variant="destructive" size="lg" [fullWidth]="true" (clicked)="logout()">
         {{ 'profile.signOut' | t }}
       </yurt-button>
+
+      <!-- Instagram -->
+      <a href="https://www.instagram.com/altyncup/" target="_blank" rel="noopener noreferrer"
+         class="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-stone-200 text-stone-500 hover:text-pink-500 hover:border-pink-200 transition-colors mt-3">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+        </svg>
+        <span class="text-sm font-semibold">@altyncup</span>
+      </a>
     </div>
 
-    <!-- Danger zone -->
-    <div class="mt-4 bg-white rounded-2xl border border-red-100 shadow-sm p-4">
-      <p class="text-xs font-bold text-red-400 uppercase tracking-wider mb-3">{{ 'profile.dangerZone' | t }}</p>
-      @if (!showDeleteConfirm()) {
-        <button
-          (click)="showDeleteConfirm.set(true)"
-          class="w-full text-center text-sm text-red-500 hover:text-red-700 border border-red-200 rounded-xl py-2.5 transition-colors"
-        >
-          {{ 'profile.deleteAccount' | t }}
-        </button>
-      } @else {
-        <p class="text-sm text-stone-600 mb-3">{{ 'profile.deleteConfirm' | t }}</p>
-        <div class="flex gap-2">
-          <button (click)="showDeleteConfirm.set(false)" class="flex-1 border border-stone-200 rounded-xl py-2 text-sm font-semibold text-stone-600">{{ 'profile.cancel' | t }}</button>
-          <button (click)="confirmDelete()" [disabled]="deleteLoading()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl py-2 text-sm disabled:opacity-60">
-            {{ deleteLoading() ? ('profile.deleting' | t) : ('profile.delete' | t) }}
+    <!-- Danger zone — only visible when editing -->
+    @if (editMode()) {
+      <div class="bg-white rounded-2xl border border-red-100 shadow-sm p-4">
+        <p class="text-xs font-bold text-red-400 uppercase tracking-wider mb-3">{{ 'profile.dangerZone' | t }}</p>
+        @if (!showDeleteConfirm()) {
+          <button
+            (click)="showDeleteConfirm.set(true)"
+            class="w-full text-center text-sm text-red-500 hover:text-red-700 border border-red-200 rounded-xl py-2.5 transition-colors"
+          >
+            {{ 'profile.deleteAccount' | t }}
           </button>
-        </div>
-      }
-    </div>
+        } @else {
+          <p class="text-sm text-stone-600 mb-3">{{ 'profile.deleteConfirm' | t }}</p>
+          <div class="flex gap-2">
+            <button (click)="showDeleteConfirm.set(false)" class="flex-1 border border-stone-200 rounded-xl py-2 text-sm font-semibold text-stone-600">{{ 'profile.cancel' | t }}</button>
+            <button (click)="confirmDelete()" [disabled]="deleteLoading()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl py-2 text-sm disabled:opacity-60">
+              {{ deleteLoading() ? ('profile.deleting' | t) : ('profile.delete' | t) }}
+            </button>
+          </div>
+        }
+      </div>
+    }
   </div>
 </div>
 

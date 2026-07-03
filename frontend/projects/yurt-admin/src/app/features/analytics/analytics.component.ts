@@ -1,14 +1,15 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
-import { AnalyticsResponse } from 'shared-models';
+import { AnalyticsResponse, Location } from 'shared-models';
 import { environment } from '../../../environments/environment';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
 
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [CommonModule, AdminTranslatePipe],
+  imports: [CommonModule, FormsModule, AdminTranslatePipe],
   templateUrl: './analytics.component.html',
   styleUrl: './analytics.component.css',
 })
@@ -18,8 +19,11 @@ export class AnalyticsComponent implements OnInit {
   data = signal<AnalyticsResponse | null>(null);
   loading = signal(true);
   activePeriod = signal('month');
+  locations = signal<Location[]>([]);
+  selectedLocationId = signal<string | null>(null);
 
   readonly periods = [
+    { label: 'Today', value: 'today' },
     { label: 'Week', value: 'week' },
     { label: 'Month', value: 'month' },
     { label: '6M', value: '6months' },
@@ -67,6 +71,7 @@ export class AnalyticsComponent implements OnInit {
 
   ngOnInit(): void {
     this.api.configure(environment.apiUrl);
+    this.api.getAdminLocations().subscribe({ next: (locs) => this.locations.set(locs), error: () => {} });
     this.loadData();
   }
 
@@ -75,9 +80,14 @@ export class AnalyticsComponent implements OnInit {
     this.loadData();
   }
 
+  setLocation(id: string | null): void {
+    this.selectedLocationId.set(id || null);
+    this.loadData();
+  }
+
   private loadData(): void {
     this.loading.set(true);
-    this.api.getAnalytics(this.activePeriod()).subscribe({
+    this.api.getAnalytics(this.activePeriod(), this.selectedLocationId() ?? undefined).subscribe({
       next: (res) => {
         this.data.set(res);
         this.loading.set(false);

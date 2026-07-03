@@ -2,6 +2,9 @@
   <div
     class="fixed inset-0 z-9998 bg-black select-none"
     (click)="onTap($event)"
+    (touchstart)="onSwipeStart($event)"
+    (touchmove)="onSwipeMove($event)"
+    (touchend)="onSwipeEnd($event)"
   >
     <!-- Background image or gradient -->
     @if (current.imageUrl) {

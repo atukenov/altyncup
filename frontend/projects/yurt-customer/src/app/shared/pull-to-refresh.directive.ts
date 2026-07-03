@@ -63,11 +63,14 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
     if (!this.enabled || !this.pulling) return;
     const dy = e.touches[0].clientY - this.startY;
     if (dy > 10 && window.scrollY === 0) {
-      const ratio = Math.min(dy / THRESHOLD, 1);
+      const clamped = Math.min(dy, THRESHOLD);
+      const ratio = clamped / THRESHOLD;
       this.renderer.setStyle(this.indicator, 'opacity', String(ratio));
+      this.el.nativeElement.style.transform = `translateY(${clamped}px)`;
     } else if (dy <= 0) {
       this.pulling = false;
       this.renderer.setStyle(this.indicator, 'opacity', '0');
+      this.el.nativeElement.style.transform = '';
     }
   }
 
@@ -77,6 +80,9 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
     const dy = e.changedTouches[0].clientY - this.startY;
     this.renderer.setStyle(this.indicator, 'opacity', '0');
     this.pulling = false;
+    this.el.nativeElement.style.transition = 'transform 0.25s ease';
+    this.el.nativeElement.style.transform = 'translateY(0)';
+    setTimeout(() => { this.el.nativeElement.style.transition = ''; }, 250);
     if (dy >= THRESHOLD) {
       this.refreshed.emit();
     }
