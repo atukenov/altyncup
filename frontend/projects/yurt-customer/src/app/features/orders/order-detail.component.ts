@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, Input, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { NotificationService, SignalrService, YurtApiService } from 'shared-api';
+import { SignalrService, YurtApiService } from 'shared-api';
 import {
   Order,
   OrderStatus,
@@ -42,8 +42,6 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
   private signalr = inject(SignalrService);
   private toast = inject(ToastService);
-  private notif = inject(NotificationService);
-
   readonly OrderStatus = OrderStatus;
   readonly PaymentStatus = PaymentStatus;
   readonly PaymentMethod = PaymentMethod;
@@ -89,28 +87,10 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
     this.signalr.startConnection().then(() => {
       this.subs.push(
         this.signalr.orderUpdated$.subscribe((o) => {
-          if (o.id === this.id) {
-            this.order.set(o);
-            if (localStorage.getItem('yurt_push_enabled') !== 'false') {
-              this.notif.sendNotification({
-                title: 'Order Update',
-                body: `Your order is now ${o.status}`,
-                tag: `order-${o.id}`,
-              });
-            }
-          }
+          if (o.id === this.id) this.order.set(o);
         }),
         this.signalr.orderDeclined$.subscribe((o) => {
-          if (o.id === this.id) {
-            this.order.set(o);
-            if (localStorage.getItem('yurt_push_enabled') !== 'false') {
-              this.notif.sendNotification({
-                title: 'Order Declined',
-                body: o.declineReason ?? 'Your order was declined.',
-                tag: `order-${o.id}`,
-              });
-            }
-          }
+          if (o.id === this.id) this.order.set(o);
         }),
         this.signalr.paymentUpdated$.subscribe((o) => {
           if (o.id === this.id) this.order.set(o);

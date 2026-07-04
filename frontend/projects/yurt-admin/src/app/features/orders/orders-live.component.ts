@@ -220,6 +220,13 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
     return order.paymentStatus === 'Paid';
   }
 
+  formatPhone(phone: string): string {
+    const d = phone.replace(/\D/g, '');
+    if (d.length === 11 && d[0] === '7')
+      return `+7 ${d.slice(1, 4)} ${d.slice(4, 7)} ${d.slice(7)}`;
+    return phone;
+  }
+
   private upsertOrder(updated: Order): void {
     this.orders.update((list) => {
       const idx = list.findIndex((o) => o.id === updated.id);

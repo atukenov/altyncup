@@ -25,7 +25,10 @@
   } @else {
     <div class="p-4 space-y-3 max-w-lg mx-auto mb-44">
       @for (item of cart.items(); track cart.itemKey(item)) {
-        <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+        <div
+          class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm"
+          (click)="toggleItem(cart.itemKey(item))"
+        >
           <!-- Main row -->
           <div class="flex items-center gap-3">
             @if (item.imageUrl) {
@@ -42,22 +45,25 @@
               </div>
             }
             <div class="flex-1 min-w-0">
-              <h3 class="font-bold text-stone-800 truncate">
-                {{ langService.lang() === 'ru' && item.nameRu ? item.nameRu
-                 : langService.lang() === 'kk' && item.nameKk ? item.nameKk
-                 : item.name }}
-                @if (item.variantLabel) {
-                  <span class="font-normal text-stone-400"> · {{ item.variantLabel }}</span>
-                }
-              </h3>
+              <div class="flex items-center gap-1">
+                <h3 class="font-bold text-stone-800 truncate">
+                  {{ langService.lang() === 'ru' && item.nameRu ? item.nameRu
+                   : langService.lang() === 'kk' && item.nameKk ? item.nameKk
+                   : item.name }}
+                  @if (item.variantLabel) {
+                    <span class="font-normal text-stone-400"> · {{ item.variantLabel }}</span>
+                  }
+                </h3>
+                <span class="text-stone-300 text-xs shrink-0">{{ isItemExpanded(cart.itemKey(item)) ? '▴' : '▾' }}</span>
+              </div>
               @if (item.selectedToppings?.length) {
                 <p class="text-stone-400 text-xs mt-0.5 truncate">
                   {{ item.selectedToppings!.map(t => t.toppingName).join(', ') }}
                 </p>
               }
-              <p class="text-amber-600 font-semibold text-sm mt-0.5">{{ item.price | currency2 }}</p>
+              <p class="text-amber-600 font-semibold text-sm mt-0.5">{{ itemLineTotal(item) | currency2 }}</p>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-2 shrink-0" (click)="$event.stopPropagation()">
               <button
                 (click)="cart.updateQty(item, item.quantity - 1)"
                 class="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 active:scale-95 flex items-center justify-center text-base font-bold transition-all"
@@ -75,8 +81,28 @@
               </button>
             </div>
           </div>
+          <!-- Expanded topping detail -->
+          @if (isItemExpanded(cart.itemKey(item))) {
+            <div class="mt-2 pt-2 border-t border-stone-50 space-y-1" (click)="$event.stopPropagation()">
+              <div class="flex justify-between text-xs text-stone-500">
+                <span>
+                  {{ langService.lang() === 'ru' && item.nameRu ? item.nameRu
+                   : langService.lang() === 'kk' && item.nameKk ? item.nameKk
+                   : item.name }}
+                  × {{ item.quantity }}
+                </span>
+                <span>{{ item.price * item.quantity | currency2 }}</span>
+              </div>
+              @for (t of item.selectedToppings ?? []; track t.toppingId) {
+                <div class="flex justify-between text-xs text-stone-400">
+                  <span>+ {{ t.toppingName }}</span>
+                  <span>{{ t.price * item.quantity | currency2 }}</span>
+                </div>
+              }
+            </div>
+          }
           <!-- Full-width note section -->
-          <div class="mt-2 pt-2 border-t border-stone-50">
+          <div class="mt-2 pt-2 border-t border-stone-50" (click)="$event.stopPropagation()">
             <button
               (click)="toggleNote(cart.itemKey(item))"
               class="text-xs text-stone-400 hover:text-amber-500 transition-colors"
@@ -113,11 +139,11 @@
           <div class="flex gap-2">
             <input
               [ngModel]="promoCodeInput()"
-              (ngModelChange)="promoCodeInput.set($event)"
+              (ngModelChange)="promoCodeInput.set($event); promoError.set(null)"
               [placeholder]="'cart.promoPlaceholder' | t"
               (keydown.enter)="applyPromoCode()"
               style="font-size: 16px"
-              class="flex-1 text-sm rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-stone-700 placeholder-stone-300 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-300"
+              [class]="promoError() ? 'flex-1 text-sm rounded-xl border border-red-300 bg-stone-50 px-3 py-2 text-stone-700 placeholder-stone-300 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-red-300' : 'flex-1 text-sm rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-stone-700 placeholder-stone-300 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-300'"
             />
             <button
               (click)="applyPromoCode()"
@@ -127,6 +153,9 @@
               {{ promoLoading() ? ('cart.applying' | t) : ('cart.apply' | t) }}
             </button>
           </div>
+          @if (promoError()) {
+            <p class="text-red-500 text-xs mt-1.5">{{ promoError() }}</p>
+          }
         }
       </div>
 

@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService, AuthStateService } from 'shared-api';
-import { PaymentMethod } from 'shared-models';
+import { CartItem, PaymentMethod } from 'shared-models';
 import { CartService } from './cart.service';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { TranslatePipe } from '../../core/translate.pipe';
@@ -32,9 +32,11 @@ export class CartComponent {
   loading = signal(false);
   selectedPaymentMethod = signal<PaymentMethod | null>(null);
   expandedNoteKeys = signal<Set<string>>(new Set());
+  expandedItemKeys = signal<Set<string>>(new Set());
 
   promoCodeInput = signal('');
   promoLoading = signal(false);
+  promoError = signal<string | null>(null);
 
   toggleNote(key: string): void {
     this.expandedNoteKeys.update((s) => {
@@ -49,6 +51,24 @@ export class CartComponent {
     return this.expandedNoteKeys().has(key);
   }
 
+  toggleItem(key: string): void {
+    this.expandedItemKeys.update((s) => {
+      const next = new Set(s);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  isItemExpanded(key: string): boolean {
+    return this.expandedItemKeys().has(key);
+  }
+
+  itemLineTotal(item: CartItem): number {
+    const toppings = item.selectedToppings?.reduce((s, t) => s + t.price, 0) ?? 0;
+    return (item.price + toppings) * item.quantity;
+  }
+
   goToMenu(): void {
     this.router.navigate(['/menu']);
   }
@@ -56,20 +76,28 @@ export class CartComponent {
   applyPromoCode(): void {
     const code = this.promoCodeInput().trim();
     if (!code) return;
+    this.promoError.set(null);
     this.promoLoading.set(true);
     this.api.validateDiscountCode(code, this.cart.subtotal()).subscribe({
       next: (res) => {
         this.promoLoading.set(false);
         if (res.isValid) {
           this.cart.applyDiscount(code, res);
-          this.toast.success(`Promo applied: ${res.description}`);
+          this.toast.success(`${this.langService.t('cart.promoCode')}: ${res.description}`);
         } else {
-          this.toast.error(res.message);
+          const msg = res.message;
+          const key = msg.includes('not found') ? 'cart.promoNotFound'
+            : msg.includes('not yet active') ? 'cart.promoNotActive'
+            : msg.includes('expired') ? 'cart.promoExpired'
+            : msg.includes('usage limit') ? 'cart.promoMaxUses'
+            : msg.includes('Minimum order') ? 'cart.promoMinOrder'
+            : null;
+          this.promoError.set(key ? this.langService.t(key) : msg);
         }
       },
       error: () => {
         this.promoLoading.set(false);
-        this.toast.error('Failed to validate promo code.');
+        this.promoError.set(this.langService.t('cart.promoNetworkError'));
       },
     });
   }
