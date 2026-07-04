@@ -4,7 +4,7 @@ export type Lang = 'en' | 'ru' | 'kk';
 
 const T: Record<Lang, Record<string, string>> = {
   en: {
-    'nav.menu': 'Menu', 'nav.cart': 'Cart', 'nav.orders': 'Orders', 'nav.saved': 'Saved', 'nav.profile': 'Profile',
+    'nav.menu': 'Menu', 'nav.cart': 'Cart', 'nav.orders': 'Orders', 'nav.saved': 'Saved', 'nav.profile': 'Profile', 'nav.news': 'News',
     'auth.tagline': 'Your coffee, your way', 'auth.welcomeBack': 'Welcome back', 'auth.signInSubtitle': 'Sign in to continue ordering',
     'auth.mobileNumber': 'Mobile Number', 'auth.pin': '4-Digit PIN', 'auth.signIn': 'Sign In', 'auth.newHere': 'New here?',
     'auth.createAccount': 'Create Account', 'auth.createYourAccount': 'Create your account', 'auth.getStarted': 'Get started',
@@ -58,9 +58,14 @@ const T: Record<Lang, Record<string, string>> = {
     'topping.size': 'Size', 'topping.milk': 'Milk', 'topping.syrup': 'Syrup',
     'topping.side-dishes': 'Side Dishes', 'topping.sauces': 'Sauces', 'topping.bread': 'Bread',
     'topping.extras': 'Extras',
+    'news.stats.orders': 'Orders', 'news.stats.bonuses': 'Bonuses', 'news.stats.achievements': 'Achievements',
+    'news.achievements': 'Achievements', 'news.promos': 'Active Promotions', 'news.newItems': 'New on the Menu',
+    'news.recommended': 'Recommended for You', 'news.woltTitle': 'Order via Wolt',
+    'news.woltDesc': 'Fast delivery to your door', 'news.woltBtn': 'Open Wolt',
+    'news.recentOrders': 'Recent Orders', 'news.reorder': 'Re-order', 'news.seeAll': 'See all',
   },
   ru: {
-    'nav.menu': 'Меню', 'nav.cart': 'Корзина', 'nav.orders': 'Заказы', 'nav.saved': 'Избранное', 'nav.profile': 'Профиль',
+    'nav.menu': 'Меню', 'nav.cart': 'Корзина', 'nav.orders': 'Заказы', 'nav.saved': 'Избранное', 'nav.profile': 'Профиль', 'nav.news': 'Новости',
     'auth.tagline': 'Ваш кофе, ваш выбор', 'auth.welcomeBack': 'С возвращением', 'auth.signInSubtitle': 'Войдите, чтобы продолжить',
     'auth.mobileNumber': 'Номер телефона', 'auth.pin': '4-значный PIN', 'auth.signIn': 'Войти', 'auth.newHere': 'Впервые здесь?',
     'auth.createAccount': 'Создать аккаунт', 'auth.createYourAccount': 'Создайте аккаунт', 'auth.getStarted': 'Начните здесь',
@@ -114,9 +119,14 @@ const T: Record<Lang, Record<string, string>> = {
     'topping.size': 'Размер', 'topping.milk': 'Молоко', 'topping.syrup': 'Сироп',
     'topping.side-dishes': 'Гарниры', 'topping.sauces': 'Соусы', 'topping.bread': 'Хлеб',
     'topping.extras': 'Дополнения',
+    'news.stats.orders': 'Заказы', 'news.stats.bonuses': 'Бонусы', 'news.stats.achievements': 'Достижения',
+    'news.achievements': 'Достижения', 'news.promos': 'Активные акции', 'news.newItems': 'Новинки меню',
+    'news.recommended': 'Рекомендуем', 'news.woltTitle': 'Заказать через Wolt',
+    'news.woltDesc': 'Быстрая доставка до вашей двери', 'news.woltBtn': 'Открыть Wolt',
+    'news.recentOrders': 'Последние заказы', 'news.reorder': 'Повторить', 'news.seeAll': 'Все',
   },
   kk: {
-    'nav.menu': 'Мәзір', 'nav.cart': 'Себет', 'nav.orders': 'Тапсырыстар', 'nav.saved': 'Сақталған', 'nav.profile': 'Профиль',
+    'nav.menu': 'Мәзір', 'nav.cart': 'Себет', 'nav.orders': 'Тапсырыстар', 'nav.saved': 'Сақталған', 'nav.profile': 'Профиль', 'nav.news': 'Жаңалықтар',
     'auth.tagline': 'Сіздің кофеңіз', 'auth.welcomeBack': 'Қош келдіңіз', 'auth.signInSubtitle': 'Жалғастыру үшін кіріңіз',
     'auth.mobileNumber': 'Телефон нөмірі', 'auth.pin': '4 таңбалы PIN', 'auth.signIn': 'Кіру', 'auth.newHere': 'Жаңа пайдаланушы?',
     'auth.createAccount': 'Тіркелу', 'auth.createYourAccount': 'Тіркелгі жасаңыз', 'auth.getStarted': 'Бастаңыз',
@@ -170,6 +180,11 @@ const T: Record<Lang, Record<string, string>> = {
     'topping.size': 'Өлшем', 'topping.milk': 'Сүт', 'topping.syrup': 'Шәрбат',
     'topping.side-dishes': 'Гарнирлер', 'topping.sauces': 'Соустар', 'topping.bread': 'Нан',
     'topping.extras': 'Қосымшалар',
+    'news.stats.orders': 'Тапсырыстар', 'news.stats.bonuses': 'Бонустар', 'news.stats.achievements': 'Жетістіктер',
+    'news.achievements': 'Жетістіктер', 'news.promos': 'Белсенді акциялар', 'news.newItems': 'Жаңа тауарлар',
+    'news.recommended': 'Ұсынылады', 'news.woltTitle': 'Wolt арқылы тапсырыс',
+    'news.woltDesc': 'Есіктеріңізге жылдам жеткізу', 'news.woltBtn': 'Wolt ашу',
+    'news.recentOrders': 'Соңғы тапсырыстар', 'news.reorder': 'Қайта тапсыру', 'news.seeAll': 'Барлығы',
   },
 };
 

@@ -419,7 +419,7 @@ public class MenuService
         return new(i.Id, i.CategoryId, i.Category?.Name ?? "",
                LocalizationHelper.Localize(i.Name, i.NameRu, i.NameKk, lang),
                LocalizationHelper.Localize(i.Description, i.DescriptionRu, i.DescriptionKk, lang),
-               i.Price, i.IsAvailable, i.ImageUrl, locationIds, toppings, variants);
+               i.Price, i.IsAvailable, i.ImageUrl, i.CreatedAt, locationIds, toppings, variants);
     }
 
     private static AdminMenuItemDto MapAdminItemToDto(MenuItem i, List<MenuToppingDto>? toppings = null)
