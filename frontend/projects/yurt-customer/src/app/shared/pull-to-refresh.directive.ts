@@ -36,7 +36,7 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
     this.renderer.setStyle(this.indicator, 'justify-content', 'center');
     this.renderer.setStyle(this.indicator, 'pointer-events', 'none');
     this.renderer.setStyle(this.indicator, 'opacity', '0');
-    this.renderer.setStyle(this.indicator, 'transition', 'opacity 0.2s');
+    this.renderer.setStyle(this.indicator, 'transform', 'translateY(-52px) scale(0.4)');
     this.renderer.setStyle(this.indicator, 'z-index', '9999');
     this.indicator.innerHTML = `
       <div style="width:32px;height:32px;border-radius:50%;border:3px solid #f59e0b;border-top-color:transparent;animation:ptr-spin 0.7s linear infinite;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.15)"></div>
@@ -63,14 +63,17 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
     if (!this.enabled || !this.pulling) return;
     const dy = e.touches[0].clientY - this.startY;
     if (dy > 10 && window.scrollY === 0) {
-      const clamped = Math.min(dy, THRESHOLD);
-      const ratio = clamped / THRESHOLD;
+      const ratio = Math.min(dy / THRESHOLD, 1);
+      const translateY = (ratio - 1) * 52;
+      const scale = 0.4 + ratio * 0.6;
+      this.renderer.setStyle(this.indicator, 'transition', 'none');
       this.renderer.setStyle(this.indicator, 'opacity', String(ratio));
-      this.el.nativeElement.style.transform = `translateY(${clamped}px)`;
+      this.renderer.setStyle(this.indicator, 'transform', `translateY(${translateY}px) scale(${scale})`);
     } else if (dy <= 0) {
       this.pulling = false;
+      this.renderer.setStyle(this.indicator, 'transition', 'transform 0.25s ease, opacity 0.2s');
       this.renderer.setStyle(this.indicator, 'opacity', '0');
-      this.el.nativeElement.style.transform = '';
+      this.renderer.setStyle(this.indicator, 'transform', 'translateY(-52px) scale(0.4)');
     }
   }
 
@@ -78,11 +81,10 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
   onTouchEnd(e: TouchEvent): void {
     if (!this.enabled || !this.pulling) return;
     const dy = e.changedTouches[0].clientY - this.startY;
+    this.renderer.setStyle(this.indicator, 'transition', 'transform 0.25s ease, opacity 0.2s');
     this.renderer.setStyle(this.indicator, 'opacity', '0');
+    this.renderer.setStyle(this.indicator, 'transform', 'translateY(-52px) scale(0.4)');
     this.pulling = false;
-    this.el.nativeElement.style.transition = 'transform 0.25s ease';
-    this.el.nativeElement.style.transform = 'translateY(0)';
-    setTimeout(() => { this.el.nativeElement.style.transition = ''; }, 250);
     if (dy >= THRESHOLD) {
       this.refreshed.emit();
     }

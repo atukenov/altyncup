@@ -460,6 +460,8 @@ export interface Promotion {
   title: string;
   description: string;
   imageUrl?: string;
+  buttonLabel?: string;
+  buttonUrl?: string;
   isActive: boolean;
   expiresAt?: string;
   createdAt: string;

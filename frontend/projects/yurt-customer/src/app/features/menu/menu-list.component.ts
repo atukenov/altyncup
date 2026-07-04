@@ -255,8 +255,18 @@ export class MenuListComponent implements OnInit {
     this.promoViewer.openRequest.set({ promos: this.promotions(), startIndex: index });
   }
 
+  searchExpanded = signal(false);
+
   focusSearch(): void {
+    this.searchExpanded.set(true);
     setTimeout(() => this.searchInputRef?.nativeElement.focus(), 50);
+  }
+
+  collapseSearch(): void {
+    this.searchExpanded.set(false);
+    this.search = '';
+    this.searchTerm.set('');
+    this.showHistory.set(false);
   }
 
   selectCategory(id: string | null): void {

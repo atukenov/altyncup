@@ -24,6 +24,7 @@ export class PromoPopupComponent implements OnInit, OnDestroy {
   currentIndex = signal(0);
   visible = signal(false);
   progress = signal(0);
+  swipeTranslateY = signal(0);
 
   private swipeStartY = 0;
   private isDragging = false;
@@ -76,15 +77,25 @@ export class PromoPopupComponent implements OnInit, OnDestroy {
   onSwipeStart(e: TouchEvent): void {
     this.swipeStartY = e.touches[0].clientY;
     this.isDragging = false;
+    this.swipeTranslateY.set(0);
   }
 
   onSwipeMove(e: TouchEvent): void {
-    if (e.touches[0].clientY - this.swipeStartY > 10) this.isDragging = true;
+    const dy = e.touches[0].clientY - this.swipeStartY;
+    if (dy > 10) {
+      this.isDragging = true;
+      this.swipeTranslateY.set(Math.max(dy, 0));
+    }
   }
 
   onSwipeEnd(e: TouchEvent): void {
     const dy = e.changedTouches[0].clientY - this.swipeStartY;
-    if (dy > 80) this.closeAll();
+    if (dy > 80) {
+      this.swipeTranslateY.set(0);
+      this.closeAll();
+    } else {
+      this.swipeTranslateY.set(0);
+    }
   }
 
   onTap(event: MouseEvent): void {

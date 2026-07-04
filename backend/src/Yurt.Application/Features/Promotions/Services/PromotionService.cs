@@ -26,7 +26,7 @@ public class PromotionService
                 p.Id,
                 LocalizationHelper.Localize(p.Title, p.TitleRu, p.TitleKk, lang),
                 LocalizationHelper.Localize(p.Description, p.DescriptionRu, p.DescriptionKk, lang),
-                p.ImageUrl, p.IsActive, p.ExpiresAt, p.CreatedAt))
+                p.ImageUrl, p.ButtonLabel, p.ButtonUrl, p.IsActive, p.ExpiresAt, p.CreatedAt))
             .ToListAsync(ct);
 
     public async Task<List<AdminPromotionDto>> GetAllPromotionsAsync(CancellationToken ct = default)
@@ -35,7 +35,7 @@ public class PromotionService
             .Select(p => new AdminPromotionDto(
                 p.Id, p.Title, p.TitleRu, p.TitleKk,
                 p.Description, p.DescriptionRu, p.DescriptionKk,
-                p.ImageUrl, p.IsActive, p.ExpiresAt, p.CreatedAt))
+                p.ImageUrl, p.ButtonLabel, p.ButtonUrl, p.IsActive, p.ExpiresAt, p.CreatedAt))
             .ToListAsync(ct);
 
     public async Task<Result<AdminPromotionDto>> CreateAsync(CreatePromotionDto dto, CancellationToken ct = default)
@@ -49,6 +49,8 @@ public class PromotionService
             DescriptionRu = dto.DescriptionRu,
             DescriptionKk = dto.DescriptionKk,
             ImageUrl = dto.ImageUrl,
+            ButtonLabel = dto.ButtonLabel,
+            ButtonUrl = dto.ButtonUrl,
             ExpiresAt = dto.ExpiresAt
         };
         _db.Promotions.Add(promo);
@@ -69,6 +71,8 @@ public class PromotionService
         promo.DescriptionRu = dto.DescriptionRu;
         promo.DescriptionKk = dto.DescriptionKk;
         promo.ImageUrl = dto.ImageUrl;
+        promo.ButtonLabel = dto.ButtonLabel;
+        promo.ButtonUrl = dto.ButtonUrl;
         promo.IsActive = dto.IsActive;
         promo.ExpiresAt = dto.ExpiresAt;
 
@@ -91,5 +95,5 @@ public class PromotionService
     private static AdminPromotionDto MapToAdminDto(Promotion p)
         => new(p.Id, p.Title, p.TitleRu, p.TitleKk,
                p.Description, p.DescriptionRu, p.DescriptionKk,
-               p.ImageUrl, p.IsActive, p.ExpiresAt, p.CreatedAt);
+               p.ImageUrl, p.ButtonLabel, p.ButtonUrl, p.IsActive, p.ExpiresAt, p.CreatedAt);
 }

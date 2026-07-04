@@ -131,6 +131,28 @@
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
+              <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.buttonLabel' | t }}</label>
+              <input
+                type="text"
+                [ngModel]="form().buttonLabel"
+                (ngModelChange)="patch('buttonLabel', $event)"
+                class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+                placeholder="e.g. Order now"
+              />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.buttonUrl' | t }}</label>
+              <input
+                type="text"
+                [ngModel]="form().buttonUrl"
+                (ngModelChange)="patch('buttonUrl', $event)"
+                class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
               <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.expiresOpt' | t }}</label>
               <input
                 type="datetime-local"

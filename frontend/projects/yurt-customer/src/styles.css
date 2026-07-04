@@ -4,8 +4,10 @@
   html {
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   body {
+    touch-action: manipulation;
     @apply bg-stone-50 text-stone-900;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);

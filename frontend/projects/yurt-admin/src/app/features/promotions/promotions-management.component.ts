@@ -12,6 +12,8 @@ interface PromotionForm {
   title: string;
   description: string;
   imageUrl: string;
+  buttonLabel: string;
+  buttonUrl: string;
   isActive: boolean;
   expiresAt: string;
 }
@@ -36,6 +38,8 @@ export class PromotionsManagementComponent implements OnInit {
     title: '',
     description: '',
     imageUrl: '',
+    buttonLabel: '',
+    buttonUrl: '',
     isActive: true,
     expiresAt: '',
   });
@@ -56,6 +60,8 @@ export class PromotionsManagementComponent implements OnInit {
       title: promo?.title ?? '',
       description: promo?.description ?? '',
       imageUrl: promo?.imageUrl ?? '',
+      buttonLabel: promo?.buttonLabel ?? '',
+      buttonUrl: promo?.buttonUrl ?? '',
       isActive: promo?.isActive ?? true,
       expiresAt: promo?.expiresAt ? promo.expiresAt.slice(0, 16) : '',
     });
@@ -78,6 +84,8 @@ export class PromotionsManagementComponent implements OnInit {
       title: f.title,
       description: f.description,
       imageUrl: f.imageUrl || undefined,
+      buttonLabel: f.buttonLabel || undefined,
+      buttonUrl: f.buttonUrl || undefined,
       isActive: f.isActive,
       expiresAt: f.expiresAt ? new Date(f.expiresAt).toISOString() : undefined,
     };

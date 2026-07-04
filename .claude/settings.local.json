@@ -40,7 +40,8 @@
       "Bash(dotnet run *)",
       "Bash(curl -s http://localhost:5000/health)",
       "Bash(curl -s http://localhost:5001/health)",
-      "Bash(curl -s http://localhost:5000/api/v1/menu/categories)"
+      "Bash(curl -s http://localhost:5000/api/v1/menu/categories)",
+      "Bash(grep -v \".js$\")"
     ],
     "additionalDirectories": [
       "/private/tmp"

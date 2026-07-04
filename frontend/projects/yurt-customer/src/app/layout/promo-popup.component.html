@@ -1,6 +1,8 @@
 @if (visible() && current) {
   <div
     class="fixed inset-0 z-9998 bg-black select-none"
+    [style.transform]="'translateY(' + swipeTranslateY() + 'px)'"
+    [style.transition]="swipeTranslateY() === 0 ? 'transform 0.25s ease' : 'none'"
     (click)="onTap($event)"
     (touchstart)="onSwipeStart($event)"
     (touchmove)="onSwipeMove($event)"
@@ -73,6 +75,17 @@
         <p class="text-white/80 text-sm leading-relaxed drop-shadow">
           {{ current.description }}
         </p>
+      }
+      @if (current.buttonLabel && current.buttonUrl) {
+        <a
+          [href]="current.buttonUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          (click)="$event.stopPropagation()"
+          class="mt-4 inline-block bg-white text-stone-900 font-semibold text-sm px-5 py-2.5 rounded-full shadow-lg active:scale-95 transition-transform"
+        >
+          {{ current.buttonLabel }}
+        </a>
       }
     </div>
   </div>

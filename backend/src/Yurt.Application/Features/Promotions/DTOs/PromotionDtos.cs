@@ -6,6 +6,8 @@ public record PromotionDto(
     string Title,
     string Description,
     string? ImageUrl,
+    string? ButtonLabel,
+    string? ButtonUrl,
     bool IsActive,
     DateTime? ExpiresAt,
     DateTime CreatedAt);
@@ -20,6 +22,8 @@ public record AdminPromotionDto(
     string? DescriptionRu,
     string? DescriptionKk,
     string? ImageUrl,
+    string? ButtonLabel,
+    string? ButtonUrl,
     bool IsActive,
     DateTime? ExpiresAt,
     DateTime CreatedAt);
@@ -32,6 +36,8 @@ public record CreatePromotionDto(
     string? DescriptionRu,
     string? DescriptionKk,
     string? ImageUrl,
+    string? ButtonLabel,
+    string? ButtonUrl,
     DateTime? ExpiresAt);
 
 public record UpdatePromotionDto(
@@ -42,5 +48,7 @@ public record UpdatePromotionDto(
     string? DescriptionRu,
     string? DescriptionKk,
     string? ImageUrl,
+    string? ButtonLabel,
+    string? ButtonUrl,
     bool IsActive,
     DateTime? ExpiresAt);

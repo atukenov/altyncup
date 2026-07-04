@@ -115,8 +115,8 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
       if (saved && locs.some((l) => l.id === saved)) {
         this.selectedLocationId = saved;
       }
+      this.loadOrders();
     });
-    this.loadOrders();
 
     this.signalr.configure(environment.apiUrl);
     this.signalr.startConnection().then(() => {

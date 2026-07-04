@@ -111,6 +111,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'promotions.expires': 'Expires:', 'promotions.imageUrlOpt': 'Image URL (optional)',
     'promotions.expiresOpt': 'Expires at (optional)', 'promotions.saving': 'Saving…',
     'promotions.createFirst': 'Create your first promo to show customers a pop-up when they open the app.',
+    'promotions.buttonLabel': 'Button label (optional)', 'promotions.buttonUrl': 'Button URL (optional)',
 
     // Customers
     'customers.title': 'Customers', 'customers.noCustomers': 'No customers yet',
@@ -267,6 +268,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'promotions.expires': 'Истекает:', 'promotions.imageUrlOpt': 'URL изображения (необязательно)',
     'promotions.expiresOpt': 'Истекает (необязательно)', 'promotions.saving': 'Сохранение…',
     'promotions.createFirst': 'Создайте первую акцию, чтобы показывать клиентам поп-ап при открытии приложения.',
+    'promotions.buttonLabel': 'Текст кнопки (необязательно)', 'promotions.buttonUrl': 'Ссылка кнопки (необязательно)',
 
     // Customers
     'customers.title': 'Клиенты', 'customers.noCustomers': 'Нет клиентов',
