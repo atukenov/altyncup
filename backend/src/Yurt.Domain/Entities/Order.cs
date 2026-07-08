@@ -23,6 +23,9 @@ public class Order : BaseEntity
     public Guid? DiscountCodeId { get; set; }
     public DiscountCode? DiscountCode { get; set; }
 
+    public bool EtaNotif5MinSent { get; set; } = false;
+    public bool EtaNotif1MinSent { get; set; } = false;
+
     public bool IsArchived { get; set; } = false;
     public DateTime? ArchivedAt { get; set; }
 

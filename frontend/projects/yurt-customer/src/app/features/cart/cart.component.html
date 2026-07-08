@@ -17,7 +17,7 @@
       <p class="text-stone-400 text-sm mt-2">{{ 'cart.emptyDesc' | t }}</p>
       <button
         (click)="goToMenu()"
-        class="mt-7 bg-amber-500 text-white font-bold rounded-2xl px-8 py-3.5 hover:bg-amber-600 active:scale-[0.98] transition-all shadow-lg shadow-amber-200"
+        class="mt-7 bg-amber-500 text-stone-900 font-bold rounded-2xl px-8 py-3.5 hover:bg-amber-600 active:scale-[0.98] transition-all shadow-lg shadow-amber-200"
       >
         {{ 'cart.browseMenu' | t }}
       </button>
@@ -136,19 +136,19 @@
           </div>
         } @else {
           <p class="text-sm font-bold text-stone-700 mb-2">{{ 'cart.promoCode' | t }}</p>
-          <div class="flex gap-2">
+          <div class="flex gap-2 items-stretch">
             <input
               [ngModel]="promoCodeInput()"
               (ngModelChange)="promoCodeInput.set($event); promoError.set(null)"
               [placeholder]="'cart.promoPlaceholder' | t"
               (keydown.enter)="applyPromoCode()"
               style="font-size: 16px"
-              [class]="promoError() ? 'flex-1 text-sm rounded-xl border border-red-300 bg-stone-50 px-3 py-2 text-stone-700 placeholder-stone-300 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-red-300' : 'flex-1 text-sm rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-stone-700 placeholder-stone-300 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-300'"
+              [class]="promoError() ? 'flex-1 min-w-0 text-sm rounded-xl border border-red-300 bg-stone-50 px-3 py-2 text-stone-700 placeholder-stone-300 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-red-300' : 'flex-1 min-w-0 text-sm rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-stone-700 placeholder-stone-300 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-300'"
             />
             <button
               (click)="applyPromoCode()"
               [disabled]="promoLoading() || !promoCodeInput().trim()"
-              class="px-4 py-2 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 active:scale-95 transition-all disabled:opacity-50"
+              class="shrink-0 px-3 py-2 rounded-xl bg-amber-500 text-stone-900 text-sm font-semibold hover:bg-amber-600 active:scale-95 transition-all disabled:opacity-50"
             >
               {{ promoLoading() ? ('cart.applying' | t) : ('cart.apply' | t) }}
             </button>
@@ -195,7 +195,7 @@
         [fullWidth]="true"
         [loading]="loading()"
         [disabled]="!selectedPaymentMethod() || loading()"
-        (clicked)="checkout()"
+        (clicked)="showConfirm.set(true)"
       >
         {{ 'cart.placeOrder' | t }} · {{ cart.total() | currency2 }}
       </yurt-button>
@@ -211,3 +211,28 @@
     </div>
   </div>
 </div>
+
+<!-- Order confirmation modal -->
+@if (showConfirm()) {
+  <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm px-4 pb-8"
+       (click)="showConfirm.set(false)">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl"
+         (click)="$event.stopPropagation()">
+      <div class="text-center mb-5">
+        <div class="text-5xl mb-3">🛒</div>
+        <h3 class="text-lg font-bold text-stone-800">{{ 'cart.confirmTitle' | t }}</h3>
+        <p class="text-sm text-stone-500 mt-1.5 leading-relaxed">{{ 'cart.confirmMsg' | t }}</p>
+      </div>
+      <div class="flex gap-3">
+        <button (click)="showConfirm.set(false)"
+                class="flex-1 py-3 rounded-2xl border border-stone-200 text-stone-600 font-semibold text-sm active:scale-95 transition-transform">
+          {{ 'cart.confirmCancel' | t }}
+        </button>
+        <button (click)="showConfirm.set(false); checkout()"
+                class="flex-1 py-3 rounded-2xl bg-amber-500 text-stone-900 font-bold text-sm active:scale-95 transition-transform shadow-lg shadow-amber-200">
+          {{ 'cart.confirmProceed' | t }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -6,6 +6,7 @@ import { YurtApiService } from 'shared-api';
 import { CustomerStats, MenuItem, Order, Promotion } from 'shared-models';
 import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
+import { PromoViewerService } from '../../core/promo-viewer.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { Currency2Pipe } from 'shared-ui';
 import { DatePipe } from '@angular/common';
@@ -22,6 +23,7 @@ export class NewsComponent implements OnInit {
   private api = inject(YurtApiService);
   private cart = inject(CartService);
   private router = inject(Router);
+  private promoViewer = inject(PromoViewerService);
   readonly lang = inject(LangService);
 
   readonly loading = signal(true);
@@ -115,6 +117,10 @@ export class NewsComponent implements OnInit {
     if (l === 'kk') return a.nameKk;
     if (l === 'ru') return a.nameRu;
     return a.nameEn;
+  }
+
+  openPromo(index: number): void {
+    this.promoViewer.openRequest.set({ promos: this.promotions(), startIndex: index });
   }
 
   openWolt(): void {

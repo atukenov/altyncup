@@ -39,20 +39,20 @@
         #cartLink="routerLinkActive"
         [class.text-amber-500]="cartLink.isActive"
         [class.text-stone-400]="!cartLink.isActive"
-        class="relative flex flex-col items-center gap-0.5 hover:text-amber-500 transition-all duration-200 min-w-14 py-1"
+        class="flex flex-col items-center gap-0.5 hover:text-amber-500 transition-all duration-200 min-w-14 py-1"
         aria-label="Cart"
       >
-        @if (cart.count() > 0) {
-          <span class="absolute -top-0.5 right-2.5 min-w-4.5 h-4.5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
-            {{ cart.count() > 99 ? '99+' : cart.count() }}
-          </span>
-        }
-        <span class="transition-transform duration-200"
+        <span class="relative transition-transform duration-200"
               [class.scale-110]="cartLink.isActive"
               [class.-translate-y-0.5]="cartLink.isActive">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6h13M10 21a1 1 0 100-2 1 1 0 000 2zm7 0a1 1 0 100-2 1 1 0 000 2z" />
           </svg>
+          @if (cart.count() > 0) {
+            <span class="absolute -top-1.5 -right-1.5 min-w-4.5 h-4.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+              {{ cart.count() > 99 ? '99+' : cart.count() }}
+            </span>
+          }
         </span>
         <span class="text-[10px] font-semibold transition-all duration-200" [class.font-bold]="cartLink.isActive">{{ 'nav.cart' | t }}</span>
       </a>

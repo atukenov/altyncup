@@ -76,6 +76,7 @@ public static class DependencyInjection
 
         // Background services
         services.AddHostedService<OrderArchivalService>();
+        services.AddHostedService<OrderTimerService>();
 
         // JWT Auth
         var jwtSecret = configuration["Jwt:Secret"]

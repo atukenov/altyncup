@@ -13,4 +13,5 @@ public interface IOrdersHubService
     Task NotifyPaymentSucceededAsync(Order order, CancellationToken cancellationToken = default);
     Task NotifyPaymentFailedAsync(Order order, CancellationToken cancellationToken = default);
     Task NotifyGroupCartUpdatedAsync(Guid groupCartId, GroupCartDto dto, CancellationToken cancellationToken = default);
+    Task NotifyEtaReminderAsync(Guid orderId, Guid customerUserId, int minutesLeft, CancellationToken cancellationToken = default);
 }

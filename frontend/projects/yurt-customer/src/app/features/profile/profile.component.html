@@ -115,7 +115,7 @@
           <button
             (click)="langService.setLang(l.code)"
             class="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
-            [class]="langService.lang() === l.code ? 'bg-amber-500 text-white' : 'bg-stone-100 text-stone-600'"
+            [class]="langService.lang() === l.code ? 'bg-amber-500 text-stone-900' : 'bg-stone-100 text-stone-600'"
           >
             {{ l.label }}
           </button>
@@ -251,7 +251,7 @@
       <button
         (click)="submitReport()"
         [disabled]="!reportText.trim() || reportLoading()"
-        class="mt-4 w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold rounded-2xl py-3.5 text-base transition-colors disabled:opacity-40 disabled:pointer-events-none"
+        class="mt-4 w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-900 font-bold rounded-2xl py-3.5 text-base transition-colors disabled:opacity-40 disabled:pointer-events-none"
       >
         {{ 'profile.reportSubmit' | t }}
       </button>
