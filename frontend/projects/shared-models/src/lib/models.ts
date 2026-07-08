@@ -128,6 +128,7 @@ export interface MenuItem {
   price: number;
   isAvailable: boolean;
   imageUrl?: string;
+  createdAt?: string;
   locationIds?: string[];
   availableToppings?: MenuTopping[];
   variants?: MenuItemVariant[];

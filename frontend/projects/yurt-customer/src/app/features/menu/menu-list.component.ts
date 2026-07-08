@@ -51,7 +51,7 @@ export class MenuListComponent implements OnInit {
   categories = signal<MenuCategory[]>([]);
   allItems = signal<MenuItem[]>([]);
   promotions = signal<Promotion[]>([]);
-  selectedCategoryId = signal<string | null>(null);
+  selectedCategoryId = signal<string | null>(sessionStorage.getItem('menu_cat') ?? null);
   search = '';
   searchHistory = signal<string[]>(this.loadSearchHistory());
   showHistory = signal(false);
@@ -110,7 +110,14 @@ export class MenuListComponent implements OnInit {
     effect(() => {
       const lang = this.langService.lang();
       const locationId = this.locationSvc.locationId() || undefined;
-      this.api.getCategories(lang, locationId).subscribe((cats) => this.categories.set(cats));
+      this.api.getCategories(lang, locationId).subscribe((cats) => {
+        this.categories.set(cats);
+        const saved = this.selectedCategoryId();
+        if (saved && !cats.some((c) => c.id === saved)) {
+          this.selectedCategoryId.set(null);
+          sessionStorage.removeItem('menu_cat');
+        }
+      });
       this.api.getActivePromotions().subscribe((promos) => this.promotions.set(promos));
       this.loadItems(lang);
     });
@@ -271,6 +278,8 @@ export class MenuListComponent implements OnInit {
 
   selectCategory(id: string | null): void {
     this.selectedCategoryId.set(id);
+    if (id) sessionStorage.setItem('menu_cat', id);
+    else sessionStorage.removeItem('menu_cat');
     this.search = '';
     this.searchTerm.set('');
   }
@@ -359,7 +368,7 @@ export class MenuListComponent implements OnInit {
     const dy = endY - startY;
 
     const ghost = document.createElement('div');
-    ghost.style.cssText = `position:fixed;width:${size}px;height:${size}px;border-radius:50%;top:${startY}px;left:${startX}px;z-index:9999;pointer-events:none;overflow:hidden;background:#f59e0b;box-shadow:0 4px 14px rgba(245,158,11,0.55);`;
+    ghost.style.cssText = `position:fixed;width:${size}px;height:${size}px;border-radius:50%;top:${startY}px;left:${startX}px;z-index:9999;pointer-events:none;overflow:hidden;background:#ffd119;box-shadow:0 4px 14px rgba(255,209,25,0.55);`;
     if (item.imageUrl) {
       const img = document.createElement('img');
       img.src = item.imageUrl;
@@ -444,6 +453,6 @@ export class MenuListComponent implements OnInit {
   }
 
   catChipClass(active: boolean): string {
-    return active ? 'bg-amber-500 text-white' : 'bg-white text-stone-600 border border-stone-200';
+    return active ? 'bg-amber-500 text-stone-900' : 'bg-white text-stone-600 border border-stone-200';
   }
 }

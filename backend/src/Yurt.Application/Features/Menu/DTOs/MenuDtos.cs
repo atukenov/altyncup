@@ -15,6 +15,7 @@ public record MenuItemDto(
     decimal Price,
     bool IsAvailable,
     string? ImageUrl,
+    DateTime CreatedAt = default,
     List<Guid>? LocationIds = null,
     List<MenuToppingDto>? AvailableToppings = null,
     List<MenuItemVariantDto>? Variants = null);

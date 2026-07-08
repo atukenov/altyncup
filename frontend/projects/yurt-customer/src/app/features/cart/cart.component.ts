@@ -37,6 +37,7 @@ export class CartComponent {
   promoCodeInput = signal('');
   promoLoading = signal(false);
   promoError = signal<string | null>(null);
+  showConfirm = signal(false);
 
   toggleNote(key: string): void {
     this.expandedNoteKeys.update((s) => {

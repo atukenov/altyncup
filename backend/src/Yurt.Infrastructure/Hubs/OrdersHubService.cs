@@ -96,4 +96,9 @@ public class OrdersHubService : IOrdersHubService
         => await _hubContext.Clients
             .Group($"group-{groupCartId}")
             .SendAsync("GroupCartUpdated", dto, ct);
+
+    public async Task NotifyEtaReminderAsync(Guid orderId, Guid customerUserId, int minutesLeft, CancellationToken ct = default)
+        => await _hubContext.Clients
+            .Group($"customer:{customerUserId}")
+            .SendAsync("EtaReminder", new { orderId, minutesLeft }, ct);
 }

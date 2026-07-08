@@ -55,6 +55,12 @@ export const routes: Routes = [
           import('./features/achievements/achievements.component').then((m) => m.AchievementsComponent),
       },
       {
+        path: 'news',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/news/news.component').then((m) => m.NewsComponent),
+      },
+      {
         path: 'group-order/create',
         canActivate: [authGuard],
         loadComponent: () =>

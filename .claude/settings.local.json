@@ -41,7 +41,8 @@
       "Bash(curl -s http://localhost:5000/health)",
       "Bash(curl -s http://localhost:5001/health)",
       "Bash(curl -s http://localhost:5000/api/v1/menu/categories)",
-      "Bash(grep -v \".js$\")"
+      "Bash(grep -v \".js$\")",
+      "Bash(python3 -)"
     ],
     "additionalDirectories": [
       "/private/tmp"

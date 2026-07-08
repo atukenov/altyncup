@@ -14,6 +14,7 @@ export class SignalrService {
   readonly orderDeclined$ = new Subject<Order>();
   readonly paymentUpdated$ = new Subject<Order>();
   readonly groupCartUpdated$ = new Subject<GroupCart>();
+  readonly etaReminder$ = new Subject<{ orderId: string; minutesLeft: number }>();
   readonly connected = signal(false);
 
   private auth = inject(AuthStateService);
@@ -38,6 +39,7 @@ export class SignalrService {
     this.hubConnection.on('OrderDeclined', (order: Order) => this.orderDeclined$.next(order));
     this.hubConnection.on('PaymentUpdated', (order: Order) => this.paymentUpdated$.next(order));
     this.hubConnection.on('GroupCartUpdated', (dto: GroupCart) => this.groupCartUpdated$.next(dto));
+    this.hubConnection.on('EtaReminder', (data: { orderId: string; minutesLeft: number }) => this.etaReminder$.next(data));
 
     this.hubConnection.onclose(() => this.connected.set(false));
     this.hubConnection.onreconnected(() => this.connected.set(true));

@@ -32,6 +32,16 @@ export class OrderNotificationService {
       const body = reason ? `${s.orderDeclined[1]}: ${reason}` : s.orderDeclined[1];
       this.sendOrderNotification(s.orderDeclined[0], body, order, 'declined');
     });
+
+    this.signalr.etaReminder$.subscribe(({ orderId, minutesLeft }) => {
+      const s = this.getStrings();
+      this.notifications.sendNotification({
+        title: s.etaReminderTitle,
+        body: minutesLeft === 1 ? s.eta1MinLeft : s.eta5MinLeft,
+        tag: `eta-${orderId}-${minutesLeft}`,
+        largeBody: minutesLeft === 1 ? s.eta1MinLeft : s.eta5MinLeft,
+      }).catch(() => {});
+    });
   }
 
   private handleOrderUpdate(order: Order): void {
@@ -74,6 +84,9 @@ export class OrderNotificationService {
     orderUpdated: [string, string];
     orderDeclined: [string, string];
     paymentUpdated: [string, string];
+    etaReminderTitle: string;
+    eta5MinLeft: string;
+    eta1MinLeft: string;
     statuses: Record<string, string>;
   } {
     const lang = this.getLang();
@@ -83,6 +96,9 @@ export class OrderNotificationService {
         orderUpdated: ['Order Updated', 'Your order is now'] as [string, string],
         orderDeclined: ['Order Declined', 'Your order was declined'] as [string, string],
         paymentUpdated: ['Payment Updated', 'Payment status updated'] as [string, string],
+        etaReminderTitle: 'Your order is almost ready!',
+        eta5MinLeft: '5 minutes left',
+        eta1MinLeft: '1 minute left!',
         statuses: {
           [OrderStatus.Created]: 'received',
           [OrderStatus.Accepted]: 'accepted',
@@ -97,6 +113,9 @@ export class OrderNotificationService {
         orderUpdated: ['Заказ обновлён', 'Ваш заказ'] as [string, string],
         orderDeclined: ['Заказ отклонён', 'Ваш заказ отклонён'] as [string, string],
         paymentUpdated: ['Оплата', 'Статус оплаты обновлён'] as [string, string],
+        etaReminderTitle: 'Ваш заказ почти готов!',
+        eta5MinLeft: 'Осталось 5 минут',
+        eta1MinLeft: 'Осталась 1 минута!',
         statuses: {
           [OrderStatus.Created]: 'получен',
           [OrderStatus.Accepted]: 'принят',
@@ -111,6 +130,9 @@ export class OrderNotificationService {
         orderUpdated: ['Тапсырыс жаңартылды', 'Тапсырысыңыз'] as [string, string],
         orderDeclined: ['Тапсырыс қабылданбады', 'Тапсырысыңыз қабылданбады'] as [string, string],
         paymentUpdated: ['Төлем', 'Төлем күйі жаңартылды'] as [string, string],
+        etaReminderTitle: 'Тапсырысыңыз дайын болуға жақын!',
+        eta5MinLeft: '5 минут қалды',
+        eta1MinLeft: '1 минут қалды!',
         statuses: {
           [OrderStatus.Created]: 'алынды',
           [OrderStatus.Accepted]: 'қабылданды',
