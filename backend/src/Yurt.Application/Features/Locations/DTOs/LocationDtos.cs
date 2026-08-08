@@ -20,19 +20,23 @@ public record AdminLocationDto(
     string ContactPhone,
     bool IsActive);
 
-public record CreateLocationDto(
-    string Name,
-    string? NameRu,
-    string? NameKk,
-    string Address,
-    string WorkingHours,
-    string ContactPhone);
+public record CreateLocationDto
+{
+    public string Name { get; init; } = string.Empty;
+    public string? NameRu { get; init; }
+    public string? NameKk { get; init; }
+    public string Address { get; init; } = string.Empty;
+    public string WorkingHours { get; init; } = string.Empty;
+    public string ContactPhone { get; init; } = string.Empty;
+}
 
-public record UpdateLocationDto(
-    string Name,
-    string? NameRu,
-    string? NameKk,
-    string Address,
-    string WorkingHours,
-    string ContactPhone,
-    bool IsActive);
+public record UpdateLocationDto
+{
+    public string Name { get; init; } = string.Empty;
+    public string? NameRu { get; init; }
+    public string? NameKk { get; init; }
+    public string Address { get; init; } = string.Empty;
+    public string WorkingHours { get; init; } = string.Empty;
+    public string ContactPhone { get; init; } = string.Empty;
+    public bool IsActive { get; init; }
+}

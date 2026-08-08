@@ -138,8 +138,8 @@ export class LocationsManagementComponent implements OnInit {
     this.saving.set(true);
     const payload: Partial<Location> = {
       name: f.name,
-      nameRu: f.nameRu || undefined,
-      nameKk: f.nameKk || undefined,
+      nameRu: f.nameRu,
+      nameKk: f.nameKk,
       address: f.address,
       workingHours: JSON.stringify(f.workingSlots),
       contactPhone: f.contactPhone,
