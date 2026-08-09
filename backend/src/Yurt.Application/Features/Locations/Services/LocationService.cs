@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Yurt.Application.Common.Helpers;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Common.Models;
 using Yurt.Application.Features.Locations.DTOs;
@@ -18,13 +17,13 @@ public class LocationService
         _audit = audit;
     }
 
-    public async Task<List<LocationDto>> GetActiveLocationsAsync(string lang = "ru", CancellationToken ct = default)
+    public async Task<List<LocationDto>> GetActiveLocationsAsync(CancellationToken ct = default)
         => await _db.Locations
             .Where(l => l.IsActive)
             .OrderBy(l => l.Name)
             .Select(l => new LocationDto(
                 l.Id,
-                LocalizationHelper.Localize(l.Name, l.NameRu, l.NameKk, lang),
+                l.Name,
                 l.Address, l.WorkingHours, l.ContactPhone, l.IsActive))
             .ToListAsync(ct);
 
@@ -32,7 +31,7 @@ public class LocationService
         => await _db.Locations
             .OrderBy(l => l.Name)
             .Select(l => new AdminLocationDto(
-                l.Id, l.Name, l.NameRu, l.NameKk,
+                l.Id, l.Name,
                 l.Address, l.WorkingHours, l.ContactPhone, l.IsActive))
             .ToListAsync(ct);
 
@@ -48,8 +47,6 @@ public class LocationService
         var loc = new Location
         {
             Name = dto.Name,
-            NameRu = dto.NameRu,
-            NameKk = dto.NameKk,
             Address = dto.Address,
             WorkingHours = dto.WorkingHours,
             ContactPhone = dto.ContactPhone
@@ -66,8 +63,6 @@ public class LocationService
         if (loc == null) return Result<AdminLocationDto>.NotFound();
 
         loc.Name = dto.Name;
-        loc.NameRu = dto.NameRu;
-        loc.NameKk = dto.NameKk;
         loc.Address = dto.Address;
         loc.WorkingHours = dto.WorkingHours;
         loc.ContactPhone = dto.ContactPhone;
@@ -91,5 +86,5 @@ public class LocationService
     }
 
     private static AdminLocationDto MapToAdminDto(Location l)
-        => new(l.Id, l.Name, l.NameRu, l.NameKk, l.Address, l.WorkingHours, l.ContactPhone, l.IsActive);
+        => new(l.Id, l.Name, l.Address, l.WorkingHours, l.ContactPhone, l.IsActive);
 }

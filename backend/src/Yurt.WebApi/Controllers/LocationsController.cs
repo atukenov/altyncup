@@ -18,9 +18,8 @@ public class LocationsController : ApiControllerBase
 
     /// <summary>Get all active locations.</summary>
     [HttpGet]
-    public async Task<IActionResult> GetActive(
-        [FromQuery] string lang = "ru", CancellationToken ct = default)
-        => Ok(await _locationService.GetActiveLocationsAsync(lang, ct));
+    public async Task<IActionResult> GetActive(CancellationToken ct = default)
+        => Ok(await _locationService.GetActiveLocationsAsync(ct));
 
     /// <summary>Get a specific location by ID.</summary>
     [HttpGet("{id:guid}")]

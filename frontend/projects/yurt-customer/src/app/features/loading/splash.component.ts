@@ -1,43 +1,78 @@
-import { Component, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  AfterViewInit,
+  Component,
+  computed,
+  ElementRef,
+  input,
+  signal,
+  ViewChild,
+} from '@angular/core';
 
 @Component({
   selector: 'app-splash',
   standalone: true,
-  imports: [CommonModule],
   template: `
     <div
-      class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-br from-amber-500 to-amber-600 transition-opacity duration-500"
-      [class.opacity-0]="ready()"
-      [class.pointer-events-none]="ready()"
+      class="fixed inset-0 z-9999 bg-black"
+      [style.opacity]="dismissed() ? '0' : '1'"
+      [style.pointer-events]="dismissed() ? 'none' : 'auto'"
+      style="transition: opacity 0.6s ease"
     >
-      <div class="flex flex-col items-center gap-6">
-        <img src="logo.png" alt="Altyncup" class="w-28 h-28 object-contain drop-shadow-2xl splash-logo" />
-        <div class="flex gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-white/60 splash-dot" style="animation-delay: 0s"></span>
-          <span class="w-2 h-2 rounded-full bg-white/60 splash-dot" style="animation-delay: 0.2s"></span>
-          <span class="w-2 h-2 rounded-full bg-white/60 splash-dot" style="animation-delay: 0.4s"></span>
+      @if (!videoFailed()) {
+        <video
+          #introVideo
+          class="w-full h-full object-cover"
+          playsinline
+          webkit-playsinline
+          muted
+          (ended)="onVideoEnded()"
+          (error)="onVideoError()"
+        >
+          <source src="intro.mp4" type="video/mp4" />
+        </video>
+      } @else {
+        <!-- Fallback: amber gradient with logo if video fails to load -->
+        <div class="w-full h-full flex flex-col items-center justify-center bg-linear-to-br from-amber-500 to-amber-600">
+          <img src="logo.png" alt="Altyncup" class="w-28 h-28 object-contain drop-shadow-2xl" style="animation: pulse 1.2s ease-in-out infinite" />
+          <style>@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }</style>
         </div>
-      </div>
+      }
     </div>
   `,
-  styles: [`
-    .splash-logo {
-      animation: splash-pulse 1.2s ease-in-out infinite;
-    }
-    @keyframes splash-pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.06); opacity: 0.9; }
-    }
-    .splash-dot {
-      animation: splash-bounce 0.8s ease-in-out infinite;
-    }
-    @keyframes splash-bounce {
-      0%, 100% { transform: translateY(0); opacity: 0.6; }
-      50% { transform: translateY(-6px); opacity: 1; }
-    }
-  `],
 })
-export class SplashComponent {
+export class SplashComponent implements AfterViewInit {
   readonly ready = input.required<boolean>();
+
+  @ViewChild('introVideo') videoRef?: ElementRef<HTMLVideoElement>;
+
+  private readonly _videoEnded = signal(false);
+  readonly videoFailed = signal(false);
+
+  // Dismiss only when BOTH the video has finished AND the app is ready
+  readonly dismissed = computed(() => this._videoEnded() && this.ready());
+
+  ngAfterViewInit(): void {
+    const video = this.videoRef?.nativeElement;
+    if (!video) return;
+
+    video.play().catch(() => {
+      // Autoplay blocked or video unavailable — skip straight to fallback logic
+      this.onVideoError();
+    });
+  }
+
+  onVideoEnded(): void {
+    this._videoEnded.set(true);
+  }
+
+  onVideoError(): void {
+    this.videoFailed.set(true);
+    // Wait for app-ready signal; if already ready, dismiss immediately
+    if (this.ready()) {
+      this._videoEnded.set(true);
+    } else {
+      // Poll isn't needed — the `ready` input is a signal so computed() will react
+      this._videoEnded.set(true);
+    }
+  }
 }

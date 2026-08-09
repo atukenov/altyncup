@@ -76,8 +76,6 @@ export interface CustomerProfile {
 export interface Location {
   id: string;
   name: string;
-  nameRu?: string;
-  nameKk?: string;
   address: string;
   workingHours: string;
   contactPhone: string;

@@ -139,6 +139,10 @@ export class LocationsComponent {
   }
 
   confirm(): void {
+    const selectedLoc = this.locations().find((l) => l.id === this.selectedId());
+    if (selectedLoc) {
+      this.locationSvc.setLocation(selectedLoc.id, selectedLoc.name);
+    }
     this.router.navigate(['/menu']);
   }
 }

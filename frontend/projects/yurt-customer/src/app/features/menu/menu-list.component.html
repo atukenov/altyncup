@@ -5,22 +5,24 @@
       <div class="flex items-center justify-between mb-3">
         <div>
           <h1 class="text-lg font-bold text-white leading-snug">{{ greeting }}</h1>
-          @if (locationName()) {
-            <button
-              routerLink="/locations"
-              class="flex items-center gap-1 mt-0.5 text-amber-100 text-xs font-medium hover:text-white transition-colors"
-            >
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fill-rule="evenodd"
-                  d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                  clip-rule="evenodd"
-                />
-              </svg>
+          <button
+            routerLink="/locations"
+            class="flex items-center gap-1 mt-0.5 text-amber-100 text-xs font-medium hover:text-white transition-colors active:opacity-70"
+          >
+            <svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fill-rule="evenodd"
+                d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            @if (locationName()) {
               {{ locationName() }}
               <span class="text-amber-200 ml-0.5">· {{ 'menu.change' | t }}</span>
-            </button>
-          }
+            } @else {
+              <span class="text-amber-200">{{ 'menu.selectLocation' | t }}</span>
+            }
+          </button>
         </div>
         <!-- Header icons -->
         <div class="flex items-center gap-2 shrink-0">

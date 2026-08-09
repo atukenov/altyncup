@@ -22,7 +22,7 @@ export class LocationService {
       this.api.getLocations(lang).subscribe({
         next: (locs) => {
           const loc = locs.find((l) => l.id === id);
-          if (loc) {
+          if (loc && loc.name) {
             this.locationName.set(loc.name);
             localStorage.setItem('yurt_location_name', loc.name);
           }

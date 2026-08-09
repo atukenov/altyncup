@@ -17,8 +17,6 @@ export interface WorkingSlot {
 interface LocationForm {
   id?: string;
   name: string;
-  nameRu: string;
-  nameKk: string;
   address: string;
   workingSlots: WorkingSlot[];
   contactPhone: string;
@@ -62,8 +60,6 @@ export class LocationsManagementComponent implements OnInit {
   showDialog = signal(false);
   form = signal<LocationForm>({
     name: '',
-    nameRu: '',
-    nameKk: '',
     address: '',
     workingSlots: DEFAULT_SLOTS.map((s) => ({ ...s })),
     contactPhone: '',
@@ -81,8 +77,6 @@ export class LocationsManagementComponent implements OnInit {
     this.form.set({
       id: loc?.id,
       name: loc?.name ?? '',
-      nameRu: loc?.nameRu ?? '',
-      nameKk: loc?.nameKk ?? '',
       address: loc?.address ?? '',
       workingSlots: parseSlots(loc?.workingHours ?? ''),
       contactPhone: loc?.contactPhone ?? '',
@@ -138,8 +132,6 @@ export class LocationsManagementComponent implements OnInit {
     this.saving.set(true);
     const payload: Partial<Location> = {
       name: f.name,
-      nameRu: f.nameRu,
-      nameKk: f.nameKk,
       address: f.address,
       workingHours: JSON.stringify(f.workingSlots),
       contactPhone: f.contactPhone,
