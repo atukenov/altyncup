@@ -96,6 +96,13 @@ export class YurtApiService {
     });
   }
 
+  adminChangePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.api}/admin/auth/change-password`, {
+      currentPassword,
+      newPassword,
+    });
+  }
+
   // ── Locations ──────────────────────────────────────────────────────────────
   getLocations(lang?: string): Observable<Location[]> {
     const params = lang ? new HttpParams().set('lang', lang) : undefined;

@@ -193,23 +193,32 @@ public static class DbSeeder
     {
         if (await db.AdminUsers.AnyAsync()) return;
 
-        db.AdminUsers.AddRange(
-            new AdminUser
-            {
-                Username = "admin",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123!"),
-                Role = AdminRole.Admin,
-                IsActive = true
-            },
-            new AdminUser
-            {
-                Username = "worker1",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Worker@123!"),
-                Role = AdminRole.Worker,
-                IsActive = true
-            }
-        );
+        var username = Environment.GetEnvironmentVariable("SEED_ADMIN_USERNAME");
+        var password = Environment.GetEnvironmentVariable("SEED_ADMIN_PASSWORD");
+
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        {
+            logger.LogWarning(
+                "SEED_ADMIN_USERNAME or SEED_ADMIN_PASSWORD env vars are not set. " +
+                "Skipping admin seed — set these variables and restart to create the initial admin account.");
+            return;
+        }
+
+        if (password.Length < 8)
+        {
+            logger.LogWarning("SEED_ADMIN_PASSWORD must be at least 8 characters. Skipping admin seed.");
+            return;
+        }
+
+        db.AdminUsers.Add(new AdminUser
+        {
+            Username = username.Trim(),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+            Role = AdminRole.Admin,
+            IsActive = true,
+            MustChangePassword = true
+        });
         await db.SaveChangesAsync();
-        logger.LogInformation("Admin users seeded.");
+        logger.LogInformation("Admin user '{Username}' seeded (MustChangePassword=true).", username);
     }
 }

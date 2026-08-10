@@ -61,6 +61,7 @@ export interface AuthResponse {
   userId: string;
   displayName: string;
   role?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface CustomerProfile {

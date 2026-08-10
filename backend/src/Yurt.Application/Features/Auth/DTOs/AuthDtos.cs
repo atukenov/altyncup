@@ -6,7 +6,8 @@ public record AuthResponseDto(
     string UserType,
     Guid UserId,
     string DisplayName,
-    string? Role = null);
+    string? Role = null,
+    bool MustChangePassword = false);
 
 public record RefreshRequestDto(string RefreshToken);
 
@@ -17,3 +18,4 @@ public record UpdateProfileDto(string FirstName, string LastName);
 
 public record CustomerProfileDto(Guid Id, string MobileNumber, string FirstName, string LastName, DateTime CreatedAt);
 public record ChangePinDto(string CurrentPin, string NewPin);
+public record ChangeAdminPasswordDto(string CurrentPassword, string NewPassword);

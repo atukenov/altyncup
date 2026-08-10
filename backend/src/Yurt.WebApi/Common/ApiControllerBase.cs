@@ -18,6 +18,14 @@ public abstract class ApiControllerBase : ControllerBase
             };
         }
 
+        if (result.StatusCode == 423)
+        {
+            var problem = new ProblemDetails { Status = 423, Title = result.Error };
+            if (result.MinutesRemaining.HasValue)
+                problem.Extensions["minutesRemaining"] = result.MinutesRemaining.Value;
+            return StatusCode(423, problem);
+        }
+
         return result.StatusCode switch
         {
             401 => Unauthorized(new ProblemDetails { Title = result.Error }),
@@ -25,7 +33,6 @@ public abstract class ApiControllerBase : ControllerBase
             404 => NotFound(new ProblemDetails { Title = result.Error }),
             409 => Conflict(new ProblemDetails { Title = result.Error }),
             422 => UnprocessableEntity(new ProblemDetails { Title = result.Error }),
-            423 => StatusCode(423, new ProblemDetails { Title = result.Error }),
             _ => BadRequest(new ProblemDetails { Title = result.Error })
         };
     }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Common.Models;
 using Yurt.Application.Features.Auth.DTOs;
@@ -11,6 +12,7 @@ public class AuthService
     private readonly IApplicationDbContext _db;
     private readonly ITokenService _tokenService;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ILogger<AuthService> _logger;
 
     private const int MaxFailedAttempts = 5;
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
@@ -18,11 +20,13 @@ public class AuthService
     public AuthService(
         IApplicationDbContext db,
         ITokenService tokenService,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        ILogger<AuthService> logger)
     {
         _db = db;
         _tokenService = tokenService;
         _passwordHasher = passwordHasher;
+        _logger = logger;
     }
 
     public async Task<Result<AuthResponseDto>> RegisterCustomerAsync(
@@ -66,8 +70,10 @@ public class AuthService
             return Result<AuthResponseDto>.Failure("Invalid credentials.", 401);
 
         if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
-            return Result<AuthResponseDto>.Failure(
-                $"Account locked. Try again after {user.LockoutEnd.Value:HH:mm} UTC.", 423);
+        {
+            var minutesRemaining = (int)Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
+            return Result<AuthResponseDto>.Locked(minutesRemaining);
+        }
 
         if (!_passwordHasher.Verify(dto.Pin4, user.PinHash))
         {
@@ -104,11 +110,11 @@ public class AuthService
             return Result<AuthResponseDto>.Failure("Invalid credentials.", 401);
 
         var role = admin.Role.ToString();
-        var accessToken = _tokenService.GenerateAdminToken(admin.Id, admin.Username, role);
+        var accessToken = _tokenService.GenerateAdminToken(admin.Id, admin.Username, role, admin.MustChangePassword);
         var refreshToken = await CreateRefreshTokenAsync(admin.Id, RefreshTokenUserType.Admin, ip, ct);
 
         return Result<AuthResponseDto>.Success(
-            new AuthResponseDto(accessToken, refreshToken, "admin", admin.Id, admin.Username, role));
+            new AuthResponseDto(accessToken, refreshToken, "admin", admin.Id, admin.Username, role, admin.MustChangePassword));
     }
 
     public async Task<Result<AuthResponseDto>> RefreshAsync(
@@ -117,8 +123,24 @@ public class AuthService
         var storedToken = await _db.RefreshTokens
             .FirstOrDefaultAsync(t => t.Token == refreshTokenValue, ct);
 
-        if (storedToken == null || storedToken.IsRevoked || storedToken.ExpiresAt <= DateTime.UtcNow)
+        if (storedToken == null || storedToken.ExpiresAt <= DateTime.UtcNow)
             return Result<AuthResponseDto>.Failure("Invalid or expired refresh token.", 401);
+
+        if (storedToken.IsRevoked)
+        {
+            // Reuse of a revoked token — possible token theft; revoke entire family
+            _logger.LogWarning("Refresh token reuse detected for user {UserId}. Revoking all tokens.", storedToken.UserId);
+            var activeTokens = await _db.RefreshTokens
+                .Where(t => t.UserId == storedToken.UserId && !t.IsRevoked)
+                .ToListAsync(ct);
+            foreach (var t in activeTokens)
+            {
+                t.IsRevoked = true;
+                t.RevokedAt = DateTime.UtcNow;
+            }
+            await _db.SaveChangesAsync(ct);
+            return Result<AuthResponseDto>.Failure("Invalid or expired refresh token.", 401);
+        }
 
         // Revoke old token and chain it
         var newRefreshValue = _tokenService.GenerateRefreshToken();
@@ -162,11 +184,11 @@ public class AuthService
                 return Result<AuthResponseDto>.Failure("User not found.", 401);
 
             role = admin.Role.ToString();
-            accessToken = _tokenService.GenerateAdminToken(admin.Id, admin.Username, role);
+            accessToken = _tokenService.GenerateAdminToken(admin.Id, admin.Username, role, admin.MustChangePassword);
 
             await _db.SaveChangesAsync(ct);
             return Result<AuthResponseDto>.Success(
-                new AuthResponseDto(accessToken, newRefreshValue, "admin", admin.Id, admin.Username, role));
+                new AuthResponseDto(accessToken, newRefreshValue, "admin", admin.Id, admin.Username, role, admin.MustChangePassword));
         }
     }
 
@@ -212,6 +234,23 @@ public class AuthService
 
         return Result<CustomerProfileDto>.Success(
             new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt));
+    }
+
+    public async Task<Result<bool>> ChangeAdminPasswordAsync(
+        Guid adminId, ChangeAdminPasswordDto dto, CancellationToken ct = default)
+    {
+        var admin = await _db.AdminUsers.FindAsync([adminId], ct);
+        if (admin == null)
+            return Result<bool>.NotFound("Admin not found.");
+
+        if (!_passwordHasher.Verify(dto.CurrentPassword, admin.PasswordHash))
+            return Result<bool>.Failure("Current password is incorrect.", 400);
+
+        admin.PasswordHash = _passwordHasher.Hash(dto.NewPassword);
+        admin.MustChangePassword = false;
+        await _db.SaveChangesAsync(ct);
+
+        return Result<bool>.Success(true);
     }
 
     private async Task<AuthResponseDto> IssueTokenPairAsync(

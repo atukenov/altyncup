@@ -78,9 +78,17 @@ public static class DependencyInjection
         services.AddHostedService<OrderArchivalService>();
         services.AddHostedService<OrderTimerService>();
 
-        // JWT Auth
-        var jwtSecret = configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("JWT Secret not configured.");
+        // JWT Auth — fail-fast secret validation
+        var jwtSecret = configuration["Jwt:Secret"];
+        if (string.IsNullOrWhiteSpace(jwtSecret))
+            throw new InvalidOperationException(
+                "Jwt:Secret is not configured. Set the Jwt__Secret environment variable.");
+        if (jwtSecret.StartsWith("CHANGE_THIS", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(
+                "Jwt:Secret is still set to the placeholder value. Generate a real secret and set it via Jwt__Secret environment variable.");
+        if (jwtSecret.Length < 32)
+            throw new InvalidOperationException(
+                $"Jwt:Secret must be at least 32 characters long (currently {jwtSecret.Length}).");
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -127,10 +135,11 @@ public static class DependencyInjection
             });
         });
 
-        // SignalR
+        // SignalR — detailed errors only in development
+        var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
         services.AddSignalR(options =>
         {
-            options.EnableDetailedErrors = true;
+            options.EnableDetailedErrors = isDev;
         }).AddJsonProtocol(opts =>
         {
             opts.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());

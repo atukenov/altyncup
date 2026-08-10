@@ -26,7 +26,7 @@ public class JwtTokenService : ITokenService
         return GenerateToken(claims);
     }
 
-    public string GenerateAdminToken(Guid adminId, string username, string role)
+    public string GenerateAdminToken(Guid adminId, string username, string role, bool mustChangePassword = false)
     {
         var claims = new List<Claim>
         {
@@ -36,6 +36,8 @@ public class JwtTokenService : ITokenService
             new("user_type", "admin"),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+        if (mustChangePassword)
+            claims.Add(new Claim("must_change_password", "true"));
         return GenerateToken(claims);
     }
 

@@ -9,4 +9,5 @@ public class AdminUser : BaseEntity
     public string PasswordHash { get; set; } = string.Empty;
     public AdminRole Role { get; set; } = AdminRole.Worker;
     public bool IsActive { get; set; } = true;
+    public bool MustChangePassword { get; set; }
 }

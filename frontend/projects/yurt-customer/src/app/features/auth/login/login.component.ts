@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { YurtApiService, AuthStateService } from 'shared-api';
 import { ButtonComponent, ToastService } from 'shared-ui';
 import { TranslatePipe } from '../../../core/translate.pipe';
+import { LangService } from '../../../core/lang.service';
 
 @Component({
   selector: 'app-login',
@@ -18,6 +19,7 @@ export class LoginComponent {
   private auth = inject(AuthStateService);
   private router = inject(Router);
   private toast = inject(ToastService);
+  private lang = inject(LangService);
 
   readonly pinInputs = viewChildren<ElementRef>('pinInput');
 
@@ -112,7 +114,13 @@ export class LoginComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        const msg = err.error?.title ?? err.error?.detail ?? 'Login failed. Please try again.';
+        let msg: string;
+        if (err.status === 423) {
+          const minutes = err.error?.extensions?.minutesRemaining ?? err.error?.minutesRemaining ?? '?';
+          msg = this.lang.t('auth.locked').replace('{minutes}', String(minutes));
+        } else {
+          msg = err.error?.title ?? err.error?.detail ?? 'Login failed. Please try again.';
+        }
         this.error.set(msg);
         this.pins = ['', '', '', ''];
         this.pinInputs()[0]?.nativeElement.focus();

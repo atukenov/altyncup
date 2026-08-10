@@ -9,6 +9,11 @@ export const routes: Routes = [
       import('./features/auth/admin-login.component').then((m) => m.AdminLoginComponent),
   },
   {
+    path: 'auth/change-password',
+    loadComponent: () =>
+      import('./features/auth/change-password.component').then((m) => m.ChangePasswordComponent),
+  },
+  {
     path: '',
     canActivateChild: [adminAuthGuard],
     loadComponent: () =>

@@ -6,6 +6,7 @@ public class Result<T>
     public T? Data { get; private set; }
     public string? Error { get; private set; }
     public int StatusCode { get; private set; }
+    public int? MinutesRemaining { get; private set; }
 
     private Result() { }
 
@@ -14,6 +15,9 @@ public class Result<T>
 
     public static Result<T> Failure(string error, int statusCode = 400)
         => new() { Succeeded = false, Error = error, StatusCode = statusCode };
+
+    public static Result<T> Locked(int minutesRemaining)
+        => new() { Succeeded = false, Error = "Account locked.", StatusCode = 423, MinutesRemaining = minutesRemaining };
 
     public static Result<T> NotFound(string error = "Not found")
         => new() { Succeeded = false, Error = error, StatusCode = 404 };

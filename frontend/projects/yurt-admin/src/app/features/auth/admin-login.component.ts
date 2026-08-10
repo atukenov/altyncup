@@ -37,7 +37,11 @@ export class AdminLoginComponent {
           userType: 'admin',
           role: res.role,
         });
-        this.router.navigate(['/dashboard']);
+        if (res.mustChangePassword) {
+          this.router.navigate(['/auth/change-password']);
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
       },
       error: () => {
         this.loading.set(false);

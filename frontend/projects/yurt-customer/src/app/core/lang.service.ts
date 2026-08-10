@@ -79,6 +79,7 @@ const T: Record<Lang, Record<string, string>> = {
     'empty.cartTitle': 'Nothing here yet', 'empty.cartHint': 'Your cup is waiting. Browse the menu — cappuccinos, rafs and fresh pastries.', 'empty.cartCta': 'Browse menu',
     'empty.ordersTitle': 'No orders yet', 'empty.ordersHint': 'Your history will appear here — with statuses, receipts and one-tap reorder.', 'empty.ordersCta': 'Place first order',
     'empty.favTitle': 'Nothing saved yet', 'empty.favHintPre': 'Tap ', 'empty.favHintPost': ' on your favourite drinks — they\'ll gather here for quick ordering.', 'empty.favCta': 'Find your favourite',
+    'auth.locked': 'Account locked. Try again in {minutes} min.',
   },
   ru: {
     'nav.menu': 'Меню', 'nav.cart': 'Корзина', 'nav.orders': 'Заказы', 'nav.saved': 'Избранное', 'nav.profile': 'Профиль', 'nav.news': 'Новости',
@@ -156,6 +157,7 @@ const T: Record<Lang, Record<string, string>> = {
     'empty.cartTitle': 'Пока пусто', 'empty.cartHint': 'Ваша чашка ждёт. Загляните в меню — там капучино, раф и свежая выпечка.', 'empty.cartCta': 'Смотреть меню',
     'empty.ordersTitle': 'Заказов ещё не было', 'empty.ordersHint': 'Здесь появится история — со статусами, чеками и повтором в один тап.', 'empty.ordersCta': 'Сделать первый заказ',
     'empty.favTitle': 'Здесь пусто', 'empty.favHintPre': 'Нажимайте ', 'empty.favHintPost': ' на любимых напитках — они соберутся здесь для быстрого заказа.', 'empty.favCta': 'Найти любимый',
+    'auth.locked': 'Аккаунт заблокирован. Попробуйте через {minutes} мин.',
   },
   kk: {
     'nav.menu': 'Мәзір', 'nav.cart': 'Себет', 'nav.orders': 'Тапсырыстар', 'nav.saved': 'Сақталған', 'nav.profile': 'Профиль', 'nav.news': 'Жаңалықтар',
@@ -233,6 +235,7 @@ const T: Record<Lang, Record<string, string>> = {
     'empty.cartTitle': 'Себет бос', 'empty.cartHint': 'Сіздің кесеңіз күтуде. Мәзірді қараңыз — кофе мен тәтті тағамдар бар.', 'empty.cartCta': 'Мәзірді қарау',
     'empty.ordersTitle': 'Тапсырыс болған жоқ', 'empty.ordersHint': 'Тарих осында пайда болады — күйлерімен, чектерімен.', 'empty.ordersCta': 'Алғашқы тапсырыс беру',
     'empty.favTitle': 'Бұл жерде бос', 'empty.favHintPre': 'Басыңыз ', 'empty.favHintPost': ' сүйікті сусындарда — тез тапсырыс үшін осында жиналады.', 'empty.favCta': 'Сүйіктісін табу',
+    'auth.locked': 'Аккаунт бұғатталған. {minutes} минуттан кейін қайталаңыз.',
   },
 };
 

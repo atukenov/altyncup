@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
 using Yurt.Application.Features.Auth.DTOs;
@@ -46,5 +48,18 @@ public class AdminAuthController : ApiControllerBase
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
         await _authService.RevokeAsync(dto.RefreshToken, ip, ct);
         return NoContent();
+    }
+
+    /// <summary>Change the authenticated admin's password and clear MustChangePassword flag.</summary>
+    [HttpPost("change-password")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangeAdminPasswordDto dto, CancellationToken ct)
+    {
+        var adminIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(adminIdClaim, out var adminId))
+            return Unauthorized();
+
+        var result = await _authService.ChangeAdminPasswordAsync(adminId, dto, ct);
+        return ToResult(result);
     }
 }

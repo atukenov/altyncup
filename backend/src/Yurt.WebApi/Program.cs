@@ -94,6 +94,9 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
         ForwardedHeaders.XForwardedProto
 });
 
+if (!app.Environment.IsDevelopment())
+    app.UseHsts();
+
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler(opts =>
     opts.Run(async ctx =>
@@ -130,9 +133,49 @@ app.UseSerilogRequestLogging(opts =>
         if (userId is not null) diag.Set("UserId", userId);
         if (ctx.Items["CorrelationId"] is string cid) diag.Set("CorrelationId", cid);
     });
+
+// Security headers
+app.Use(async (ctx, next) =>
+{
+    ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    ctx.Response.Headers["X-Frame-Options"] = "DENY";
+    ctx.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    ctx.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    await next();
+});
+
 app.UseIpRateLimiting();
 app.UseCors();
 app.UseAuthentication();
+
+// Block admin routes for accounts that still have the must_change_password claim set
+app.Use(async (ctx, next) =>
+{
+    var path = ctx.Request.Path.Value ?? "";
+    if (path.Contains("/admin/", StringComparison.OrdinalIgnoreCase) &&
+        !path.Contains("/auth/login", StringComparison.OrdinalIgnoreCase) &&
+        !path.Contains("/auth/logout", StringComparison.OrdinalIgnoreCase) &&
+        !path.Contains("/auth/refresh", StringComparison.OrdinalIgnoreCase) &&
+        !path.Contains("/auth/change-password", StringComparison.OrdinalIgnoreCase))
+    {
+        var mustChange = ctx.User.FindFirstValue("must_change_password");
+        if (mustChange == "true")
+        {
+            ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+            ctx.Response.ContentType = "application/problem+json";
+            await ctx.Response.WriteAsJsonAsync(new ProblemDetails
+            {
+                Status = 403,
+                Title = "Password change required.",
+                Detail = "You must change your password before accessing this resource.",
+                Instance = ctx.Request.Path
+            });
+            return;
+        }
+    }
+    await next();
+});
+
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<OrdersHub>("/hubs/orders");

@@ -1,6 +1,7 @@
 /.vscode
 
 appsettings.Local.json
+appsettings.Development.json
 
 # Build output
 **/bin/
