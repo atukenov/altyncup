@@ -26,6 +26,14 @@
           <option [value]="loc.id">{{ loc.name }}{{ loc.address ? ' — ' + loc.address : '' }}</option>
         }
       </select>
+      <!-- Search -->
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchChange()"
+        placeholder="{{ 'orders.search' | t }}"
+        class="mt-2 w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-400 outline-none"
+      />
     </div>
     <!-- Status tabs -->
     <div class="flex gap-1 px-3 py-2 border-b border-slate-50 flex-shrink-0">

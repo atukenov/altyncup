@@ -19,20 +19,32 @@ export class CustomersComponent implements OnInit {
   customers = signal<CustomerSummary[]>([]);
   loading = signal(true);
   phone = '';
+  total = signal(0);
+  page = signal(1);
+  readonly pageSize = 50;
 
   ngOnInit(): void {
     this.load();
   }
 
-  load(): void {
+  load(page = 1): void {
+    this.page.set(page);
     this.loading.set(true);
-    this.api.getAdminCustomers(this.phone || undefined).subscribe({
-      next: (c) => { this.customers.set(c); this.loading.set(false); },
+    this.api.getAdminCustomers(this.phone || undefined, page, this.pageSize).subscribe({
+      next: (res) => {
+        this.customers.set(res.items);
+        this.total.set(res.total);
+        this.loading.set(false);
+      },
       error: () => this.loading.set(false),
     });
   }
 
   onSearch(): void {
-    this.load();
+    this.load(1);
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.total() / this.pageSize);
   }
 }

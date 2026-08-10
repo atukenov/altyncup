@@ -48,7 +48,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     // Live Orders
     'orders.title': 'Live Orders', 'orders.noOrders': 'No orders',
     'orders.tabActive': 'Active', 'orders.tabDone': 'Done', 'orders.tabAll': 'All',
-    'orders.allLocations': 'All Locations',
+    'orders.allLocations': 'All Locations', 'orders.search': 'Search by order # or phone…',
     'orders.selectOrder': 'Select an order', 'orders.clickToView': 'Click any order to view details',
     'orders.accept': '✓ Accept', 'orders.decline': '✕ Decline',
     'orders.markPreparing': 'Mark Preparing', 'orders.markReady': 'Mark Ready',
@@ -206,7 +206,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     // Live Orders
     'orders.title': 'Заказы (Live)', 'orders.noOrders': 'Нет заказов',
     'orders.tabActive': 'Активные', 'orders.tabDone': 'Завершённые', 'orders.tabAll': 'Все',
-    'orders.allLocations': 'Все локации',
+    'orders.allLocations': 'Все локации', 'orders.search': 'Поиск по номеру заказа или телефону…',
     'orders.selectOrder': 'Выберите заказ', 'orders.clickToView': 'Нажмите на заказ для просмотра',
     'orders.accept': '✓ Принять', 'orders.decline': '✕ Отклонить',
     'orders.markPreparing': 'Начать готовку', 'orders.markReady': 'Пометить готовым',
@@ -364,7 +364,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     // Live Orders
     'orders.title': 'Тапсырыстар (Live)', 'orders.noOrders': 'Тапсырыстар жоқ',
     'orders.tabActive': 'Белсенді', 'orders.tabDone': 'Аяқталған', 'orders.tabAll': 'Барлық',
-    'orders.allLocations': 'Барлық мекендер',
+    'orders.allLocations': 'Барлық мекендер', 'orders.search': 'Тапсырыс # немесе телефон бойынша іздеу…',
     'orders.selectOrder': 'Тапсырыс таңдаңыз', 'orders.clickToView': 'Мәліметтерді көру үшін тапсырысты нұқыңыз',
     'orders.accept': '✓ Қабылдау', 'orders.decline': '✕ Қабылдамау',
     'orders.markPreparing': 'Дайындауды бастау', 'orders.markReady': 'Дайын деп белгілеу',

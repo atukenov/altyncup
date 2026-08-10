@@ -44,6 +44,8 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   selectedOrder = signal<Order | null>(null);
   activeTab = signal<string>('active');
   selectedLocationId = '';
+  searchQuery = '';
+  private searchDebounce: ReturnType<typeof setTimeout> | null = null;
   private readonly LOC_KEY = 'yurt_orders_location';
 
   etaInput = 10;
@@ -138,12 +140,18 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
     this.signalr.stopConnection();
   }
 
+  onSearchChange(): void {
+    if (this.searchDebounce) clearTimeout(this.searchDebounce);
+    this.searchDebounce = setTimeout(() => this.loadOrders(), 300);
+  }
+
   loadOrders(): void {
     localStorage.setItem(this.LOC_KEY, this.selectedLocationId);
     this.loading.set(true);
-    this.api.getAdminOrders(undefined, this.selectedLocationId || undefined).subscribe({
-      next: (orders) => {
-        this.orders.set(orders);
+    const search = this.searchQuery.trim() || undefined;
+    this.api.getAdminOrders(undefined, this.selectedLocationId || undefined, search).subscribe({
+      next: (res) => {
+        this.orders.set(res.items);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),

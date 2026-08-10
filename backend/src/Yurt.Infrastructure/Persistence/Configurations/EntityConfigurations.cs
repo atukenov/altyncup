@@ -90,6 +90,10 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(e => e.PaymentStatus).HasConversion<string>().HasMaxLength(20);
         builder.Property(e => e.PaymentMethod).HasConversion<string>().HasMaxLength(20);
         builder.Property(e => e.DeclineReason).HasMaxLength(500);
+        builder.Property(e => e.IdempotencyKey).HasMaxLength(128);
+        builder.HasIndex(e => new { e.CustomerUserId, e.IdempotencyKey })
+            .IsUnique()
+            .HasFilter("\"IdempotencyKey\" IS NOT NULL");
         builder.Property(e => e.Subtotal).HasPrecision(10, 2);
         builder.Property(e => e.DiscountAmount).HasPrecision(10, 2).HasDefaultValue(0m);
         builder.Property(e => e.Total).HasPrecision(10, 2);

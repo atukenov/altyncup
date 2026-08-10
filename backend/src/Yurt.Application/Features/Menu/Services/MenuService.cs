@@ -11,11 +11,13 @@ public class MenuService
 {
     private readonly IApplicationDbContext _db;
     private readonly IAuditLogService _audit;
+    private readonly IMenuCacheService _menuCache;
 
-    public MenuService(IApplicationDbContext db, IAuditLogService audit)
+    public MenuService(IApplicationDbContext db, IAuditLogService audit, IMenuCacheService menuCache)
     {
         _db = db;
         _audit = audit;
+        _menuCache = menuCache;
     }
 
     // ── Customer endpoints (localized) ────────────────────────────────────────
@@ -23,6 +25,10 @@ public class MenuService
     public async Task<List<MenuCategoryDto>> GetCategoriesAsync(
         string lang = "ru", Guid? locationId = null, CancellationToken ct = default)
     {
+        var cacheKey = $"cats:{lang}:{locationId}";
+        var cached = await _menuCache.GetAsync<List<MenuCategoryDto>>(cacheKey);
+        if (cached is not null) return cached;
+
         var query = _db.MenuCategories.AsQueryable();
 
         if (locationId.HasValue)
@@ -32,18 +38,32 @@ public class MenuService
                 (!i.MenuItemLocations.Any() || i.MenuItemLocations.Any(l => l.LocationId == locationId.Value))));
         }
 
-        return await query
+        var result = await query
             .OrderBy(c => c.SortOrder).ThenBy(c => c.Name)
             .Select(c => new MenuCategoryDto(
                 c.Id,
                 LocalizationHelper.Localize(c.Name, c.NameRu, c.NameKk, lang),
                 c.SortOrder))
             .ToListAsync(ct);
+
+        await _menuCache.SetAsync(cacheKey, result);
+        return result;
     }
 
     public async Task<List<MenuItemDto>> GetItemsAsync(
         Guid? categoryId, string? search, string lang = "ru", Guid? locationId = null, CancellationToken ct = default)
     {
+        // Only cache unfilitered/unasearched browsing — search results are not cached
+        var cacheKey = string.IsNullOrWhiteSpace(search)
+            ? $"items:{lang}:{categoryId}:{locationId}"
+            : null;
+
+        if (cacheKey is not null)
+        {
+            var cached = await _menuCache.GetAsync<List<MenuItemDto>>(cacheKey);
+            if (cached is not null) return cached;
+        }
+
         var query = _db.MenuItems
             .Include(i => i.Category)
             .Include(i => i.MenuItemLocations)
@@ -70,8 +90,11 @@ public class MenuService
         var categoryIds = items.Select(i => i.CategoryId).Distinct().ToList();
         var toppingsByCategory = await GetToppingsByCategoryIdsAsync(categoryIds, lang, ct);
 
-        return items.Select(i => MapItemToDto(i, lang,
+        var result = items.Select(i => MapItemToDto(i, lang,
             toppingsByCategory.TryGetValue(i.CategoryId, out var t) ? t : null)).ToList();
+
+        if (cacheKey is not null) await _menuCache.SetAsync(cacheKey, result);
+        return result;
     }
 
     public async Task<Result<MenuItemDto>> GetItemByIdAsync(Guid id, string lang = "ru", Guid? locationId = null, CancellationToken ct = default)
@@ -96,6 +119,10 @@ public class MenuService
     public async Task<List<MenuToppingDto>> GetToppingsAsync(
         Guid? categoryId, string lang = "ru", CancellationToken ct = default)
     {
+        var cacheKey = $"tops:{lang}:{categoryId}";
+        var cached = await _menuCache.GetAsync<List<MenuToppingDto>>(cacheKey);
+        if (cached is not null) return cached;
+
         var query = _db.MenuToppings
             .Include(t => t.ToppingCategories)
             .AsQueryable();
@@ -106,12 +133,15 @@ public class MenuService
 
         var toppings = await query.OrderBy(t => t.Group).ThenBy(t => t.Name).ToListAsync(ct);
 
-        return toppings.Select(t => new MenuToppingDto(
+        var result = toppings.Select(t => new MenuToppingDto(
             t.Id,
             LocalizationHelper.Localize(t.Name, t.NameRu, t.NameKk, lang),
             t.Price, t.IsAvailable,
             t.ToppingCategories.Select(tc => tc.CategoryId).ToList(),
             t.Group)).ToList();
+
+        await _menuCache.SetAsync(cacheKey, result);
+        return result;
     }
 
     // ── Admin endpoints (all fields exposed) ──────────────────────────────────
@@ -161,6 +191,7 @@ public class MenuService
         _db.MenuCategories.Add(cat);
         await _db.SaveChangesAsync(ct);
         await _audit.LogAsync("CategoryCreated", "MenuCategory", cat.Id.ToString(), cat.Name, ct);
+        await _menuCache.InvalidateAllMenuAsync();
         return Result<AdminMenuCategoryDto>.Success(
             new AdminMenuCategoryDto(cat.Id, cat.Name, cat.NameRu, cat.NameKk, cat.SortOrder), 201);
     }
@@ -178,6 +209,7 @@ public class MenuService
         cat.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
         await _audit.LogAsync("CategoryUpdated", "MenuCategory", id.ToString(), cat.Name, ct);
+        await _menuCache.InvalidateAllMenuAsync();
         return Result<AdminMenuCategoryDto>.Success(
             new AdminMenuCategoryDto(cat.Id, cat.Name, cat.NameRu, cat.NameKk, cat.SortOrder));
     }
@@ -190,6 +222,7 @@ public class MenuService
         _db.MenuCategories.Remove(cat);
         await _db.SaveChangesAsync(ct);
         await _audit.LogAsync("CategoryDeleted", "MenuCategory", id.ToString(), name, ct);
+        await _menuCache.InvalidateAllMenuAsync();
         return Result<bool>.Success(true);
     }
 
@@ -238,6 +271,7 @@ public class MenuService
         item.MenuItemLocations = [.. (dto.LocationIds?.Distinct().Select(l => new MenuItemLocation { MenuItemId = item.Id, LocationId = l }) ?? [])];
         item.Variants = await _db.MenuItemVariants.Where(v => v.MenuItemId == item.Id).OrderBy(v => v.SortOrder).ToListAsync(ct);
         await _audit.LogAsync("MenuItemCreated", "MenuItem", item.Id.ToString(), item.Name, ct);
+        await _menuCache.InvalidateAllMenuAsync();
         return Result<AdminMenuItemDto>.Success(MapAdminItemToDto(item), 201);
     }
 
@@ -288,6 +322,7 @@ public class MenuService
         await _db.SaveChangesAsync(ct);
         item.Variants = await _db.MenuItemVariants.Where(v => v.MenuItemId == item.Id).OrderBy(v => v.SortOrder).ToListAsync(ct);
         await _audit.LogAsync("MenuItemUpdated", "MenuItem", id.ToString(), item.Name, ct);
+        await _menuCache.InvalidateAllMenuAsync();
         return Result<AdminMenuItemDto>.Success(MapAdminItemToDto(item));
     }
 
@@ -299,6 +334,7 @@ public class MenuService
         _db.MenuItems.Remove(item);
         await _db.SaveChangesAsync(ct);
         await _audit.LogAsync("MenuItemDeleted", "MenuItem", id.ToString(), name, ct);
+        await _menuCache.InvalidateAllMenuAsync();
         return Result<bool>.Success(true);
     }
 
@@ -327,6 +363,7 @@ public class MenuService
 
         await _db.SaveChangesAsync(ct);
         await _audit.LogAsync("ToppingCreated", "MenuTopping", topping.Id.ToString(), topping.Name, ct);
+        await _menuCache.InvalidateAllMenuAsync();
         return Result<AdminMenuToppingDto>.Success(
             new AdminMenuToppingDto(topping.Id, topping.Name, topping.NameRu, topping.NameKk,
                 topping.Price, topping.IsAvailable, dto.CategoryIds.Distinct().ToList(), topping.Group), 201);
@@ -361,6 +398,7 @@ public class MenuService
 
         await _db.SaveChangesAsync(ct);
         await _audit.LogAsync("ToppingUpdated", "MenuTopping", id.ToString(), topping.Name, ct);
+        await _menuCache.InvalidateAllMenuAsync();
         return Result<AdminMenuToppingDto>.Success(
             new AdminMenuToppingDto(topping.Id, topping.Name, topping.NameRu, topping.NameKk,
                 topping.Price, topping.IsAvailable, dto.CategoryIds.Distinct().ToList(), topping.Group));
@@ -374,6 +412,7 @@ public class MenuService
         _db.MenuToppings.Remove(topping);
         await _db.SaveChangesAsync(ct);
         await _audit.LogAsync("ToppingDeleted", "MenuTopping", id.ToString(), name, ct);
+        await _menuCache.InvalidateAllMenuAsync();
         return Result<bool>.Success(true);
     }
 

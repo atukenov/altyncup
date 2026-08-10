@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Text.Json.Serialization;
 using System.Security.Claims;
 using Serilog;
@@ -179,6 +181,15 @@ app.Use(async (ctx, next) =>
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<OrdersHub>("/hubs/orders");
+
+// ── Health ────────────────────────────────────────────────────────────────────
+// /health — liveness probe (no DB check)
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
+// /health/ready — readiness probe (includes DB check)
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = hc => hc.Tags.Contains("ready")
+});
 
 // ── Seed ──────────────────────────────────────────────────────────────────────
 await DbSeeder.SeedAsync(app.Services);

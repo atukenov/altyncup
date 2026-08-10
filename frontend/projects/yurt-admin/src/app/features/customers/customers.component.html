@@ -70,5 +70,25 @@
         </div>
       }
     </div>
+
+    <!-- Pagination -->
+    @if (totalPages > 1) {
+      <div class="flex items-center justify-between mt-4 text-sm text-slate-500">
+        <span>{{ total() }} total</span>
+        <div class="flex items-center gap-2">
+          <button
+            [disabled]="page() <= 1"
+            (click)="load(page() - 1)"
+            class="px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 transition-colors"
+          >←</button>
+          <span class="font-medium text-slate-700">{{ page() }} / {{ totalPages }}</span>
+          <button
+            [disabled]="page() >= totalPages"
+            (click)="load(page() + 1)"
+            class="px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 transition-colors"
+          >→</button>
+        </div>
+      </div>
+    }
   }
 </div>

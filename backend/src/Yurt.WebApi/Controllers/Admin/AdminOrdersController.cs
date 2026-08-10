@@ -18,13 +18,22 @@ public class AdminOrdersController : ApiControllerBase
 
     public AdminOrdersController(OrderService orderService) => _orderService = orderService;
 
-    /// <summary>Get orders with optional filters.</summary>
+    /// <summary>Get orders with optional filters, pagination, and search.</summary>
     [HttpGet]
     public async Task<IActionResult> GetOrders(
         [FromQuery] OrderStatus? status,
         [FromQuery] Guid? locationId,
-        CancellationToken ct)
-        => Ok(await _orderService.GetAdminOrdersAsync(status, locationId, ct));
+        [FromQuery] string? search,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 100,
+        CancellationToken ct = default)
+    {
+        if (page < 1) page = 1;
+        if (pageSize is < 1 or > 100) pageSize = 100;
+        var (total, items) = await _orderService.GetAdminOrdersAsync(
+            status, locationId, search, page, pageSize, ct);
+        return Ok(new { total, page, pageSize, items });
+    }
 
     /// <summary>Get a single order by ID.</summary>
     [HttpGet("{id:guid}")]

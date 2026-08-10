@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.Auth.Services;
 using Yurt.Application.Features.Favorites.Services;
@@ -21,6 +22,7 @@ using Yurt.Application.Features.Promotions.Services;
 using Yurt.Application.Features.DiscountCodes.Services;
 using Yurt.Application.Features.AuditLog.Services;
 using Yurt.Application.Features.Reports;
+using Yurt.Infrastructure.Health;
 using Yurt.Infrastructure.Hubs;
 using Yurt.Infrastructure.Payments;
 using Yurt.Infrastructure.Persistence;
@@ -44,6 +46,18 @@ public static class DependencyInjection
 
         // HTTP context
         services.AddHttpContextAccessor();
+
+        // Health checks — factory lambda resolves the connection string lazily (after all
+        // configuration providers, including test overrides, have been applied)
+        services.AddHealthChecks()
+            .Add(new HealthCheckRegistration(
+                "postgres",
+                _ => new NpgsqlHealthCheck(GetPostgreSqlConnectionString(configuration)),
+                HealthStatus.Unhealthy,
+                ["ready"]));
+
+        // Menu cache (singleton — wraps IMemoryCache which is also singleton)
+        services.AddSingleton<IMenuCacheService, MemoryMenuCacheService>();
 
         // Services
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();

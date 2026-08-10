@@ -26,6 +26,23 @@ public class OrderService
     public async Task<Result<OrderDto>> CreateOrderAsync(
         Guid customerId, CreateOrderDto dto, CancellationToken ct = default)
     {
+        // Idempotency: if this customer sent the same key within 24 h, return the original order
+        if (!string.IsNullOrWhiteSpace(dto.IdempotencyKey))
+        {
+            var cutoff = DateTime.UtcNow.AddHours(-24);
+            var existing = await _db.Orders
+                .Include(o => o.Location)
+                .Include(o => o.CustomerUser)
+                .Include(o => o.Items).ThenInclude(i => i.Toppings)
+                .Include(o => o.DiscountCode)
+                .FirstOrDefaultAsync(o =>
+                    o.CustomerUserId == customerId &&
+                    o.IdempotencyKey == dto.IdempotencyKey &&
+                    o.CreatedAt >= cutoff, ct);
+            if (existing is not null)
+                return Result<OrderDto>.Success(MapToDto(existing), 200);
+        }
+
         // Validate location
         var location = await _db.Locations
             .FirstOrDefaultAsync(l => l.Id == dto.LocationId && l.IsActive, ct);
@@ -99,6 +116,7 @@ public class OrderService
         order.PaymentMethod = dto.PaymentMethod;
         order.Items = orderItems;
         order.Subtotal = orderItems.Sum(i => i.LineTotal);
+        order.IdempotencyKey = dto.IdempotencyKey;
 
         // Apply discount code if provided
         if (!string.IsNullOrWhiteSpace(dto.DiscountCode))
@@ -192,8 +210,9 @@ public class OrderService
             .Select(o => MapToDto(o))
             .ToListAsync(ct);
 
-    public async Task<List<OrderDto>> GetAdminOrdersAsync(
-        OrderStatus? status, Guid? locationId, CancellationToken ct = default)
+    public async Task<(int Total, List<OrderDto> Items)> GetAdminOrdersAsync(
+        OrderStatus? status, Guid? locationId, string? search,
+        int page, int pageSize, CancellationToken ct = default)
     {
         var query = _db.Orders
             .Include(o => o.Location)
@@ -206,10 +225,25 @@ public class OrderService
         if (status.HasValue) query = query.Where(o => o.Status == status.Value);
         if (locationId.HasValue) query = query.Where(o => o.LocationId == locationId.Value);
 
-        return await query
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            // Postgres UUIDs are lowercase text; normalize to match what users type
+            var s = search.Trim().ToLowerInvariant();
+            // Npgsql translates Guid.ToString() to uuid::text at runtime
+            query = query.Where(o =>
+                o.Id.ToString().EndsWith(s) ||
+                o.CustomerUser!.MobileNumber.Contains(s));
+        }
+
+        var total = await query.CountAsync(ct);
+        var items = await query
             .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(o => MapToDto(o))
             .ToListAsync(ct);
+
+        return (total, items);
     }
 
     public async Task<Result<OrderDto>> AcceptOrderAsync(

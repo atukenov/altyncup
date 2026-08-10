@@ -16,7 +16,8 @@ public class CustomerService
         _audit = audit;
     }
 
-    public async Task<List<CustomerSummaryDto>> GetCustomersAsync(string? phone, CancellationToken ct = default)
+    public async Task<(int Total, List<CustomerSummaryDto> Items)> GetCustomersAsync(
+        string? phone, int page, int pageSize, CancellationToken ct = default)
     {
         var query = _db.CustomerUsers
             .Include(u => u.Orders)
@@ -25,8 +26,11 @@ public class CustomerService
         if (!string.IsNullOrWhiteSpace(phone))
             query = query.Where(u => u.MobileNumber.Contains(phone));
 
-        return await query
+        var total = await query.CountAsync(ct);
+        var items = await query
             .OrderByDescending(u => u.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(u => new CustomerSummaryDto(
                 u.Id,
                 u.MobileNumber,
@@ -35,6 +39,8 @@ public class CustomerService
                 u.Orders.Count(o => o.Status == OrderStatus.Completed),
                 u.Orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.Total)))
             .ToListAsync(ct);
+
+        return (total, items);
     }
 
     public async Task<Result<CustomerDetailDto>> SetActiveAsync(Guid id, bool isActive, CancellationToken ct = default)

@@ -29,6 +29,8 @@ public class Order : BaseEntity
     public bool IsArchived { get; set; } = false;
     public DateTime? ArchivedAt { get; set; }
 
+    public string? IdempotencyKey { get; set; }
+
     public CustomerUser CustomerUser { get; set; } = null!;
     public Location Location { get; set; } = null!;
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();

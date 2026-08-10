@@ -23,14 +23,17 @@ public class OrdersController : ApiControllerBase
         _currentUser = currentUser;
     }
 
-    /// <summary>Place a new order.</summary>
+    /// <summary>Place a new order. Supply an Idempotency-Key header to safely retry.</summary>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateOrderDto dto, CancellationToken ct)
     {
         if (dto.Items == null || dto.Items.Count == 0)
             return ValidationError("Order must contain at least one item.");
 
-        var result = await _orderService.CreateOrderAsync(_currentUser.UserId!.Value, dto, ct);
+        var idempotencyKey = Request.Headers["Idempotency-Key"].FirstOrDefault();
+        var effectiveDto = string.IsNullOrWhiteSpace(idempotencyKey) ? dto : dto with { IdempotencyKey = idempotencyKey };
+
+        var result = await _orderService.CreateOrderAsync(_currentUser.UserId!.Value, effectiveDto, ct);
         return ToResult(result);
     }
 

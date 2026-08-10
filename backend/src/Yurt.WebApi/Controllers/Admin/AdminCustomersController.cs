@@ -17,8 +17,17 @@ public class AdminCustomersController : ApiControllerBase
     public AdminCustomersController(CustomerService customers) => _customers = customers;
 
     [HttpGet]
-    public async Task<IActionResult> GetCustomers([FromQuery] string? phone, CancellationToken ct)
-        => Ok(await _customers.GetCustomersAsync(phone, ct));
+    public async Task<IActionResult> GetCustomers(
+        [FromQuery] string? phone,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken ct = default)
+    {
+        if (page < 1) page = 1;
+        if (pageSize is < 1 or > 100) pageSize = 50;
+        var (total, items) = await _customers.GetCustomersAsync(phone, page, pageSize, ct);
+        return Ok(new { total, page, pageSize, items });
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetCustomer(Guid id, CancellationToken ct)

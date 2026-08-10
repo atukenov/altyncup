@@ -220,8 +220,9 @@ export class YurtApiService {
   }
 
   // ── Orders ─────────────────────────────────────────────────────────────────
-  createOrder(request: CreateOrderRequest): Observable<Order> {
-    return this.http.post<Order>(`${this.api}/orders`, request);
+  createOrder(request: CreateOrderRequest, idempotencyKey?: string): Observable<Order> {
+    const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined;
+    return this.http.post<Order>(`${this.api}/orders`, request, { headers });
   }
 
   getActiveOrders(): Observable<Order[]> {
@@ -249,11 +250,12 @@ export class YurtApiService {
   }
 
   // Admin orders
-  getAdminOrders(status?: OrderStatus, locationId?: string): Observable<Order[]> {
-    let params = new HttpParams();
+  getAdminOrders(status?: OrderStatus, locationId?: string, search?: string, page = 1, pageSize = 100): Observable<{ total: number; page: number; pageSize: number; items: Order[] }> {
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
     if (status) params = params.set('status', status);
     if (locationId) params = params.set('locationId', locationId);
-    return this.http.get<Order[]>(`${this.api}/admin/orders`, { params });
+    if (search) params = params.set('search', search);
+    return this.http.get<{ total: number; page: number; pageSize: number; items: Order[] }>(`${this.api}/admin/orders`, { params });
   }
 
   acceptOrder(id: string, req: AcceptOrderRequest): Observable<Order> {
@@ -278,9 +280,10 @@ export class YurtApiService {
   }
 
   // ── Customers (admin) ──────────────────────────────────────────────────────
-  getAdminCustomers(phone?: string): Observable<CustomerSummary[]> {
-    const params = phone ? new HttpParams().set('phone', phone) : undefined;
-    return this.http.get<CustomerSummary[]>(`${this.api}/admin/customers`, { params });
+  getAdminCustomers(phone?: string, page = 1, pageSize = 50): Observable<{ total: number; page: number; pageSize: number; items: CustomerSummary[] }> {
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    if (phone) params = params.set('phone', phone);
+    return this.http.get<{ total: number; page: number; pageSize: number; items: CustomerSummary[] }>(`${this.api}/admin/customers`, { params });
   }
 
   getAdminCustomer(id: string): Observable<CustomerDetail> {
