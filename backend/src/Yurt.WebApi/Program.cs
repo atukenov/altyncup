@@ -88,6 +88,21 @@ builder.Services.AddInMemoryRateLimiting();
 // ─────────────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
+// ── Liveness probe — raw middleware, absolute first position ──────────────────
+// Must be before UseForwardedHeaders, UseHsts, Serilog, rate limiting, and auth.
+// Nothing in the pipeline can interfere with it.
+app.Use(async (ctx, next) =>
+{
+    if (ctx.Request.Path.StartsWithSegments("/health"))
+    {
+        ctx.Response.StatusCode = 200;
+        ctx.Response.ContentType = "text/plain";
+        await ctx.Response.WriteAsync("Healthy");
+        return;
+    }
+    await next(ctx);
+});
+
 // HTTPS / Forwarded Headers
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
@@ -127,14 +142,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// ── Health — short-circuit BEFORE routing, rate limiting, and auth ────────────
-// UseHealthChecks middleware form runs before endpoint routing so nothing in
-// the pipeline can interfere with the liveness/readiness probes.
-app.UseHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
-app.UseHealthChecks("/health/ready", new HealthCheckOptions
-{
-    Predicate = hc => hc.Tags.Contains("ready")
-});
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging(opts =>
