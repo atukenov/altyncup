@@ -7,19 +7,29 @@
   </div>
 
   @if (!cart.items().length) {
-    <div class="text-center py-24 px-6">
-      <div
-        class="w-24 h-24 bg-stone-100 rounded-full flex items-center justify-center text-5xl mx-auto mb-5"
-      >
-        🛒
-      </div>
-      <h2 class="text-xl font-bold text-stone-700">{{ 'cart.empty' | t }}</h2>
-      <p class="text-stone-400 text-sm mt-2">{{ 'cart.emptyDesc' | t }}</p>
-      <button
-        (click)="goToMenu()"
-        class="mt-7 bg-amber-500 text-stone-900 font-bold rounded-2xl px-8 py-3.5 hover:bg-amber-600 active:scale-[0.98] transition-all shadow-lg shadow-amber-200"
-      >
-        {{ 'cart.browseMenu' | t }}
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 200px);padding:0 40px 80px;text-align:center">
+      <span style="position:relative;width:180px;height:180px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span style="position:absolute;inset:10px;border-radius:999px;background:radial-gradient(circle,rgba(255,209,25,.3),transparent 68%)"></span>
+        <svg width="140" height="140" viewBox="0 0 140 140" style="position:relative">
+          <g stroke="#1c1917" stroke-width="4" stroke-linecap="round" fill="none">
+            <path d="M96,60 Q114,62 112,76 Q110,90 92,90"></path>
+            <path d="M38,52 L98,52 L92,104 Q91,112 82,112 L54,112 Q45,112 44,104 Z" fill="#ffd119"></path>
+            <path d="M50,68 L86,68" stroke="#ffffff" stroke-width="5" opacity=".85"></path>
+            <path d="M52,80 L84,80" stroke="#ffffff" stroke-width="5" opacity=".5"></path>
+            <path d="M56,36 Q52,28 56,20" class="steam"></path>
+            <path d="M70,38 Q75,29 70,20" class="steam steam-d1"></path>
+            <path d="M84,36 Q80,28 84,20" class="steam steam-d2"></path>
+          </g>
+          <circle cx="112" cy="108" r="14" fill="#1c1917"></circle>
+          <path d="M108,108 h8 M112,104 v8" stroke="#ffd119" stroke-width="3" stroke-linecap="round"></path>
+        </svg>
+      </span>
+      <h3 style="margin:18px 0 0;font-size:19px;font-weight:800;color:#1c1917">{{ 'empty.cartTitle' | t }}</h3>
+      <p style="margin:8px 0 0;font-size:13.5px;font-weight:500;color:#78716c;line-height:1.55">{{ 'empty.cartHint' | t }}</p>
+      <button (click)="goToMenu()"
+        style="margin-top:22px;background:#ffd119;border:none;border-radius:999px;padding:15px 32px;font-size:14.5px;font-weight:800;color:#1c1917;cursor:pointer;font-family:inherit;box-shadow:0 10px 20px -6px rgba(217,175,0,.45)"
+        class="active:scale-[0.97] transition-transform">
+        {{ 'empty.cartCta' | t }}
       </button>
     </div>
   } @else {

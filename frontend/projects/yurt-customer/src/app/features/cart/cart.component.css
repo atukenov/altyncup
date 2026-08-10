@@ -1,1 +1,9 @@
+@keyframes steam {
+  0%   { opacity: 0; transform: translateY(6px); }
+  40%  { opacity: .65; }
+  100% { opacity: 0; transform: translateY(-12px); }
+}
 
+.steam        { animation: steam 2.6s ease-in-out infinite; }
+.steam-d1     { animation-delay: .8s; }
+.steam-d2     { animation-delay: 1.6s; }

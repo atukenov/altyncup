@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService, AuthStateService, NotificationService } from 'shared-api';
 import { CustomerProfile, CustomerStats } from 'shared-models';
-import { ButtonComponent, ToastService } from 'shared-ui';
+import { Currency2Pipe, ToastService } from 'shared-ui';
 import { LangService, Lang } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
@@ -12,7 +12,7 @@ import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, TranslatePipe, PullToRefreshDirective],
+  imports: [CommonModule, FormsModule, RouterLink, Currency2Pipe, TranslatePipe, PullToRefreshDirective],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })
@@ -135,6 +135,14 @@ export class ProfileComponent implements OnInit {
           this.toast.error('Failed to update profile.');
         },
       });
+  }
+
+  get initials(): string {
+    const p = this.profile();
+    if (!p) return '';
+    if (p.firstName && p.lastName) return (p.firstName[0] + p.lastName[0]).toUpperCase();
+    if (p.firstName) return p.firstName[0].toUpperCase();
+    return p.mobileNumber.slice(0, 2).toUpperCase();
   }
 
   logout(): void {

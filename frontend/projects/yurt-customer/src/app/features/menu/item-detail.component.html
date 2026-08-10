@@ -1,212 +1,302 @@
+<div>
 <div class="min-h-screen bg-stone-50" pullToRefresh (refreshed)="reload()">
 
   <!-- ── Loading skeleton ──────────────────────────────────────────────────── -->
   @if (loading()) {
     <div class="animate-pulse">
-      <div class="h-72 bg-stone-200"></div>
-      <div class="p-5 space-y-4">
+      <div class="bg-stone-800" style="height:352px"></div>
+      <div class="bg-white p-5 space-y-4" style="border-radius:26px 26px 0 0;margin-top:-26px">
         <div class="h-7 bg-stone-200 rounded-xl w-2/3"></div>
-        <div class="h-4 bg-stone-200 rounded-xl"></div>
-        <div class="h-4 bg-stone-200 rounded-xl w-3/4"></div>
-        <div class="h-12 bg-stone-200 rounded-2xl mt-4"></div>
+        <div class="h-4 bg-stone-200 rounded-xl w-1/2"></div>
+        <div class="h-12 bg-stone-200 rounded-2xl"></div>
+        <div class="h-10 bg-stone-200 rounded-2xl"></div>
+        <div class="h-10 bg-stone-200 rounded-2xl w-3/4"></div>
       </div>
     </div>
+
   } @else if (item()) {
     @let i = item()!;
 
-    <!-- ── Full-bleed hero ────────────────────────────────────────────────── -->
-    <div class="relative">
-      @if (i.imageUrl && !imageError()) {
-        <img [src]="i.imageUrl" [alt]="i.name" class="w-full h-72 object-cover" (error)="onImageError()" />
-      } @else {
-        <div class="w-full h-72 bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-          <span class="text-9xl opacity-60">☕</span>
-        </div>
-      }
-      <!-- Dark fade at bottom of image for contrast -->
-      <div class="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-black/20"></div>
+    <!-- ── Hero (352 px, full-bleed) ─────────────────────────────────────── -->
+    <div class="relative overflow-hidden" style="height:352px">
 
-      <!-- Floating back button -->
+      <!-- Background photo (heavily darkened + blurred so SVG cup is the focus) -->
+      @if (i.imageUrl && !imageError()) {
+        <img [src]="i.imageUrl" [alt]="i.name"
+          class="absolute inset-0 w-full h-full object-cover"
+          style="filter:brightness(0.22) blur(6px);transform:scale(1.08)"
+          (error)="onImageError()" />
+      } @else {
+        <div class="absolute inset-0" style="background:linear-gradient(135deg,#3d2b1a,#1c1008)"></div>
+      }
+
+      <!-- Gradient overlay for bottom vignette + safe-area fade -->
+      <div class="absolute inset-0"
+        style="background:linear-gradient(to top,rgba(20,16,13,.92) 0%,rgba(20,16,13,.3) 55%,rgba(20,16,13,.5) 100%)"></div>
+
+      <!-- Radial amber glow behind cup -->
+      <div class="absolute" style="width:340px;height:340px;bottom:-40px;left:50%;transform:translateX(-50%);
+        background:radial-gradient(circle,rgba(255,209,25,.28),transparent 65%);border-radius:50%;pointer-events:none"></div>
+
+      <!-- Back button -->
       <button
         (click)="goBack()"
         aria-label="Back"
-        class="absolute left-4 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-colors active:scale-95"
-        style="top: calc(3rem + env(safe-area-inset-top))"
+        class="absolute left-4 w-10 h-10 rounded-full flex items-center justify-center text-white active:scale-95 transition-transform"
+        style="top:calc(3rem + env(safe-area-inset-top));background:rgba(255,255,255,.14);backdrop-filter:blur(6px)"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
         </svg>
       </button>
 
-      <!-- Floating favorite button -->
+      <!-- Favorite button -->
       <button
         (click)="toggleFavorite()"
         aria-label="Toggle favorite"
-        class="absolute right-4 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center transition-all hover:bg-black/50 active:scale-95"
-        style="top: calc(3rem + env(safe-area-inset-top))"
+        class="absolute right-4 w-10 h-10 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+        style="top:calc(3rem + env(safe-area-inset-top));background:rgba(255,255,255,.14);backdrop-filter:blur(6px)"
         [class.text-red-400]="isFav()"
         [class.text-white]="!isFav()"
       >
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z" />
+          <path d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"/>
         </svg>
       </button>
+
+      <!-- ── Animated SVG Cup ────────────────────────────────────────────── -->
+      <div class="absolute" style="bottom:36px;left:50%;transform:translateX(-50%)">
+        <svg viewBox="0 0 230 250" width="230" style="overflow:visible">
+          <defs>
+            <clipPath id="cup-clip">
+              <path d="M70,94 L160,94 L151,216 Q150,224 142,224 L88,224 Q80,224 79,216 Z"/>
+            </clipPath>
+          </defs>
+
+          <!-- Outer scale group (size animation) -->
+          <g [style.transform]="'scale(' + cupScale() + ')'"
+             style="transform-origin:115px 232px;transition:transform .45s cubic-bezier(.34,1.56,.64,1)">
+
+            <!-- Shadow -->
+            <ellipse cx="115" cy="234" rx="64" ry="9" fill="rgba(0,0,0,.35)"/>
+
+            <!-- Handle -->
+            <path d="M166,120 Q198,124 194,152 Q190,180 158,180"
+              stroke="#fffdf7" stroke-width="10" stroke-linecap="round" fill="none"/>
+
+            <!-- Body -->
+            <path d="M64,88 L166,88 L156,220 Q155,230 144,230 L86,230 Q75,230 74,220 Z" fill="#fffdf7"/>
+
+            <!-- Clipped interior -->
+            <g clip-path="url(#cup-clip)">
+
+              <!-- Liquid (milk color + fill level) -->
+              <rect x="65" y="94" width="100" height="132"
+                [attr.fill]="cupLiquidColor()"
+                [style.transform]="'translateY(' + cupLiquidShift() + 'px)'"
+                style="transition:transform .5s ease,fill .4s ease"/>
+
+              <!-- Foam -->
+              <rect x="65" y="94" width="100" height="11"
+                fill="#f2e4c8"
+                [style.transform]="'translateY(' + cupLiquidShift() + 'px)'"
+                style="transition:transform .5s ease"/>
+
+              <!-- Syrup layer (bottom) -->
+              <rect x="65" y="210" width="100"
+                [attr.height]="cupSyrupColor() ? 14 : 0"
+                [attr.fill]="cupSyrupColor() || 'transparent'"
+                style="transition:height .4s ease,fill .4s ease"/>
+
+              <!-- Sugar cubes -->
+              @for (cube of SUGAR_CUBE_POS; track cube.x) {
+                @let cubeIdx = $index;
+                <rect
+                  [attr.x]="cube.x" [attr.y]="cube.y"
+                  width="13" height="13" rx="2.5" fill="white"
+                  [attr.transform]="'rotate(10,' + cube.cx + ',' + cube.cy + ')'"
+                  [style.opacity]="cubeIdx < sugarCount() ? '1' : '0'"
+                  style="transition:opacity .3s"/>
+              }
+            </g>
+
+            <!-- Rim -->
+            <rect x="58" y="80" width="114" height="14" rx="7" fill="#f2ecdf"/>
+
+            <!-- Whipped cream -->
+            <circle cx="94" cy="72" r="14" fill="white"
+              [style.opacity]="hasCream() ? '1' : '0'"
+              style="transition:opacity .35s"/>
+            <circle cx="115" cy="65" r="18" fill="white"
+              [style.opacity]="hasCream() ? '1' : '0'"
+              style="transition:opacity .35s"/>
+            <circle cx="137" cy="72" r="14" fill="white"
+              [style.opacity]="hasCream() ? '1' : '0'"
+              style="transition:opacity .35s"/>
+
+            <!-- Steam -->
+            <path d="M100,50 Q95,38 100,26"
+              stroke="white" stroke-width="4" stroke-linecap="round" fill="none"
+              class="steam steam-1"/>
+            <path d="M126,52 Q132,40 126,28"
+              stroke="white" stroke-width="4" stroke-linecap="round" fill="none"
+              class="steam steam-2"/>
+
+          </g>
+        </svg>
+      </div>
     </div>
 
-    <!-- ── Content card (overlaps image by ~24px) ────────────────────────── -->
-    <div class="relative -mt-6 bg-white rounded-t-3xl pb-36">
-      <div class="px-5 pt-5">
+    <!-- ── Content sheet (overlaps hero by 26px) ─────────────────────────── -->
+    <div class="bg-white pb-32" style="border-radius:26px 26px 0 0;margin-top:-26px;padding-top:22px;position:relative;z-index:1">
+      <div style="padding:0 20px">
 
-        <!-- Drag handle -->
-        <div class="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-4"></div>
-
-        <!-- Category badge -->
-        <span class="inline-block px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full mb-3 uppercase tracking-wide">
-          {{ i.categoryName }}
-        </span>
-
-        <!-- Title + price row -->
-        <div class="flex items-start justify-between gap-3 mb-3">
-          <h2 class="text-2xl font-bold text-stone-800 leading-tight flex-1">{{ i.name }}</h2>
-          <span class="text-2xl font-bold text-amber-600 shrink-0 mt-0.5">
-            @if (i.variants && i.variants.length > 0) {
-              {{ effectivePrice() | currency2 }}
-            } @else {
-              {{ i.price | currency2 }}
-            }
+        <!-- Title + unit price row -->
+        <div class="flex items-start justify-between gap-3 mb-1">
+          <h2 style="font-size:26px;font-weight:800;color:#1c1917;letter-spacing:-.01em;line-height:1.15;flex:1">
+            {{ i.name }}
+          </h2>
+          <span style="font-size:22px;font-weight:800;color:#d9af00;flex-shrink:0;margin-top:2px;font-variant-numeric:tabular-nums">
+            {{ unitPrice() | currency2 }}
           </span>
         </div>
 
+        <!-- Meta line (description) -->
         @if (i.description) {
-          <p class="text-stone-500 text-sm leading-relaxed mb-5">{{ i.description }}</p>
+          <p style="font-size:12px;font-weight:600;color:#a8a29e;margin-bottom:18px">
+            {{ i.description }}
+          </p>
+        } @else {
+          <div style="margin-bottom:18px"></div>
         }
 
-        <!-- ── Size picker (variants) ────────────────────────────────────── -->
+        <!-- ── Size segmented control ────────────────────────────────────── -->
         @if (i.variants && i.variants.length > 0) {
-          <div class="mb-5">
-            <div class="flex items-center gap-2 mb-3">
-              <p class="text-xs font-bold text-stone-400 uppercase tracking-widest">{{ 'item.size' | t }}</p>
-              <span class="text-[10px] bg-stone-100 text-stone-400 rounded-full px-2 py-0.5 font-medium">{{ 'item.chooseOne' | t }}</span>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              @for (v of i.variants; track v.id) {
-                @let sel = selectedVariant()?.id === v.id;
-                <button
-                  (click)="selectedVariant.set(v)"
-                  class="flex flex-col items-center px-4 py-2.5 rounded-2xl border-2 text-sm font-semibold transition-all active:scale-95"
-                  [class]="sel
-                    ? 'border-amber-400 bg-amber-50 text-amber-700'
-                    : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300'"
-                >
-                  <span>{{ v.label }}</span>
-                  <span class="text-xs font-bold mt-0.5" [class]="sel ? 'text-amber-600' : 'text-stone-400'">{{ v.price | currency2 }}</span>
-                </button>
-              }
-            </div>
+          <div style="background:#f5f5f4;border-radius:16px;padding:4px;display:flex;gap:0;margin-bottom:22px">
+            @for (v of i.variants; track v.id) {
+              @let sel = selectedVariant()?.id === v.id;
+              <button
+                (click)="selectedVariant.set(v)"
+                class="flex-1 flex flex-col items-center active:scale-[0.97] transition-all"
+                style="padding:9px 4px;border-radius:12px;border:none;cursor:pointer;transition:all .2s"
+                [style.background]="sel ? '#ffd119' : 'transparent'"
+                [style.box-shadow]="sel ? '0 2px 8px rgba(217,175,0,.35)' : 'none'"
+              >
+                <span style="font-size:14px;font-weight:800"
+                  [style.color]="sel ? '#1c1917' : '#78716c'">{{ v.label }}</span>
+                @if (v.price) {
+                  <span style="font-size:10.5px;font-weight:600;opacity:.65"
+                    [style.color]="sel ? '#1c1917' : '#78716c'">{{ v.price | currency2 }}</span>
+                }
+              </button>
+            }
           </div>
         }
 
-        <!-- ── Toppings ──────────────────────────────────────────────────── -->
+        <!-- ── Topping groups ─────────────────────────────────────────────── -->
         @if (toppings.length) {
-          <div class="mb-5">
-            <h3 class="text-base font-bold text-stone-800 mb-4">{{ 'item.customize' | t }}</h3>
+          @for (group of groupedToppings; track group.label) {
+            @let groupKey = group.toppings[0]?.group;
 
-            @for (group of groupedToppings; track group.label) {
-              <div class="mb-5">
-                <div class="flex items-center gap-2 mb-3">
-                  <p class="text-xs font-bold text-stone-400 uppercase tracking-widest">{{ group.label }}</p>
-                  @if (group.toppings[0]?.group) {
-                    <span class="text-[10px] bg-stone-100 text-stone-400 rounded-full px-2 py-0.5 font-medium">{{ 'item.chooseOne' | t }}</span>
+            <!-- ── Sugar stepper ────────────────────────────────────────── -->
+            @if (groupKey === 'sugar') {
+              @let sc = sugarCount();
+              <div style="padding:13px 16px;border-radius:18px;background:#fafaf9;border:2px solid #f5f5f4;display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+                <div>
+                  <p class="section-label" style="margin-bottom:4px">{{ group.label }}</p>
+                  <p style="font-size:14px;font-weight:700;color:#1c1917">
+                    @if (sc === 0) { {{ 'item.noSugar' | t }} }
+                    @else { {{ sc }}&nbsp;{{ 'item.sugarUnit' | t }} }
+                  </p>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <button
+                    (click)="decrementSugar()"
+                    [disabled]="sc === 0"
+                    class="active:scale-[0.92] transition-transform"
+                    style="width:36px;height:36px;border-radius:50%;border:2px solid #e7e5e4;background:white;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;disabled:opacity-30"
+                    [style.opacity]="sc === 0 ? '0.35' : '1'"
+                  >−</button>
+                  <span style="font-size:18px;font-weight:800;color:#1c1917;min-width:20px;text-align:center">{{ sc }}</span>
+                  <button
+                    (click)="incrementSugar()"
+                    [disabled]="sc >= sugarToppings.length"
+                    class="active:scale-[0.92] transition-transform"
+                    style="width:36px;height:36px;border-radius:50%;border:none;background:#ffd119;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer"
+                    [style.opacity]="sc >= sugarToppings.length ? '0.35' : '1'"
+                  >+</button>
+                </div>
+              </div>
+
+            <!-- ── Milk / Syrup chip row ─────────────────────────────────── -->
+            } @else if (groupKey) {
+              <div style="margin-bottom:18px">
+                <p class="section-label" style="margin-bottom:10px">{{ group.label }}</p>
+                <div class="chip-scroll">
+                  @for (topping of group.toppings; track topping.id) {
+                    @let sel = isToppingSelected(topping.id);
+                    <button
+                      (click)="toggleTopping(topping)"
+                      class="chip active:scale-95 transition-all"
+                      style="flex-shrink:0"
+                      [style.border-color]="sel ? '#ffdc30' : '#e7e5e4'"
+                      [style.background]="sel ? '#fffde5' : '#fff'"
+                    >
+                      <!-- Color swatch -->
+                      <span class="swatch" [style.background]="groupKey === 'syrup' ? syrupSwatchColor(topping.name) : milkSwatchColor(topping.name)"></span>
+                      <!-- Name -->
+                      <span style="font-size:13px;font-weight:700"
+                        [style.color]="sel ? '#a68700' : '#57534e'">{{ topping.name }}</span>
+                      <!-- Price -->
+                      @if (topping.price > 0) {
+                        <span style="font-size:11px;font-weight:600"
+                          [style.color]="sel ? '#d9af00' : '#a8a29e'">+{{ topping.price | currency2 }}</span>
+                      }
+                    </button>
                   }
                 </div>
+              </div>
 
-                <!-- Radio group — pill style -->
-                @if (group.toppings[0]?.group) {
-                  <div class="flex flex-wrap gap-2">
-                    @for (topping of group.toppings; track topping.id) {
-                      @let sel = isToppingSelected(topping.id);
-                      <button
-                        (click)="toggleTopping(topping)"
-                        class="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border-2 text-sm font-semibold transition-all active:scale-95"
-                        [class]="sel
-                          ? 'border-amber-400 bg-amber-50 text-amber-700'
-                          : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300'"
-                      >
-                        @if (sel) {
-                          <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                          </svg>
-                        }
-                        <span>{{ topping.name }}</span>
-                        @if (topping.price > 0) {
-                          <span class="opacity-60 font-normal text-xs">+{{ topping.price | currency2 }}</span>
-                        }
-                      </button>
-                    }
-                  </div>
-
-                <!-- Checkbox group — card rows -->
-                } @else {
-                  <div class="space-y-2">
-                    @for (topping of group.toppings; track topping.id) {
-                      @let sel = isToppingSelected(topping.id);
-                      <button
-                        (click)="toggleTopping(topping)"
-                        class="w-full flex items-center justify-between py-3 px-4 rounded-2xl border-2 transition-all active:scale-[0.99]"
-                        [class]="sel
-                          ? 'border-amber-400 bg-amber-50'
-                          : 'border-stone-100 bg-stone-50 hover:border-stone-200'"
-                      >
-                        <div class="flex items-center gap-3">
-                          <span
-                            class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
-                            [class]="sel ? 'border-amber-500 bg-amber-500' : 'border-stone-300 bg-white'"
-                          >
-                            @if (sel) {
-                              <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            }
-                          </span>
-                          <span class="text-stone-800 font-medium text-sm">{{ topping.name }}</span>
-                        </div>
-                        <span class="text-sm font-semibold" [class]="sel ? 'text-amber-600' : 'text-stone-400'">
-                          {{ topping.price === 0 ? ('menu.free' | t) : '+' + (topping.price | currency2) }}
+            <!-- ── Extras checklist (ungrouped) ───────────────────────────── -->
+            } @else {
+              <div style="margin-bottom:18px">
+                <p class="section-label" style="margin-bottom:10px">{{ group.label }}</p>
+                <div class="space-y-2">
+                  @for (topping of group.toppings; track topping.id) {
+                    @let sel = isToppingSelected(topping.id);
+                    <button
+                      (click)="toggleTopping(topping)"
+                      class="w-full flex items-center justify-between active:scale-[0.99] transition-all"
+                      style="padding:12px 16px;border-radius:16px;border:2px solid"
+                      [style.border-color]="sel ? '#ffdc30' : '#f5f5f4'"
+                      [style.background]="sel ? '#fffde5' : '#fafaf9'"
+                    >
+                      <div class="flex items-center gap-3">
+                        <!-- Checkbox -->
+                        <span class="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-all"
+                          style="border:2px solid"
+                          [style.border-color]="sel ? '#ffd119' : '#d6d3d1'"
+                          [style.background]="sel ? '#ffd119' : 'white'"
+                        >
+                          @if (sel) {
+                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#1c1917" stroke-width="3">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                            </svg>
+                          }
                         </span>
-                      </button>
-                    }
-                  </div>
-                }
+                        <span style="font-size:14px;font-weight:600;color:#292524">{{ topping.name }}</span>
+                      </div>
+                      <span style="font-size:13px;font-weight:600"
+                        [style.color]="sel ? '#d9af00' : '#a8a29e'">
+                        {{ topping.price === 0 ? ('menu.free' | t) : ('+' + (topping.price | currency2)) }}
+                      </span>
+                    </button>
+                  }
+                </div>
               </div>
             }
-          </div>
+          }
         }
-
-        <!-- ── Quantity selector ─────────────────────────────────────────── -->
-        <div class="mb-2">
-          <h3 class="text-base font-bold text-stone-800 mb-3">{{ 'item.quantity' | t }}</h3>
-          <div class="flex items-center gap-4">
-            <button
-              (click)="decrementQty()"
-              [disabled]="quantity() === 1"
-              class="w-11 h-11 rounded-full border-2 border-stone-200 flex items-center justify-center text-xl font-bold text-stone-600 disabled:opacity-30 hover:border-stone-300 active:scale-95 transition-all"
-              aria-label="Decrease"
-            >−</button>
-            <span class="text-2xl font-bold text-stone-800 w-8 text-center tabular-nums">{{ quantity() }}</span>
-            <button
-              (click)="incrementQty()"
-              class="w-11 h-11 rounded-full bg-amber-500 hover:bg-amber-600 flex items-center justify-center text-xl font-bold text-stone-900 active:scale-95 transition-all shadow-sm shadow-amber-200"
-              aria-label="Increase"
-            >+</button>
-
-            <!-- Topping summary pill -->
-            @if (toppingTotal() > 0) {
-              <span class="ml-auto text-xs bg-amber-100 text-amber-700 font-semibold px-3 py-1.5 rounded-full">
-                +{{ toppingTotal() | currency2 }} extras
-              </span>
-            }
-          </div>
-        </div>
 
       </div>
     </div>
@@ -220,29 +310,67 @@
     </div>
   }
 
-  <!-- ── Sticky add-to-cart footer ──────────────────────────────────────── -->
-  @if (item()) {
-    <div
-      class="fixed left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-stone-100 max-w-lg mx-auto"
-      style="bottom: calc(4rem + env(safe-area-inset-bottom)); box-shadow: 0 -1px 16px rgba(0,0,0,0.08)"
-    >
+
+</div><!-- /pullToRefresh -->
+
+<!-- ── Fixed footer ────────────────────────────────────────────────────── -->
+@if (item()) {
+  <div class="fixed left-0 right-0 max-w-lg mx-auto"
+    style="bottom:calc(4rem + env(safe-area-inset-bottom));padding:14px 16px;
+      background:rgba(255,255,255,.96);backdrop-filter:blur(6px);
+      border-top:1px solid #f5f5f4;box-shadow:0 -4px 24px rgba(0,0,0,.07);z-index:10">
+
+      <!-- Unavailable warning -->
       @if (unavailableAtLocation()) {
-        <div class="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm font-medium rounded-2xl px-4 py-3 mb-3">
+        <div class="flex items-center gap-2 text-sm font-medium rounded-2xl mb-3"
+          style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px 16px">
           <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
           </svg>
           Not available at your selected location
         </div>
       }
-      <button
-        (click)="addToCart()"
-        [disabled]="unavailableAtLocation()"
-        class="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-stone-900 font-bold rounded-2xl py-4 text-base flex items-center justify-between px-5 shadow-lg shadow-amber-200/60 transition-all focus:outline-none disabled:opacity-40 disabled:pointer-events-none"
-      >
-        <span class="bg-white/20 rounded-xl w-7 h-7 flex items-center justify-center text-sm font-bold shrink-0">{{ quantity() }}</span>
-        <span>{{ 'item.addToCart' | t }}</span>
-        <span class="shrink-0">{{ lineTotal() | currency2 }}</span>
-      </button>
-    </div>
-  }
-</div>
+
+      <div class="flex items-center gap-3">
+
+        <!-- Quantity pill -->
+        <div style="background:#f5f5f4;border-radius:999px;padding:4px;display:flex;align-items:center;gap:2px">
+          <button
+            (click)="decrementQty()"
+            class="active:scale-[0.92] transition-transform"
+            style="width:36px;height:36px;border-radius:50%;background:white;border:none;
+              box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:18px;font-weight:700;
+              display:flex;align-items:center;justify-content:center;cursor:pointer"
+            [style.opacity]="quantity() === 1 ? '0.3' : '1'"
+          >−</button>
+          <span style="width:30px;text-align:center;font-size:16px;font-weight:700;color:#1c1917">
+            {{ quantity() }}
+          </span>
+          <button
+            (click)="incrementQty()"
+            class="active:scale-[0.92] transition-transform"
+            style="width:36px;height:36px;border-radius:50%;background:white;border:none;
+              box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:18px;font-weight:700;
+              display:flex;align-items:center;justify-content:center;cursor:pointer"
+          >+</button>
+        </div>
+
+        <!-- Add-to-cart button -->
+        <button
+          (click)="addToCart()"
+          [disabled]="unavailableAtLocation()"
+          class="flex-1 flex items-center justify-between active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none"
+          style="background:#1c1917;color:#ffd119;border-radius:999px;padding:15px 22px;
+            font-weight:800;font-size:15px;border:none;cursor:pointer"
+        >
+          <span>{{ 'item.addToCart' | t }}</span>
+          <span [class.price-pop]="pricePop()" style="font-variant-numeric:tabular-nums">
+            {{ lineTotal() | currency2 }}
+          </span>
+        </button>
+
+      </div>
+  </div>
+}
+
+</div><!-- /root -->

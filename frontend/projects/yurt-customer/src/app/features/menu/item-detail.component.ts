@@ -28,6 +28,7 @@ export class ItemDetailComponent implements OnInit {
   private langService = inject(LangService);
   private locationSvc = inject(LocationService);
 
+  // ── Existing state (unchanged) ──────────────────────────────────────────────
   item = signal<MenuItem | null>(null);
   loading = signal(true);
   quantity = signal(1);
@@ -47,20 +48,135 @@ export class ItemDetailComponent implements OnInit {
     return !item.locationIds.includes(locId);
   });
 
-  onImageError(): void {
-    this.imageError.set(true);
+  readonly toppingTotal = computed(() => {
+    const item = this.item();
+    if (!item?.availableToppings) return 0;
+    return item.availableToppings
+      .filter((t) => this.selectedToppingIds().has(t.id))
+      .reduce((sum, t) => sum + t.price, 0);
+  });
+
+  readonly lineTotal = computed(() =>
+    (this.effectivePrice() + this.toppingTotal()) * this.quantity()
+  );
+
+  // Unit price shown in header (no quantity)
+  readonly unitPrice = computed(() => this.effectivePrice() + this.toppingTotal());
+
+  // ── Cup visualization (presentational only) ─────────────────────────────────
+  private readonly MILK_COLORS: Record<string, string> = {
+    'Обычное': '#c9a06e', 'Овсяное': '#d8b988', 'Миндальное': '#bd9264',
+  };
+  private readonly SYRUP_COLORS: Record<string, string> = {
+    'Без сиропа': '#f5f5f4', 'Карамель': '#b06f24', 'Ваниль': '#e8cf9a',
+  };
+
+  // Index-based fallback palette so any milk selection visibly changes the cup
+  private readonly MILK_PALETTE = ['#c9a06e', '#d8b988', '#bd9264', '#b8956a'];
+
+  milkSwatchColor(name: string): string {
+    if (this.MILK_COLORS[name]) return this.MILK_COLORS[name];
+    // Partial match for names like "Миндальное молоко" → "Миндальное"
+    const key = Object.keys(this.MILK_COLORS).find(k => name.includes(k));
+    return key ? this.MILK_COLORS[key] : '#c9a06e';
   }
 
+  syrupSwatchColor(name: string): string {
+    if (this.SYRUP_COLORS[name]) return this.SYRUP_COLORS[name];
+    const key = Object.keys(this.SYRUP_COLORS).find(k => name.includes(k));
+    return key ? this.SYRUP_COLORS[key] : '#e8cf9a';
+  }
+
+  readonly cupScale = computed(() => {
+    const variants = this.item()?.variants ?? [];
+    const sel = this.selectedVariant();
+    if (!sel || !variants.length) return 1;
+    const idx = variants.findIndex(v => v.id === sel.id);
+    return ([0.85, 1, 1.12] as const)[Math.min(Math.max(idx, 0), 2)] ?? 1;
+  });
+
+  readonly cupFillFraction = computed(() => {
+    const variants = this.item()?.variants ?? [];
+    const sel = this.selectedVariant();
+    if (!sel || !variants.length) return 0.74;
+    const idx = variants.findIndex(v => v.id === sel.id);
+    return ([0.58, 0.74, 0.9] as const)[Math.min(Math.max(idx, 0), 2)] ?? 0.74;
+  });
+
+  readonly cupLiquidShift = computed(() =>
+    Math.round(132 * (1 - this.cupFillFraction()))
+  );
+
+  readonly cupLiquidColor = computed(() => {
+    const milk = this.item()?.availableToppings?.filter(t => t.group === 'milk') ?? [];
+    const ids = this.selectedToppingIds();
+    const sel = milk.find(t => ids.has(t.id));
+    if (!sel) return '#c9a06e';
+    const exact = this.MILK_COLORS[sel.name];
+    if (exact) return exact;
+    const partial = Object.keys(this.MILK_COLORS).find(k => sel.name.includes(k));
+    return partial ? this.MILK_COLORS[partial] : this.MILK_PALETTE[milk.indexOf(sel) % this.MILK_PALETTE.length];
+  });
+
+  readonly cupSyrupColor = computed((): string | null => {
+    const syrup = this.item()?.availableToppings?.filter(t => t.group === 'syrup') ?? [];
+    const ids = this.selectedToppingIds();
+    const sel = syrup.find(t => ids.has(t.id));
+    if (!sel) return null;
+    const color = this.SYRUP_COLORS[sel.name];
+    return color && color !== '#f5f5f4' ? color : null;
+  });
+
+  readonly sugarCount = computed(() => {
+    const sugar = this.item()?.availableToppings?.filter(t => t.group === 'sugar') ?? [];
+    const ids = this.selectedToppingIds();
+    const idx = sugar.findIndex(t => ids.has(t.id));
+    return idx === -1 ? 0 : idx + 1;
+  });
+
+  readonly hasCream = computed(() => {
+    const toppings = this.item()?.availableToppings ?? [];
+    const ids = this.selectedToppingIds();
+    return toppings.some(t => ids.has(t.id) && /сливк|cream/i.test(t.name));
+  });
+
+  // Sugar cube positions (pre-computed to avoid Math.floor in template)
+  readonly SUGAR_CUBE_POS = [
+    { x: 82, y: 176, cx: 88.5, cy: 182.5 },
+    { x: 108, y: 176, cx: 114.5, cy: 182.5 },
+    { x: 82, y: 154, cx: 88.5, cy: 160.5 },
+    { x: 108, y: 154, cx: 114.5, cy: 160.5 },
+  ] as const;
+
+  // Pop animation for footer price
+  pricePop = signal(false);
+  private _popTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // ── Lifecycle ────────────────────────────────────────────────────────────────
   constructor() {
+    // Reload on language change (existing behavior)
     effect(() => {
       const lang = this.langService.lang();
       if (this.id) this.loadItem(lang);
     });
+    // Price pop animation — runs in setTimeout so signal writes happen outside effect
+    effect(() => {
+      this.lineTotal(); // track
+      clearTimeout(this._popTimer);
+      this._popTimer = setTimeout(() => {
+        this.pricePop.set(false);
+        this._popTimer = setTimeout(() => {
+          this.pricePop.set(true);
+          this._popTimer = setTimeout(() => this.pricePop.set(false), 380);
+        }, 10);
+      }, 0);
+    });
   }
 
-  reload(): void {
-    this.loadItem(this.langService.lang());
-  }
+  // ── Existing methods (unchanged) ─────────────────────────────────────────────
+  onImageError(): void { this.imageError.set(true); }
+
+  reload(): void { this.loadItem(this.langService.lang()); }
 
   private loadItem(lang: string): void {
     this.loading.set(true);
@@ -106,17 +222,9 @@ export class ItemDetailComponent implements OnInit {
     return result;
   }
 
-  readonly toppingTotal = computed(() => {
-    const item = this.item();
-    if (!item?.availableToppings) return 0;
-    return item.availableToppings
-      .filter((t) => this.selectedToppingIds().has(t.id))
-      .reduce((sum, t) => sum + t.price, 0);
-  });
-
-  readonly lineTotal = computed(() =>
-    (this.effectivePrice() + this.toppingTotal()) * this.quantity()
-  );
+  get sugarToppings(): MenuTopping[] {
+    return this.toppings.filter(t => t.group === 'sugar');
+  }
 
   isToppingSelected(id: string): boolean {
     return this.selectedToppingIds().has(id);
@@ -137,6 +245,21 @@ export class ItemDetailComponent implements OnInit {
       }
       return next;
     });
+  }
+
+  // Sugar stepper (maps to existing toggleTopping radio logic)
+  incrementSugar(): void {
+    const sugar = this.sugarToppings;
+    const count = this.sugarCount();
+    if (count < sugar.length) this.toggleTopping(sugar[count]);
+  }
+
+  decrementSugar(): void {
+    const sugar = this.sugarToppings;
+    const count = this.sugarCount();
+    if (count === 0) return;
+    if (count === 1) this.toggleTopping(sugar[0]);
+    else this.toggleTopping(sugar[count - 2]);
   }
 
   incrementQty(): void { this.quantity.update((q) => q + 1); }

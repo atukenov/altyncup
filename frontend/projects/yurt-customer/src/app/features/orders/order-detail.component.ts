@@ -9,13 +9,7 @@ import {
   PaymentMethod,
   PaymentStatus,
 } from 'shared-models';
-import {
-  BadgeComponent,
-  Currency2Pipe,
-  OrderStatusColorPipe,
-  OrderStatusLabelPipe,
-  ToastService,
-} from 'shared-ui';
+import { Currency2Pipe, OrderStatusLabelPipe, ToastService } from 'shared-ui';
 import { environment } from '../../../environments/environment';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
@@ -25,9 +19,7 @@ import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
   standalone: true,
   imports: [
     CommonModule,
-    BadgeComponent,
     OrderStatusLabelPipe,
-    OrderStatusColorPipe,
     Currency2Pipe,
     TranslatePipe,
     PullToRefreshDirective,
@@ -130,5 +122,34 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
       [OrderStatus.Declined]: '❌',
     };
     return map[status] ?? '📋';
+  }
+
+  // ── Presentational helpers (design-only) ────────────────────────────────────
+
+  get ringPercent(): number {
+    const o = this.order();
+    if (!o) return 0;
+    const map: Partial<Record<OrderStatus, number>> = {
+      [OrderStatus.Created]: 5,
+      [OrderStatus.Accepted]: 10,
+      [OrderStatus.Preparing]: 45,
+      [OrderStatus.Ready]: 85,
+      [OrderStatus.Completed]: 100,
+      [OrderStatus.Declined]: 0,
+    };
+    return map[o.status] ?? 0;
+  }
+
+  get displaySteps(): { status: OrderStatus; labelKey: string }[] {
+    return [
+      { status: OrderStatus.Accepted,  labelKey: 'timeline.s.Accepted'  },
+      { status: OrderStatus.Preparing, labelKey: 'timeline.s.Preparing' },
+      { status: OrderStatus.Ready,     labelKey: 'timeline.s.Ready'     },
+      { status: OrderStatus.Completed, labelKey: 'timeline.s.Completed' },
+    ];
+  }
+
+  toppingList(toppings: { toppingName: string }[]): string {
+    return toppings.map(t => t.toppingName).join(', ');
   }
 }
