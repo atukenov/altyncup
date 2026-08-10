@@ -151,7 +151,9 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
     const search = this.searchQuery.trim() || undefined;
     this.api.getAdminOrders(undefined, this.selectedLocationId || undefined, search).subscribe({
       next: (res) => {
-        this.orders.set(res.items);
+        // Guard: old backend returns Order[] directly; new backend returns { items: Order[] }
+        const items = Array.isArray(res) ? (res as unknown as Order[]) : res.items ?? [];
+        this.orders.set(items);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),

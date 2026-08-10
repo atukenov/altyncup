@@ -32,8 +32,10 @@ export class CustomersComponent implements OnInit {
     this.loading.set(true);
     this.api.getAdminCustomers(this.phone || undefined, page, this.pageSize).subscribe({
       next: (res) => {
-        this.customers.set(res.items);
-        this.total.set(res.total);
+        const items = Array.isArray(res) ? (res as unknown as CustomerSummary[]) : res.items ?? [];
+        const total = Array.isArray(res) ? res.length : res.total ?? 0;
+        this.customers.set(items);
+        this.total.set(total);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
