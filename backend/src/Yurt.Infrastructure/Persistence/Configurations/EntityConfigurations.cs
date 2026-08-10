@@ -193,8 +193,8 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.Property(e => e.Currency).HasConversion<string>().HasMaxLength(10);
         builder.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(e => e.PaymentUrl).HasMaxLength(500).IsRequired();
-        builder.Property(e => e.QrCode).HasMaxLength(2000).IsRequired();
-        builder.Property(e => e.RawResponse).HasMaxLength(4000);
+        builder.Property(e => e.QrCode).HasColumnType("text").IsRequired();
+        builder.Property(e => e.RawResponse).HasColumnType("text");
         builder.Property(e => e.Amount).HasPrecision(10, 2);
         builder.HasOne(e => e.Order).WithMany().HasForeignKey(e => e.OrderId).OnDelete(DeleteBehavior.Cascade);
     }
@@ -206,8 +206,8 @@ public class PaymentWebhookLogConfiguration : IEntityTypeConfiguration<PaymentWe
     {
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Provider).HasConversion<string>().HasMaxLength(50);
-        builder.Property(e => e.Payload).HasMaxLength(4000).IsRequired();
-        builder.Property(e => e.Headers).HasMaxLength(2000).IsRequired();
+        builder.Property(e => e.Payload).HasColumnType("text").IsRequired();
+        builder.Property(e => e.Headers).HasColumnType("text").IsRequired();
         builder.Property(e => e.Processed).HasDefaultValue(false);
     }
 }
