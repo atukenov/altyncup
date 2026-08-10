@@ -127,6 +127,15 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// ── Health — short-circuit BEFORE routing, rate limiting, and auth ────────────
+// UseHealthChecks middleware form runs before endpoint routing so nothing in
+// the pipeline can interfere with the liveness/readiness probes.
+app.UseHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
+app.UseHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = hc => hc.Tags.Contains("ready")
+});
+
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging(opts =>
     opts.EnrichDiagnosticContext = (diag, ctx) =>
@@ -181,15 +190,6 @@ app.Use(async (ctx, next) =>
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<OrdersHub>("/hubs/orders");
-
-// ── Health ────────────────────────────────────────────────────────────────────
-// /health — liveness probe (no DB check)
-app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
-// /health/ready — readiness probe (includes DB check)
-app.MapHealthChecks("/health/ready", new HealthCheckOptions
-{
-    Predicate = hc => hc.Tags.Contains("ready")
-});
 
 // ── Seed ──────────────────────────────────────────────────────────────────────
 await DbSeeder.SeedAsync(app.Services);
