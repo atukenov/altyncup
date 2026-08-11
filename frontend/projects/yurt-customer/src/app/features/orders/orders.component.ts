@@ -10,6 +10,7 @@ import {
   OrderStatusLabelPipe,
   OrderStatusColorPipe,
   Currency2Pipe,
+  SkeletonOrderCardComponent,
 } from 'shared-ui';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { AppResumeService } from '../../core/app-resume.service';
@@ -25,6 +26,7 @@ import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
     OrderStatusLabelPipe,
     OrderStatusColorPipe,
     Currency2Pipe,
+    SkeletonOrderCardComponent,
     TranslatePipe,
     PullToRefreshDirective,
   ],

@@ -23,11 +23,7 @@
   <div class="p-4 max-w-lg mx-auto space-y-3 pb-8">
     @if (loading()) {
       @for (i of [1, 2, 3]; track i) {
-        <div class="bg-white rounded-2xl border border-stone-100 p-4 animate-pulse">
-          <div class="h-4 bg-stone-200 rounded w-1/2 mb-2"></div>
-          <div class="h-3 bg-stone-200 rounded w-3/4 mb-3"></div>
-          <div class="h-8 bg-stone-200 rounded-xl"></div>
-        </div>
+        <yurt-skeleton-order-card />
       }
     } @else {
       @for (order of visibleOrders(); track order.id) {
