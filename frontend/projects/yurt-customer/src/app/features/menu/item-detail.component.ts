@@ -9,11 +9,12 @@ import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { LocationService } from '../../core/location.service';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
+import { CupViewerComponent } from './cup-viewer.component';
 
 @Component({
   selector: 'app-item-detail',
   standalone: true,
-  imports: [CommonModule, Currency2Pipe, TranslatePipe, PullToRefreshDirective],
+  imports: [CommonModule, Currency2Pipe, TranslatePipe, PullToRefreshDirective, CupViewerComponent],
   templateUrl: './item-detail.component.html',
   styleUrl: './item-detail.component.css',
 })
@@ -90,9 +91,27 @@ export class ItemDetailComponent implements OnInit {
   readonly cupScale = computed(() => {
     const variants = this.item()?.variants ?? [];
     const sel = this.selectedVariant();
-    if (!sel || !variants.length) return 1;
-    const idx = variants.findIndex(v => v.id === sel.id);
-    return ([0.85, 1, 1.12] as const)[Math.min(Math.max(idx, 0), 2)] ?? 1;
+    if (!sel || !variants.length) return 0.76;
+    const sorted = [...variants].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    const idx = sorted.findIndex(v => v.id === sel.id);
+    return ([0.68, 0.76, 0.84] as const)[Math.min(Math.max(idx, 0), 2)] ?? 0.76;
+  });
+
+  // 3D viewer tint: milk color blended 45% toward syrup when a syrup is selected
+  readonly liquidColor = computed((): string => {
+    const milk = this.cupLiquidColor();        // e.g. '#c9a06e'
+    const syrup = this.cupSyrupColor();        // null | '#b06f24' | '#e8cf9a'
+    if (!syrup) return milk;
+    const blend = (a: number, b: number, t: number) => Math.round(a + (b - a) * t);
+    const parseHex = (h: string) => [
+      parseInt(h.slice(1, 3), 16),
+      parseInt(h.slice(3, 5), 16),
+      parseInt(h.slice(5, 7), 16),
+    ];
+    const [mr, mg, mb] = parseHex(milk);
+    const [sr, sg, sb] = parseHex(syrup);
+    const toHex = (n: number) => n.toString(16).padStart(2, '0');
+    return `#${toHex(blend(mr, sr, 0.45))}${toHex(blend(mg, sg, 0.45))}${toHex(blend(mb, sb, 0.45))}`;
   });
 
   readonly cupFillFraction = computed(() => {

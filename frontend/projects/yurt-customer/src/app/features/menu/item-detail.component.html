@@ -64,86 +64,23 @@
         </svg>
       </button>
 
-      <!-- ── Animated SVG Cup ────────────────────────────────────────────── -->
-      <div class="absolute" style="bottom:36px;left:50%;transform:translateX(-50%)">
-        <svg viewBox="0 0 230 250" width="230" style="overflow:visible">
-          <defs>
-            <clipPath id="cup-clip">
-              <path d="M70,94 L160,94 L151,216 Q150,224 142,224 L88,224 Q80,224 79,216 Z"/>
-            </clipPath>
-          </defs>
+      <!-- ── 3D Cup Viewer ──────────────────────────────────────────────── -->
+      <div class="absolute"
+           style="left:50%;bottom:2px;transform-origin:50% 100%;transition:transform .45s cubic-bezier(.34,1.56,.64,1)"
+           [style.transform]="'translateX(-50%) scale(' + cupScale() + ')'">
+        <cup-viewer
+          src="cup.glb"
+          [tint]="liquidColor()"
+          style="width:260px;height:280px;display:block">
+        </cup-viewer>
+      </div>
 
-          <!-- Outer scale group (size animation) -->
-          <g [style.transform]="'scale(' + cupScale() + ')'"
-             style="transform-origin:115px 232px;transition:transform .45s cubic-bezier(.34,1.56,.64,1)">
-
-            <!-- Shadow -->
-            <ellipse cx="115" cy="234" rx="64" ry="9" fill="rgba(0,0,0,.35)"/>
-
-            <!-- Handle -->
-            <path d="M166,120 Q198,124 194,152 Q190,180 158,180"
-              stroke="#fffdf7" stroke-width="10" stroke-linecap="round" fill="none"/>
-
-            <!-- Body -->
-            <path d="M64,88 L166,88 L156,220 Q155,230 144,230 L86,230 Q75,230 74,220 Z" fill="#fffdf7"/>
-
-            <!-- Clipped interior -->
-            <g clip-path="url(#cup-clip)">
-
-              <!-- Liquid (milk color + fill level) -->
-              <rect x="65" y="94" width="100" height="132"
-                [attr.fill]="cupLiquidColor()"
-                [style.transform]="'translateY(' + cupLiquidShift() + 'px)'"
-                style="transition:transform .5s ease,fill .4s ease"/>
-
-              <!-- Foam -->
-              <rect x="65" y="94" width="100" height="11"
-                fill="#f2e4c8"
-                [style.transform]="'translateY(' + cupLiquidShift() + 'px)'"
-                style="transition:transform .5s ease"/>
-
-              <!-- Syrup layer (bottom) -->
-              <rect x="65" y="210" width="100"
-                [attr.height]="cupSyrupColor() ? 14 : 0"
-                [attr.fill]="cupSyrupColor() || 'transparent'"
-                style="transition:height .4s ease,fill .4s ease"/>
-
-              <!-- Sugar cubes -->
-              @for (cube of SUGAR_CUBE_POS; track cube.x) {
-                @let cubeIdx = $index;
-                <rect
-                  [attr.x]="cube.x" [attr.y]="cube.y"
-                  width="13" height="13" rx="2.5" fill="white"
-                  [attr.transform]="'rotate(10,' + cube.cx + ',' + cube.cy + ')'"
-                  [style.opacity]="cubeIdx < sugarCount() ? '1' : '0'"
-                  style="transition:opacity .3s"/>
-              }
-            </g>
-
-            <!-- Rim -->
-            <rect x="58" y="80" width="114" height="14" rx="7" fill="#f2ecdf"/>
-
-            <!-- Whipped cream -->
-            <circle cx="94" cy="72" r="14" fill="white"
-              [style.opacity]="hasCream() ? '1' : '0'"
-              style="transition:opacity .35s"/>
-            <circle cx="115" cy="65" r="18" fill="white"
-              [style.opacity]="hasCream() ? '1' : '0'"
-              style="transition:opacity .35s"/>
-            <circle cx="137" cy="72" r="14" fill="white"
-              [style.opacity]="hasCream() ? '1' : '0'"
-              style="transition:opacity .35s"/>
-
-            <!-- Steam -->
-            <path d="M100,50 Q95,38 100,26"
-              stroke="white" stroke-width="4" stroke-linecap="round" fill="none"
-              class="steam steam-1"/>
-            <path d="M126,52 Q132,40 126,28"
-              stroke="white" stroke-width="4" stroke-linecap="round" fill="none"
-              class="steam steam-2"/>
-
-          </g>
-        </svg>
+      <!-- 360° pill -->
+      <div class="absolute" style="bottom:10px;left:50%;transform:translateX(-50%);
+        background:rgba(0,0,0,.25);backdrop-filter:blur(6px);border-radius:999px;
+        padding:4px 12px;font-size:10px;font-weight:700;color:rgba(255,255,255,.5);
+        pointer-events:none;user-select:none">
+        360°
       </div>
     </div>
 
