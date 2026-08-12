@@ -54,7 +54,7 @@
           {{ 'news.seeAll' | t }} →
         </a>
       </div>
-      <div class="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1" style="scrollbar-width:none">
+      <div class="flex gap-3 overflow-x-auto h-scroll pb-2 -mx-1 px-1">
         @for (a of allAchievements; track a.id; let i = $index) {
           @let unlocked = unlockedAchievements().includes(a);
           <div class="badge-card shrink-0 w-20 flex flex-col items-center gap-1.5 rounded-2xl py-3 px-1 text-center"
@@ -115,7 +115,7 @@
         <div class="flex items-center justify-between px-4 mb-3">
           <h2 class="text-base font-bold text-stone-800">{{ 'news.newItems' | t }}</h2>
         </div>
-        <div class="flex gap-3 overflow-x-auto pb-2 pl-4 pr-2" style="scrollbar-width:none">
+        <div class="flex gap-3 overflow-x-auto h-scroll pb-2 pl-4 pr-2">
           @for (item of newItems(); track item.id) {
             <div class="shrink-0 w-36 rounded-2xl overflow-hidden bg-white shadow-sm border border-stone-100 flex flex-col">
               @if (item.imageUrl) {
@@ -144,7 +144,7 @@
         <div class="flex items-center justify-between px-4 mb-3">
           <h2 class="text-base font-bold text-stone-800">{{ 'news.recommended' | t }}</h2>
         </div>
-        <div class="flex gap-3 overflow-x-auto pb-2 pl-4 pr-2" style="scrollbar-width:none">
+        <div class="flex gap-3 overflow-x-auto h-scroll pb-2 pl-4 pr-2">
           @for (item of recommendedItems(); track item.id) {
             <div class="shrink-0 w-36 rounded-2xl overflow-hidden bg-white shadow-sm border border-stone-100 flex flex-col">
               @if (item.imageUrl) {

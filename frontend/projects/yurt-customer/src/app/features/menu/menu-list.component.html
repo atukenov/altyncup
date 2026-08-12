@@ -106,7 +106,7 @@
       <p class="px-4 text-xs font-bold text-stone-500 uppercase tracking-widest mb-2.5">
         {{ 'menu.specials' | t }}
       </p>
-      <div class="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-1">
+      <div class="flex gap-3 px-4 overflow-x-auto h-scroll pb-1">
         @for (promo of promotions(); track promo.id; let i = $index) {
           <div class="shrink-0 w-52 h-28 rounded-2xl overflow-hidden relative shadow-sm cursor-pointer active:scale-[0.97] transition-transform"
                (click)="openPromo(i)">
@@ -137,7 +137,7 @@
   }
 
   <!-- ── Category chips ─────────────────────────────────────────────────── -->
-  <div class="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
+  <div class="flex gap-2 px-4 py-3 overflow-x-auto h-scroll">
     <button
       (click)="selectCategory(null)"
       [class]="catChipClass(null === selectedCategoryId())"

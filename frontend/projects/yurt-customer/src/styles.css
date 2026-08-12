@@ -37,4 +37,12 @@
   .pin-box {
     @apply w-14 h-14 text-center text-2xl font-bold border-2 border-stone-200 rounded-2xl bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-200 transition-all outline-none;
   }
+  .h-scroll {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: none;
+  }
+  .h-scroll::-webkit-scrollbar {
+    display: none;
+  }
 }
