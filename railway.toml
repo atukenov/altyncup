@@ -4,4 +4,3 @@ context = "."
 
 [deploy]
 startCommand = "dotnet Yurt.WebApi.dll"
-healthcheckPath = "/health"
