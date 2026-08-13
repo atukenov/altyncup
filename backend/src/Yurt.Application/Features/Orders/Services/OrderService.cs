@@ -148,6 +148,11 @@ public class OrderService
         // Attach navigation properties needed by MapToDto and the hub notification
         order.Location = location;
         order.CustomerUser = await _db.CustomerUsers.FindAsync([customerId], ct);
+
+        // Reserve loyalty points as (partial) payment — fails open to normal payment
+        if (dto.LoyaltyPointsToSpend is > 0)
+            await _loyalty.TryHoldForOrderAsync(order, dto.LoyaltyPointsToSpend.Value, ct);
+
         await _hub.NotifyOrderCreatedAsync(order, ct);
 
         return Result<OrderDto>.Success(MapToDto(order), 201);
@@ -286,6 +291,9 @@ public class OrderService
         order.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
+        // Give reserved points back to the customer (retried in background on failure)
+        await _loyalty.ReleaseHoldForOrderAsync(order, ct);
+
         await _hub.NotifyOrderDeclinedAsync(order, ct);
         await _audit.LogAsync("OrderDeclined", "Order", orderId.ToString(), dto.Reason, ct);
         return Result<OrderDto>.Success(MapToDto(order));
@@ -316,10 +324,15 @@ public class OrderService
         await _hub.NotifyOrderUpdatedAsync(order, ct);
         await _audit.LogAsync($"OrderStatus{dto.Status}", "Order", orderId.ToString(), null, ct);
 
-        // Loyalty crediting is best-effort: CreditForOrderAsync logs and swallows
-        // its own failures so iiko downtime can never fail order completion.
+        // Loyalty operations are best-effort: both methods log and swallow their own
+        // failures (or defer to background retry) so iiko downtime can never fail
+        // order completion. Spend must finalize before earning so the earn base
+        // excludes the points-paid portion.
         if (dto.Status == OrderStatus.Completed)
+        {
+            await _loyalty.FinalizeSpendForOrderAsync(order, ct);
             await _loyalty.CreditForOrderAsync(order, ct);
+        }
 
         return Result<OrderDto>.Success(MapToDto(order));
     }
@@ -381,6 +394,8 @@ public class OrderService
                 i.Id, i.MenuItemId, i.MenuItemName, i.Quantity, i.UnitPrice, i.LineTotal,
                 i.Toppings.Select(t => new OrderItemToppingDto(t.ToppingId, t.ToppingName, t.Price)).ToList(),
                 i.Notes, i.VariantLabel
-            )).ToList());
+            )).ToList(),
+            o.LoyaltyPointsSpent,
+            o.LoyaltyPointsEarned);
     }
 }

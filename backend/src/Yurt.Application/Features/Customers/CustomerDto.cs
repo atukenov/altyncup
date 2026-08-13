@@ -28,4 +28,6 @@ public record CustomerOrderSummaryDto(
     OrderStatus Status,
     decimal Total,
     string LocationName,
-    int ItemCount);
+    int ItemCount,
+    decimal? LoyaltyPointsEarned = null,
+    decimal? LoyaltyPointsSpent = null);

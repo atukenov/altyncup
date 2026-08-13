@@ -313,6 +313,16 @@
               <span class="font-bold text-slate-800">{{ 'orders.total' | t }}</span>
               <span class="font-bold text-amber-600">{{ o.total | currency2 }}</span>
             </div>
+            @if (o.loyaltyPointsSpent) {
+              <div class="flex justify-between text-sm">
+                <span class="text-amber-600">✨ {{ 'orders.bonusPaid' | t }}</span>
+                <span class="text-amber-600 font-semibold">-{{ o.loyaltyPointsSpent | currency2 }}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="font-semibold text-slate-600">{{ 'orders.dueAtCounter' | t }}</span>
+                <span class="font-semibold text-slate-700">{{ o.total - o.loyaltyPointsSpent | currency2 }}</span>
+              </div>
+            }
           </div>
         </div>
       </div>

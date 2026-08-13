@@ -35,6 +35,16 @@ public class Order : BaseEntity
     // Null = not credited (loyalty disabled or order not yet completed).
     public decimal? LoyaltyPointsEarned { get; set; }
 
+    // Points applied as (partial) payment at checkout. Held in the iiko wallet on
+    // placement, charged off on completion, released on decline.
+    public decimal? LoyaltyPointsSpent { get; set; }
+
+    // Active iiko hold transaction id; null once the hold is consumed or released.
+    public Guid? LoyaltyHoldTransactionId { get; set; }
+
+    // Wallet operation still owed to iiko (retried by LoyaltyRetryService).
+    public LoyaltyPendingAction LoyaltyPendingAction { get; set; } = LoyaltyPendingAction.None;
+
     public CustomerUser CustomerUser { get; set; } = null!;
     public Location Location { get; set; } = null!;
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
