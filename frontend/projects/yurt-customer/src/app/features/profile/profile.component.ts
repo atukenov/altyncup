@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService, AuthStateService, NotificationService } from 'shared-api';
-import { CustomerProfile, CustomerStats } from 'shared-models';
+import { CustomerProfile, CustomerStats, LoyaltyBalance } from 'shared-models';
 import { Currency2Pipe, ToastService } from 'shared-ui';
 import { LangService, Lang } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
@@ -31,6 +31,7 @@ export class ProfileComponent implements OnInit {
 
   profile = signal<CustomerProfile | null>(null);
   stats = signal<CustomerStats | null>(null);
+  loyalty = signal<LoyaltyBalance | null>(null);
   editMode = signal(false);
   saving = signal(false);
   editFirstName = '';
@@ -61,6 +62,7 @@ export class ProfileComponent implements OnInit {
   loadProfile(): void {
     this.api.me().subscribe({ next: (p) => this.profile.set(p), error: () => {} });
     this.api.getCustomerStats().subscribe({ next: (s) => this.stats.set(s), error: () => {} });
+    this.api.getLoyaltyBalance().subscribe({ next: (l) => this.loyalty.set(l), error: () => {} });
   }
 
   async toggleNotifications(): Promise<void> {

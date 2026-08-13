@@ -1,0 +1,33 @@
+namespace Yurt.Application.Features.Loyalty;
+
+/// <summary>
+/// Configuration for the iikoCloud loyalty integration ("Iiko" section).
+/// Secrets (ApiKey, ClientSecret) must come from environment variables, never from committed config.
+/// </summary>
+public class IikoOptions
+{
+    /// <summary>Master feature flag. When false no iiko calls are made anywhere.</summary>
+    public bool Enabled { get; set; } = false;
+
+    public string BaseUrl { get; set; } = "https://api-ru.iiko.services";
+
+    /// <summary>API key generated in iikoWeb (Integrations → API Keys). Used by /api/v2/access_token.</summary>
+    public string ApiKey { get; set; } = string.Empty;
+
+    /// <summary>Application id issued by the iiko Developer Portal. Used by /api/v2/access_token.</summary>
+    public string AppId { get; set; } = string.Empty;
+
+    /// <summary>Application secret issued by the iiko Developer Portal. Used by /api/v2/access_token.</summary>
+    public string ClientSecret { get; set; } = string.Empty;
+
+    public Guid OrganizationId { get; set; }
+
+    /// <summary>Loyalty program customers are enrolled into.</summary>
+    public Guid ProgramId { get; set; }
+
+    /// <summary>Percent of the completed order total credited as points (e.g. 5 = 5%).</summary>
+    public decimal EarnPercent { get; set; } = 5m;
+
+    /// <summary>Session token lifetime safety margin — tokens live ~1h; refresh after this many minutes.</summary>
+    public int TokenLifetimeMinutes { get; set; } = 50;
+}

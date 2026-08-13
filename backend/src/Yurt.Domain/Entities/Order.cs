@@ -31,6 +31,10 @@ public class Order : BaseEntity
 
     public string? IdempotencyKey { get; set; }
 
+    // Loyalty points credited to the customer's iiko wallet when the order completed.
+    // Null = not credited (loyalty disabled or order not yet completed).
+    public decimal? LoyaltyPointsEarned { get; set; }
+
     public CustomerUser CustomerUser { get; set; } = null!;
     public Location Location { get; set; } = null!;
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();

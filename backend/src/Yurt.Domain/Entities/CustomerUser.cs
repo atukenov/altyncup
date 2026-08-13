@@ -12,6 +12,10 @@ public class CustomerUser : BaseEntity
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }
 
+    // iiko loyalty link (null until the customer is first synced to iikoCloud)
+    public Guid? IikoCustomerId { get; set; }
+    public Guid? IikoWalletId { get; set; }
+
     public ICollection<Order> Orders { get; set; } = new List<Order>();
     public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
 }

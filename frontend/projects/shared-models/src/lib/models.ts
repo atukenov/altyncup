@@ -429,6 +429,16 @@ export interface CustomerStats {
   totalSpent: number;
 }
 
+// ── Loyalty (iiko) ────────────────────────────────────────────────────────────
+
+export interface LoyaltyBalance {
+  enabled: boolean;
+  available: boolean;
+  linked: boolean;
+  balance: number | null;
+  earnPercent: number;
+}
+
 // ── Discount Codes ────────────────────────────────────────────────────────────
 
 export interface DiscountCode {

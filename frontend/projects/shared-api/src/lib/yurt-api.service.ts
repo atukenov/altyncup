@@ -18,6 +18,7 @@ import {
   DiscountCode,
   GroupCart,
   Location,
+  LoyaltyBalance,
   MenuCategory,
   MenuItem,
   MenuTopping,
@@ -326,6 +327,10 @@ export class YurtApiService {
 
   getCustomerStats(): Observable<CustomerStats> {
     return this.http.get<CustomerStats>(`${this.api}/auth/me/stats`);
+  }
+
+  getLoyaltyBalance(): Observable<LoyaltyBalance> {
+    return this.http.get<LoyaltyBalance>(`${this.api}/loyalty/me`);
   }
 
   // ── Analytics ───────────────────────────────────────────────────────────────

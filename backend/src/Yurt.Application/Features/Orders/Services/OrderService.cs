@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Common.Models;
 using Yurt.Application.Features.DiscountCodes.Services;
+using Yurt.Application.Features.Loyalty.Services;
 using Yurt.Application.Features.Orders.DTOs;
 using Yurt.Domain.Entities;
 using Yurt.Domain.Enums;
@@ -14,13 +15,15 @@ public class OrderService
     private readonly IOrdersHubService _hub;
     private readonly IAuditLogService _audit;
     private readonly DiscountCodeService _discountCodes;
+    private readonly LoyaltyService _loyalty;
 
-    public OrderService(IApplicationDbContext db, IOrdersHubService hub, IAuditLogService audit, DiscountCodeService discountCodes)
+    public OrderService(IApplicationDbContext db, IOrdersHubService hub, IAuditLogService audit, DiscountCodeService discountCodes, LoyaltyService loyalty)
     {
         _db = db;
         _hub = hub;
         _audit = audit;
         _discountCodes = discountCodes;
+        _loyalty = loyalty;
     }
 
     public async Task<Result<OrderDto>> CreateOrderAsync(
@@ -312,6 +315,12 @@ public class OrderService
 
         await _hub.NotifyOrderUpdatedAsync(order, ct);
         await _audit.LogAsync($"OrderStatus{dto.Status}", "Order", orderId.ToString(), null, ct);
+
+        // Loyalty crediting is best-effort: CreditForOrderAsync logs and swallows
+        // its own failures so iiko downtime can never fail order completion.
+        if (dto.Status == OrderStatus.Completed)
+            await _loyalty.CreditForOrderAsync(order, ct);
+
         return Result<OrderDto>.Success(MapToDto(order));
     }
 
