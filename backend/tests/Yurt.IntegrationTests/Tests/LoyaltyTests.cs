@@ -94,6 +94,80 @@ public class LoyaltyTests(YurtWebAppFactory factory)
     }
 
     [Fact]
+    public async Task AdminLoyaltyEndpoint_UnlinkedCustomer_ReportsNotLinkedWithoutCreatingIikoCustomer()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client = enabledFactory.CreateClient();
+        var (_, customerId) = await ApiHelpers.CreateCustomerAsync(client, "+77001000805");
+
+        var adminToken = await ApiHelpers.CreateAdminTokenAsync(enabledFactory.Services, client);
+        ApiHelpers.Authorize(client, adminToken);
+
+        var balance = await client.GetFromJsonAsync<LoyaltyBalanceResult>(
+            $"/api/v1/admin/customers/{customerId}/loyalty", ApiHelpers.JsonOpts);
+
+        // Admin viewing must not create the customer in iiko as a side effect
+        Assert.NotNull(balance);
+        Assert.True(balance.Enabled);
+        Assert.True(balance.Available);
+        Assert.False(balance.Linked);
+        Assert.Null(balance.Balance);
+
+        await using var scope = enabledFactory.Services.CreateAsyncScope();
+        var db   = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var user = await db.CustomerUsers.FirstAsync(u => u.Id == customerId);
+        Assert.Null(user.IikoCustomerId);
+    }
+
+    [Fact]
+    public async Task AdminLoyaltyEndpoint_LinkedCustomer_ReturnsBalance()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client    = enabledFactory.CreateClient();
+        var completed = await PlaceAndCompleteOrderAsync(enabledFactory, client, "+77001000806");
+        var call      = Assert.Single(fake.TopupCalls);
+
+        await using var scope = enabledFactory.Services.CreateAsyncScope();
+        var db      = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var order   = await db.Orders.FirstAsync(o => o.Id == completed.Id);
+
+        var adminToken = await ApiHelpers.CreateAdminTokenAsync(enabledFactory.Services, client);
+        ApiHelpers.Authorize(client, adminToken);
+
+        var balance = await client.GetFromJsonAsync<LoyaltyBalanceResult>(
+            $"/api/v1/admin/customers/{order.CustomerUserId}/loyalty", ApiHelpers.JsonOpts);
+
+        Assert.NotNull(balance);
+        Assert.True(balance.Linked);
+        Assert.Equal(call.Sum, balance.Balance);
+    }
+
+    [Fact]
+    public async Task AdminLoyaltyEndpoint_RejectsCustomerToken()
+    {
+        var client = factory.CreateClient();
+        var (token, customerId) = await ApiHelpers.CreateCustomerAsync(client, "+77001000807");
+        ApiHelpers.Authorize(client, token);
+
+        var resp = await client.GetAsync($"/api/v1/admin/customers/{customerId}/loyalty");
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, resp.StatusCode);
+    }
+
+    [Fact]
     public async Task LoyaltyEnabled_IikoDown_OrderCompletionStillSucceeds()
     {
         using var brokenFactory = factory.WithWebHostBuilder(builder =>

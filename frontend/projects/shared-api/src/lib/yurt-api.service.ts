@@ -333,6 +333,10 @@ export class YurtApiService {
     return this.http.get<LoyaltyBalance>(`${this.api}/loyalty/me`);
   }
 
+  getAdminCustomerLoyalty(customerId: string): Observable<LoyaltyBalance> {
+    return this.http.get<LoyaltyBalance>(`${this.api}/admin/customers/${customerId}/loyalty`);
+  }
+
   // ── Analytics ───────────────────────────────────────────────────────────────
   getAnalytics(period: string, locationId?: string): Observable<AnalyticsResponse> {
     let params = new HttpParams().set('period', period);

@@ -33,8 +33,13 @@ public class LoyaltyService
             ? 0m
             : Math.Round(orderTotal * earnPercent / 100m, 2, MidpointRounding.ToZero);
 
-    /// <summary>Balance for the customer's profile/cart. Never throws — degrades to Available=false.</summary>
-    public async Task<LoyaltyBalanceDto> GetBalanceAsync(Guid customerId, CancellationToken ct = default)
+    /// <summary>
+    /// Balance for the customer's profile/cart. Never throws — degrades to Available=false.
+    /// With <paramref name="linkIfMissing"/> false (admin views), an unlinked customer is
+    /// reported as Linked=false instead of being created in iiko as a side effect.
+    /// </summary>
+    public async Task<LoyaltyBalanceDto> GetBalanceAsync(
+        Guid customerId, bool linkIfMissing = true, CancellationToken ct = default)
     {
         if (!_options.Enabled)
             return new LoyaltyBalanceDto(false, false, false, null, 0);
@@ -45,6 +50,9 @@ public class LoyaltyService
 
         try
         {
+            if (user.IikoCustomerId == null && !linkIfMissing)
+                return new LoyaltyBalanceDto(true, true, false, null, _options.EarnPercent);
+
             await EnsureLinkedAsync(user, ct);
 
             var info = await _iiko.GetCustomerByPhoneAsync(user.MobileNumber, ct);

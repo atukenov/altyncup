@@ -25,5 +25,5 @@ public class LoyaltyController : ApiControllerBase
     /// <summary>Current customer's iiko loyalty balance. Degrades gracefully when iiko is unavailable.</summary>
     [HttpGet("me")]
     public async Task<IActionResult> GetMyBalance(CancellationToken ct)
-        => Ok(await _loyalty.GetBalanceAsync(_currentUser.UserId!.Value, ct));
+        => Ok(await _loyalty.GetBalanceAsync(_currentUser.UserId!.Value, linkIfMissing: true, ct));
 }

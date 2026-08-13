@@ -34,7 +34,8 @@
           <p class="text-slate-400 text-xs mt-1">{{ 'customers.memberSince' | t }} {{ c.registeredAt | date: 'MMM d, y' }}</p>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-3 mt-5">
+      <div class="grid gap-3 mt-5"
+        [class]="loyalty()?.enabled ? 'grid-cols-3' : 'grid-cols-2'">
         <div class="bg-amber-50 rounded-xl p-4 text-center">
           <p class="text-2xl font-bold text-amber-600">{{ c.totalOrders }}</p>
           <p class="text-xs text-slate-500 mt-0.5">{{ 'customers.totalOrders' | t }}</p>
@@ -43,6 +44,22 @@
           <p class="text-2xl font-bold text-amber-600">{{ c.totalSpent | currency2 }}</p>
           <p class="text-xs text-slate-500 mt-0.5">{{ 'customers.totalSpent' | t }}</p>
         </div>
+        @if (loyalty(); as l) {
+          @if (l.enabled) {
+            <div class="bg-yellow-50 rounded-xl p-4 text-center">
+              @if (l.available && l.linked && l.balance !== null) {
+                <p class="text-2xl font-bold text-yellow-600">{{ l.balance | currency2 }}</p>
+                <p class="text-xs text-slate-500 mt-0.5">{{ 'customers.loyaltyBalance' | t }}</p>
+              } @else if (l.available && !l.linked) {
+                <p class="text-2xl font-bold text-slate-300">—</p>
+                <p class="text-xs text-slate-500 mt-0.5">{{ 'customers.loyaltyNotLinked' | t }}</p>
+              } @else {
+                <p class="text-2xl font-bold text-slate-300">?</p>
+                <p class="text-xs text-slate-500 mt-0.5">{{ 'customers.loyaltyUnavailable' | t }}</p>
+              }
+            </div>
+          }
+        }
       </div>
       <div class="mt-4 flex justify-end">
         <button
