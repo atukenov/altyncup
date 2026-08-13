@@ -1,9 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService, AuthStateService } from 'shared-api';
-import { CartItem, PaymentMethod } from 'shared-models';
+import { CartItem, LoyaltyBalance, PaymentMethod } from 'shared-models';
 import { CartService } from './cart.service';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { TranslatePipe } from '../../core/translate.pipe';
@@ -17,7 +17,7 @@ import { LangService } from '../../core/lang.service';
   templateUrl: './cart.component.html',
   styleUrl: './cart.component.css',
 })
-export class CartComponent {
+export class CartComponent implements OnInit {
   readonly cart = inject(CartService);
   readonly langService = inject(LangService);
   private api = inject(YurtApiService);
@@ -32,6 +32,31 @@ export class CartComponent {
   loading = signal(false);
   selectedPaymentMethod = signal<PaymentMethod | null>(null);
   private checkoutKey: string | null = null;
+
+  // iiko loyalty — pay with bonus points
+  loyalty = signal<LoyaltyBalance | null>(null);
+  bonusInput = signal<number | null>(null);
+  readonly maxBonus = computed(() => {
+    const l = this.loyalty();
+    if (!l?.enabled || !l.available || !l.balance || l.balance <= 0) return 0;
+    return Math.min(l.balance, this.cart.total());
+  });
+  readonly appliedBonus = computed(() => {
+    const raw = this.bonusInput() ?? 0;
+    return Math.min(Math.max(raw, 0), this.maxBonus());
+  });
+  readonly payableTotal = computed(() => this.cart.total() - this.appliedBonus());
+
+  ngOnInit(): void {
+    this.api.getLoyaltyBalance().subscribe({
+      next: (l) => this.loyalty.set(l),
+      error: () => {},
+    });
+  }
+
+  useAllBonus(): void {
+    this.bonusInput.set(this.maxBonus());
+  }
   expandedNoteKeys = signal<Set<string>>(new Set());
   expandedItemKeys = signal<Set<string>>(new Set());
 
@@ -147,7 +172,9 @@ export class CartComponent {
     // Generate a unique key per checkout attempt; reuse across retries of the same attempt
     if (!this.checkoutKey) this.checkoutKey = crypto.randomUUID();
 
-    this.api.createOrder({ locationId, items, paymentMethod, discountCode }, this.checkoutKey).subscribe({
+    const loyaltyPointsToSpend = this.appliedBonus() > 0 ? this.appliedBonus() : undefined;
+
+    this.api.createOrder({ locationId, items, paymentMethod, discountCode, loyaltyPointsToSpend }, this.checkoutKey).subscribe({
       next: (order) => {
         this.checkoutKey = null;
         this.cart.clear();

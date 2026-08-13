@@ -154,6 +154,7 @@ export interface CreateOrderRequest {
   items: OrderItemInput[];
   paymentMethod: PaymentMethod;
   discountCode?: string;
+  loyaltyPointsToSpend?: number;
 }
 
 export interface CreatePaymentRequest {
@@ -229,6 +230,8 @@ export interface Order {
   total: number;
   discountCode?: string;
   items: OrderItem[];
+  loyaltyPointsSpent?: number;
+  loyaltyPointsEarned?: number;
 }
 
 // ── Favorites ────────────────────────────────────────────────────────────────
@@ -353,6 +356,8 @@ export interface CustomerOrderSummary {
   total: number;
   locationName: string;
   itemCount: number;
+  loyaltyPointsEarned?: number;
+  loyaltyPointsSpent?: number;
 }
 
 export interface CustomerDetail {

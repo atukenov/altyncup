@@ -100,6 +100,7 @@ public static class DependencyInjection
         // Background services
         services.AddHostedService<OrderArchivalService>();
         services.AddHostedService<OrderTimerService>();
+        services.AddHostedService<LoyaltyRetryService>();
 
         // JWT Auth — fail-fast secret validation
         var jwtSecret = configuration["Jwt:Secret"];

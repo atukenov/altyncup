@@ -94,6 +94,9 @@
               <th class="text-left px-5 py-3">{{ 'label.status' | t }}</th>
               <th class="text-right px-5 py-3">{{ 'customers.items' | t }}</th>
               <th class="text-right px-5 py-3">{{ 'customers.total' | t }}</th>
+              @if (loyalty()?.enabled) {
+                <th class="text-right px-5 py-3">{{ 'customers.bonuses' | t }}</th>
+              }
             </tr>
           </thead>
           <tbody>
@@ -114,6 +117,19 @@
                 </td>
                 <td class="px-5 py-3 text-right text-slate-600">{{ o.itemCount }}</td>
                 <td class="px-5 py-3 text-right font-semibold text-amber-600">{{ o.total | currency2 }}</td>
+                @if (loyalty()?.enabled) {
+                  <td class="px-5 py-3 text-right whitespace-nowrap">
+                    @if (o.loyaltyPointsEarned) {
+                      <span class="text-teal-600 font-semibold">+{{ o.loyaltyPointsEarned | currency2 }}</span>
+                    }
+                    @if (o.loyaltyPointsSpent) {
+                      <span class="text-amber-600 font-semibold" [class.ml-2]="o.loyaltyPointsEarned">−{{ o.loyaltyPointsSpent | currency2 }}</span>
+                    }
+                    @if (!o.loyaltyPointsEarned && !o.loyaltyPointsSpent) {
+                      <span class="text-slate-300">—</span>
+                    }
+                  </td>
+                }
               </tr>
             }
           </tbody>

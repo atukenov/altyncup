@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.Loyalty.DTOs;
 using Yurt.Domain.Entities;
+using Yurt.Domain.Enums;
 
 namespace Yurt.Application.Features.Loyalty.Services;
 
@@ -81,7 +82,9 @@ public class LoyaltyService
         if (!_options.Enabled) return;
         if (order.LoyaltyPointsEarned != null) return; // already credited
 
-        var points = CalculatePoints(order.Total, _options.EarnPercent);
+        // Earn only on the money portion — the part paid with points earns nothing
+        var earnBase = order.Total - (order.LoyaltyPointsSpent ?? 0m);
+        var points = CalculatePoints(earnBase, _options.EarnPercent);
         if (points <= 0) return;
 
         try
@@ -110,6 +113,161 @@ public class LoyaltyService
             _logger.LogError(ex,
                 "Failed to credit loyalty points for order {OrderId} (customer {CustomerId})",
                 order.Id, order.CustomerUserId);
+        }
+    }
+
+    /// <summary>
+    /// Reserve points as (partial) payment for a freshly placed order.
+    /// Clamps the requested amount to min(balance, order total). Returns the points
+    /// actually applied; 0 when disabled, invalid, or iiko is unavailable (fail open
+    /// to normal payment — order placement must never fail because of loyalty).
+    /// </summary>
+    public async Task<decimal> TryHoldForOrderAsync(
+        Order order, decimal requestedPoints, CancellationToken ct = default)
+    {
+        if (!_options.Enabled || requestedPoints <= 0) return 0m;
+
+        try
+        {
+            var user = order.CustomerUser
+                ?? await _db.CustomerUsers.FirstOrDefaultAsync(u => u.Id == order.CustomerUserId, ct);
+            if (user == null) return 0m;
+
+            await EnsureLinkedAsync(user, ct);
+
+            var info = await _iiko.GetCustomerByPhoneAsync(user.MobileNumber, ct);
+            var balance = info?.WalletBalances
+                .Where(w => user.IikoWalletId == null || w.Id == user.IikoWalletId)
+                .Sum(w => w.Balance) ?? 0m;
+
+            var applied = Math.Round(
+                Math.Min(requestedPoints, Math.Min(balance, order.Total)),
+                2, MidpointRounding.ToZero);
+            if (applied <= 0) return 0m;
+
+            var holdId = await _iiko.HoldAsync(
+                user.IikoCustomerId!.Value, user.IikoWalletId!.Value, applied,
+                $"Altyncup order {order.Id}", ct);
+
+            order.LoyaltyPointsSpent = applied;
+            order.LoyaltyHoldTransactionId = holdId;
+            // Fully covered by points → nothing left to collect at the counter
+            if (applied >= order.Total) order.PaymentStatus = PaymentStatus.Paid;
+            await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync("LoyaltyPointsHeld", "Order", order.Id.ToString(),
+                $"{applied} points held (hold {holdId})", ct);
+            return applied;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Loyalty hold failed for order {OrderId}; falling back to normal payment", order.Id);
+            return 0m;
+        }
+    }
+
+    /// <summary>
+    /// Consume the points reserved for a completed order: release the hold, then
+    /// charge off the amount. (iiko holds reduce the available balance, so charging
+    /// off while the hold is active would debit the customer twice — release first.)
+    /// Failures set LoyaltyPendingAction for background retry; never throws.
+    /// </summary>
+    public async Task FinalizeSpendForOrderAsync(Order order, CancellationToken ct = default)
+    {
+        if (!_options.Enabled) return;
+        if (order.LoyaltyPointsSpent is not > 0) return;
+        if (order.LoyaltyHoldTransactionId == null &&
+            order.LoyaltyPendingAction != LoyaltyPendingAction.ChargeOff) return; // already finalized
+
+        var user = order.CustomerUser
+            ?? await _db.CustomerUsers.FirstOrDefaultAsync(u => u.Id == order.CustomerUserId, ct);
+        if (user?.IikoCustomerId == null || user.IikoWalletId == null) return;
+
+        if (order.LoyaltyHoldTransactionId != null)
+        {
+            try
+            {
+                await _iiko.CancelHoldAsync(order.LoyaltyHoldTransactionId.Value, ct);
+                order.LoyaltyHoldTransactionId = null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to release hold for completed order {OrderId}; will retry", order.Id);
+                order.LoyaltyPendingAction = LoyaltyPendingAction.FinalizeSpend;
+                await _db.SaveChangesAsync(ct);
+                return;
+            }
+        }
+
+        try
+        {
+            await _iiko.ChargeoffAsync(
+                user.IikoCustomerId.Value, user.IikoWalletId.Value,
+                order.LoyaltyPointsSpent.Value, $"Altyncup order {order.Id}", ct);
+            order.LoyaltyPendingAction = LoyaltyPendingAction.None;
+            await _db.SaveChangesAsync(ct);
+            await _audit.LogAsync("LoyaltyPointsSpent", "Order", order.Id.ToString(),
+                $"{order.LoyaltyPointsSpent} points charged off", ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Chargeoff failed for completed order {OrderId}; will retry", order.Id);
+            order.LoyaltyPendingAction = LoyaltyPendingAction.ChargeOff;
+            await _db.SaveChangesAsync(ct);
+        }
+    }
+
+    /// <summary>
+    /// Release the hold of a declined/cancelled order — the customer keeps their points.
+    /// Failures set LoyaltyPendingAction.Release for background retry; never throws.
+    /// </summary>
+    public async Task ReleaseHoldForOrderAsync(Order order, CancellationToken ct = default)
+    {
+        if (!_options.Enabled) return;
+        if (order.LoyaltyHoldTransactionId == null) return;
+
+        try
+        {
+            await _iiko.CancelHoldAsync(order.LoyaltyHoldTransactionId.Value, ct);
+            order.LoyaltyHoldTransactionId = null;
+            order.LoyaltyPointsSpent = null; // nothing was spent
+            order.LoyaltyPendingAction = LoyaltyPendingAction.None;
+            await _db.SaveChangesAsync(ct);
+            await _audit.LogAsync("LoyaltyHoldReleased", "Order", order.Id.ToString(), null, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to release hold for declined order {OrderId}; will retry", order.Id);
+            order.LoyaltyPendingAction = LoyaltyPendingAction.Release;
+            await _db.SaveChangesAsync(ct);
+        }
+    }
+
+    /// <summary>Background retry of wallet operations that failed while iiko was down.</summary>
+    public async Task RetryPendingAsync(CancellationToken ct = default)
+    {
+        if (!_options.Enabled) return;
+
+        var pending = await _db.Orders
+            .Include(o => o.CustomerUser)
+            .Where(o => o.LoyaltyPendingAction != LoyaltyPendingAction.None)
+            .OrderBy(o => o.UpdatedAt)
+            .Take(50)
+            .ToListAsync(ct);
+
+        foreach (var order in pending)
+        {
+            switch (order.LoyaltyPendingAction)
+            {
+                case LoyaltyPendingAction.FinalizeSpend:
+                case LoyaltyPendingAction.ChargeOff:
+                    await FinalizeSpendForOrderAsync(order, ct);
+                    break;
+                case LoyaltyPendingAction.Release:
+                    await ReleaseHoldForOrderAsync(order, ct);
+                    break;
+            }
         }
     }
 

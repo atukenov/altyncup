@@ -160,6 +160,18 @@
           {{ o.total | currency2 }}
         </span>
       </div>
+      @if (o.loyaltyPointsSpent) {
+        <div style="display:flex;justify-content:space-between;margin-top:6px">
+          <span style="font-size:13px;color:#d97706">✨ {{ 'order.bonusSpent' | t }}</span>
+          <span style="font-size:13px;color:#d97706;font-weight:600">-{{ o.loyaltyPointsSpent | currency2 }}</span>
+        </div>
+      }
+      @if (o.loyaltyPointsEarned) {
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-size:13px;color:#0d9488">✨ {{ 'order.bonusEarned' | t }}</span>
+          <span style="font-size:13px;color:#0d9488;font-weight:600">+{{ o.loyaltyPointsEarned | currency2 }}</span>
+        </div>
+      }
     </div>
 
     <!-- ── Payment card ──────────────────────────────────────────────────────── -->
@@ -270,6 +282,18 @@
               <span class="text-stone-800">{{ 'order.total' | t }}</span>
               <span class="text-amber-600">{{ r.total | currency2 }}</span>
             </div>
+            @if (r.loyaltyPointsSpent) {
+              <div class="flex justify-between text-sm">
+                <span class="text-amber-600">✨ {{ 'order.bonusSpent' | t }}</span>
+                <span class="text-amber-600 font-semibold">-{{ r.loyaltyPointsSpent | currency2 }}</span>
+              </div>
+            }
+            @if (r.loyaltyPointsEarned) {
+              <div class="flex justify-between text-sm">
+                <span class="text-teal-600">✨ {{ 'order.bonusEarned' | t }}</span>
+                <span class="text-teal-600 font-semibold">+{{ r.loyaltyPointsEarned | currency2 }}</span>
+              </div>
+            }
           </div>
           <div class="border-t border-dashed border-stone-200"></div>
           <div class="space-y-1.5">

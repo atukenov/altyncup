@@ -80,7 +80,9 @@ public class CustomerService
                         o.Status,
                         o.Total,
                         o.Location.Name,
-                        o.Items.Count))
+                        o.Items.Count,
+                        o.LoyaltyPointsEarned,
+                        o.LoyaltyPointsSpent))
                     .ToList()))
             .FirstOrDefaultAsync(ct);
 }

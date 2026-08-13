@@ -69,7 +69,8 @@ public class YurtWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
             var toRemove = services
                 .Where(s =>
                     s.ImplementationType?.FullName?.EndsWith("OrderArchivalService") == true ||
-                    s.ImplementationType?.FullName?.EndsWith("OrderTimerService")    == true)
+                    s.ImplementationType?.FullName?.EndsWith("OrderTimerService")    == true ||
+                    s.ImplementationType?.FullName?.EndsWith("LoyaltyRetryService")  == true)
                 .ToList();
             foreach (var d in toRemove) services.Remove(d);
         });
