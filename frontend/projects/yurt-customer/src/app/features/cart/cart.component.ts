@@ -1,11 +1,11 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService, AuthStateService } from 'shared-api';
 import { CartItem, LoyaltyBalance, PaymentMethod } from 'shared-models';
 import { CartService } from './cart.service';
-import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
+import { ToastService, Currency2Pipe } from 'shared-ui';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { LocationService } from '../../core/location.service';
 import { LangService } from '../../core/lang.service';
@@ -13,7 +13,7 @@ import { LangService } from '../../core/lang.service';
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, Currency2Pipe, TranslatePipe],
+  imports: [CommonModule, FormsModule, Currency2Pipe, TranslatePipe],
   templateUrl: './cart.component.html',
   styleUrl: './cart.component.css',
 })
@@ -47,6 +47,23 @@ export class CartComponent implements OnInit {
   });
   readonly payableTotal = computed(() => this.cart.total() - this.appliedBonus());
   readonly fullyCoveredByBonus = computed(() => this.appliedBonus() >= this.cart.total());
+
+  // Pop animation on the total whenever it changes (bonus toggle, promo, qty change)
+  totalPulse = signal(false);
+  private lastPayableTotal = this.payableTotal();
+
+  constructor() {
+    effect(() => {
+      const value = this.payableTotal();
+      if (value === this.lastPayableTotal) return;
+      this.lastPayableTotal = value;
+      this.totalPulse.set(false);
+      queueMicrotask(() => {
+        this.totalPulse.set(true);
+        setTimeout(() => this.totalPulse.set(false), 350);
+      });
+    });
+  }
 
   ngOnInit(): void {
     this.api.getLoyaltyBalance().subscribe({
