@@ -158,8 +158,11 @@ public class IikoApiClient : IIikoApiClient
             "api/1/loyalty/iiko/customer/program/add",
             new AddToProgramRequest(iikoCustomerId, _options.ProgramId, _options.OrganizationId), ct);
 
-        return resp.WalletId
-            ?? resp.UserWalletId
+        // userWalletId is the customer's own balance-holding wallet (matches the ids
+        // returned by customer/info's walletBalances); walletId is only the shared
+        // program-level wallet definition and never holds an individual balance.
+        return resp.UserWalletId
+            ?? resp.WalletId
             ?? throw new IikoApiException("iiko program/add returned no wallet id.");
     }
 

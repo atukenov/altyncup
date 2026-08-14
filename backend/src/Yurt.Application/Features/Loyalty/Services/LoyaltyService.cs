@@ -60,6 +60,8 @@ public class LoyaltyService
             if (info == null)
                 return new LoyaltyBalanceDto(true, true, false, null, _options.EarnPercent);
 
+            await SelfHealWalletIdAsync(user, info, ct);
+
             var balance = info.WalletBalances
                 .Where(w => user.IikoWalletId == null || w.Id == user.IikoWalletId)
                 .Sum(w => w.Balance);
@@ -94,6 +96,9 @@ public class LoyaltyService
             if (user == null) return;
 
             await EnsureLinkedAsync(user, ct);
+
+            var info = await _iiko.GetCustomerByPhoneAsync(user.MobileNumber, ct);
+            if (info != null) await SelfHealWalletIdAsync(user, info, ct);
 
             await _iiko.TopupAsync(
                 user.IikoCustomerId!.Value,
@@ -136,6 +141,8 @@ public class LoyaltyService
             await EnsureLinkedAsync(user, ct);
 
             var info = await _iiko.GetCustomerByPhoneAsync(user.MobileNumber, ct);
+            if (info != null) await SelfHealWalletIdAsync(user, info, ct);
+
             var balance = info?.WalletBalances
                 .Where(w => user.IikoWalletId == null || w.Id == user.IikoWalletId)
                 .Sum(w => w.Balance) ?? 0m;
@@ -269,6 +276,23 @@ public class LoyaltyService
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// Repairs a cached wallet id that doesn't match any of the customer's real iiko
+    /// wallets — e.g. records linked before a fix that made us prefer iiko's per-customer
+    /// userWalletId over the shared, non-balance-holding program walletId returned by
+    /// program/add. Re-enrolling is idempotent in iiko and recovers the correct id.
+    /// </summary>
+    private async Task SelfHealWalletIdAsync(CustomerUser user, IikoCustomerInfo info, CancellationToken ct)
+    {
+        if (info.WalletBalances.Count == 0) return;
+        if (info.WalletBalances.Any(w => w.Id == user.IikoWalletId)) return;
+
+        _logger.LogInformation(
+            "Repairing stale iiko wallet id for customer {CustomerId}", user.Id);
+        user.IikoWalletId = await _iiko.AddCustomerToProgramAsync(user.IikoCustomerId!.Value, ct);
+        await _db.SaveChangesAsync(ct);
     }
 
     /// <summary>Create/enroll the customer in iiko on first use and persist the link ids.</summary>

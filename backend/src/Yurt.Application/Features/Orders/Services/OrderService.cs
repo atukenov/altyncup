@@ -142,6 +142,12 @@ public class OrderService
 
         order.Total = order.Subtotal - order.DiscountAmount;
 
+        // A payment method is required unless the customer declared enough bonus points
+        // to cover the full total — otherwise there'd be no way to settle the remainder.
+        if (dto.PaymentMethod == null && (dto.LoyaltyPointsToSpend ?? 0m) < order.Total)
+            return Result<OrderDto>.Failure(
+                "Select a payment method, or apply enough bonus points to cover the full total.", 400);
+
         _db.Orders.Add(order);
         await _db.SaveChangesAsync(ct);
 
@@ -152,6 +158,16 @@ public class OrderService
         // Reserve loyalty points as (partial) payment — fails open to normal payment
         if (dto.LoyaltyPointsToSpend is > 0)
             await _loyalty.TryHoldForOrderAsync(order, dto.LoyaltyPointsToSpend.Value, ct);
+
+        // Safety net: the customer intended full bonus coverage, but the amount actually
+        // applied (clamped to the live iiko balance) fell short of the total — fall back
+        // to a payment method so the order isn't left without one; the remainder is
+        // settled at the counter like any other partial-bonus order.
+        if (order.PaymentMethod == null && (order.LoyaltyPointsSpent ?? 0m) < order.Total)
+        {
+            order.PaymentMethod = PaymentMethod.Cash;
+            await _db.SaveChangesAsync(ct);
+        }
 
         await _hub.NotifyOrderCreatedAsync(order, ct);
 

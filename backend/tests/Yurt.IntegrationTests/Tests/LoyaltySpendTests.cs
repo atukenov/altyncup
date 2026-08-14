@@ -37,7 +37,8 @@ public class LoyaltySpendTests(YurtWebAppFactory factory)
             }));
 
     private static async Task<(OrderWithLoyalty Order, string CustomerToken)> PlaceOrderAsync(
-        WebApplicationFactory<Program> appFactory, HttpClient client, string phone, decimal? pointsToSpend)
+        WebApplicationFactory<Program> appFactory, HttpClient client, string phone, decimal? pointsToSpend,
+        string? paymentMethod = "Cash")
     {
         var (customerToken, _) = await ApiHelpers.CreateCustomerAsync(client, phone);
         ApiHelpers.Authorize(client, customerToken);
@@ -46,7 +47,7 @@ public class LoyaltySpendTests(YurtWebAppFactory factory)
         var resp = await client.PostAsJsonAsync("/api/v1/orders", new
         {
             locationId          = LocationId,
-            paymentMethod       = "Cash",
+            paymentMethod,
             loyaltyPointsToSpend = pointsToSpend,
             items               = new[] { new { menuItemId = itemId, quantity = 2 } }
         });
@@ -125,6 +126,79 @@ public class LoyaltySpendTests(YurtWebAppFactory factory)
 
         Assert.Equal(order.Total, Assert.Single(fake.ChargeoffCalls).Sum);
         Assert.Empty(fake.TopupCalls); // earn base is zero — no points on points
+    }
+
+    [Fact]
+    public async Task FullCoverWithNoPaymentMethod_PlacesOrderWithoutRequiringABank()
+    {
+        var fake = new FakeIikoApiClient();
+        fake.SetBalance("+77001000910", 1000m);
+        using var f = EnabledFactory(fake);
+        var client = f.CreateClient();
+
+        // paymentMethod omitted entirely — matches the customer app when bonuses fully
+        // cover the total and the bank-selection step is skipped
+        var (order, _) = await PlaceOrderAsync(f, client, "+77001000910", 1000m, paymentMethod: null);
+
+        Assert.Equal(order.Total, order.LoyaltyPointsSpent);
+        Assert.Equal("Paid", order.PaymentStatus);
+    }
+
+    [Fact]
+    public async Task NoPaymentMethodAndInsufficientPoints_Returns400()
+    {
+        var fake = new FakeIikoApiClient();
+        fake.SetBalance("+77001000911", 1m); // far short of the order total
+        using var f = EnabledFactory(fake);
+        var client = f.CreateClient();
+
+        var (customerToken, _) = await ApiHelpers.CreateCustomerAsync(client, "+77001000911");
+        ApiHelpers.Authorize(client, customerToken);
+        var (itemId, _, _) = await ApiHelpers.GetMenuItemAsync(f.Services, "Cappuccino");
+
+        var resp = await client.PostAsJsonAsync("/api/v1/orders", new
+        {
+            locationId          = LocationId,
+            paymentMethod       = (string?)null,
+            loyaltyPointsToSpend = 1m,
+            items               = new[] { new { menuItemId = itemId, quantity = 2 } }
+        });
+
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task NoPaymentMethod_BalanceDropsBetweenClientCheckAndHold_FallsBackToCash()
+    {
+        // Client believed 1000 points were available and asked to spend all of it with no
+        // bank selected; by the time the hold runs the real balance is much lower — the
+        // order must not be left without a settled payment method for the remainder.
+        var fake = new FakeIikoApiClient();
+        fake.SetBalance("+77001000912", 1m);
+        using var f = EnabledFactory(fake);
+        var client = f.CreateClient();
+
+        var (customerToken, _) = await ApiHelpers.CreateCustomerAsync(client, "+77001000912");
+        ApiHelpers.Authorize(client, customerToken);
+        var (itemId, _, _) = await ApiHelpers.GetMenuItemAsync(f.Services, "Cappuccino");
+
+        var resp = await client.PostAsJsonAsync("/api/v1/orders", new
+        {
+            locationId          = LocationId,
+            paymentMethod       = (string?)null,
+            loyaltyPointsToSpend = 1000m, // client's stale belief, exceeds real balance
+            items               = new[] { new { menuItemId = itemId, quantity = 2 } }
+        });
+        resp.EnsureSuccessStatusCode(); // guard passed (declared amount covers total); order proceeds
+
+        var order = await resp.Content.ReadFromJsonAsync<OrderWithLoyalty>(ApiHelpers.JsonOpts);
+        Assert.Equal(1m, order!.LoyaltyPointsSpent); // clamped to the real balance
+        Assert.NotEqual(order.Total, order.LoyaltyPointsSpent);
+
+        await using var scope = f.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var dbOrder = await db.Orders.FirstAsync(o => o.Id == order.Id);
+        Assert.Equal(Yurt.Domain.Enums.PaymentMethod.Cash, dbOrder.PaymentMethod);
     }
 
     [Fact]

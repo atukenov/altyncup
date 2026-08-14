@@ -46,6 +46,7 @@ export class CartComponent implements OnInit {
     return Math.min(Math.max(raw, 0), this.maxBonus());
   });
   readonly payableTotal = computed(() => this.cart.total() - this.appliedBonus());
+  readonly fullyCoveredByBonus = computed(() => this.appliedBonus() >= this.cart.total());
 
   ngOnInit(): void {
     this.api.getLoyaltyBalance().subscribe({
@@ -151,7 +152,7 @@ export class CartComponent implements OnInit {
     }
 
     const paymentMethod = this.selectedPaymentMethod();
-    if (!paymentMethod) {
+    if (!paymentMethod && !this.fullyCoveredByBonus()) {
       this.toast.warning('Select a payment method to continue.');
       return;
     }
@@ -174,7 +175,10 @@ export class CartComponent implements OnInit {
 
     const loyaltyPointsToSpend = this.appliedBonus() > 0 ? this.appliedBonus() : undefined;
 
-    this.api.createOrder({ locationId, items, paymentMethod, discountCode, loyaltyPointsToSpend }, this.checkoutKey).subscribe({
+    this.api.createOrder(
+      { locationId, items, paymentMethod: paymentMethod ?? undefined, discountCode, loyaltyPointsToSpend },
+      this.checkoutKey,
+    ).subscribe({
       next: (order) => {
         this.checkoutKey = null;
         this.cart.clear();

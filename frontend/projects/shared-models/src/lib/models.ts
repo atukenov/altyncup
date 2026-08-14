@@ -152,7 +152,7 @@ export interface OrderItemInput {
 export interface CreateOrderRequest {
   locationId: string;
   items: OrderItemInput[];
-  paymentMethod: PaymentMethod;
+  paymentMethod?: PaymentMethod;
   discountCode?: string;
   loyaltyPointsToSpend?: number;
 }

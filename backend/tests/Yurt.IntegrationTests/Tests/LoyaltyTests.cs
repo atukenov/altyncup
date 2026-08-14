@@ -168,6 +168,52 @@ public class LoyaltyTests(YurtWebAppFactory factory)
     }
 
     [Fact]
+    public async Task StaleCachedWalletId_SelfHealsOnNextBalanceCheck()
+    {
+        // Simulates a customer linked before the wallet-id priority fix: their cached
+        // IikoWalletId is some other guid that doesn't match any real wallet iiko
+        // returns for them — this is exactly the "bonuses not showing" bug report,
+        // since the balance filter matches nothing and silently sums to zero.
+        var fake = new FakeIikoApiClient();
+        var phone = "+77001000809";
+        fake.SetBalance(phone, 42m);
+
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client = enabledFactory.CreateClient();
+        var (token, customerId) = await ApiHelpers.CreateCustomerAsync(client, phone);
+
+        var staleWalletId = Guid.NewGuid();
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var user = await db.CustomerUsers.FirstAsync(u => u.Id == customerId);
+            user.IikoCustomerId = FakeIikoApiClient.CustomerId;
+            user.IikoWalletId = staleWalletId; // wrong on purpose
+            await db.SaveChangesAsync();
+        }
+
+        ApiHelpers.Authorize(client, token);
+        var balance = await client.GetFromJsonAsync<LoyaltyBalanceResult>(
+            "/api/v1/loyalty/me", ApiHelpers.JsonOpts);
+
+        // Self-healed: real balance is now visible, not masked by the stale id
+        Assert.NotNull(balance);
+        Assert.Equal(42m, balance.Balance);
+
+        await using var verifyScope = enabledFactory.Services.CreateAsyncScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var healed = await verifyDb.CustomerUsers.FirstAsync(u => u.Id == customerId);
+        Assert.Equal(FakeIikoApiClient.WalletId, healed.IikoWalletId);
+        Assert.NotEqual(staleWalletId, healed.IikoWalletId);
+    }
+
+    [Fact]
     public async Task LoyaltyEnabled_IikoDown_OrderCompletionStillSucceeds()
     {
         using var brokenFactory = factory.WithWebHostBuilder(builder =>
