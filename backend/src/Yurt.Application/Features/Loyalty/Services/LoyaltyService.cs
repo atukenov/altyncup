@@ -51,10 +51,16 @@ public class LoyaltyService
 
         try
         {
-            if (user.IikoCustomerId == null && !linkIfMissing)
-                return new LoyaltyBalanceDto(true, true, false, null, _options.EarnPercent);
+            if (user.IikoCustomerId == null)
+            {
+                if (linkIfMissing)
+                    await EnsureLinkedAsync(user, ct);
+                else
+                    await SelfHealLinkAsync(user, ct);
+            }
 
-            await EnsureLinkedAsync(user, ct);
+            if (user.IikoCustomerId == null)
+                return new LoyaltyBalanceDto(true, true, false, null, _options.EarnPercent);
 
             var info = await _iiko.GetCustomerByPhoneAsync(user.MobileNumber, ct);
             if (info == null)
@@ -276,6 +282,29 @@ public class LoyaltyService
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// Admin-view self-heal for a customer with no cached iiko link: adopts an iiko
+    /// customer that already exists for their phone number (enrolled through another
+    /// channel, or linked before a data issue wiped the local ids) instead of leaving
+    /// the link broken until they next place an order. Never creates a new iiko
+    /// customer — viewing a profile must not have that side effect.
+    /// </summary>
+    private async Task SelfHealLinkAsync(CustomerUser user, CancellationToken ct)
+    {
+        var existing = await _iiko.GetCustomerByPhoneAsync(user.MobileNumber, ct);
+        if (existing == null) return; // not registered in iiko — nothing to adopt
+
+        user.IikoCustomerId = existing.Id;
+        user.IikoWalletId = await _iiko.AddCustomerToProgramAsync(existing.Id, ct);
+        await _db.SaveChangesAsync(ct);
+
+        _logger.LogInformation(
+            "Self-healed iiko link for customer {CustomerId} -> iiko customer {IikoCustomerId}",
+            user.Id, existing.Id);
+        await _audit.LogAsync("LoyaltySelfHealLinked", "CustomerUser", user.Id.ToString(),
+            $"Linked to existing iiko customer {existing.Id}", ct);
     }
 
     /// <summary>

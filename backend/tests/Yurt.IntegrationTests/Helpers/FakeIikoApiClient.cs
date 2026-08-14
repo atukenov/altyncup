@@ -13,6 +13,7 @@ public class FakeIikoApiClient : IIikoApiClient
     public static readonly Guid WalletId   = Guid.Parse("bbbbbbbb-1111-2222-3333-444444444444");
 
     private readonly Dictionary<string, decimal> _balancesByPhone = [];
+    private readonly HashSet<string> _knownPhones = [];
     private readonly Dictionary<Guid, decimal> _activeHolds = [];
     private string? _lastPhone;
 
@@ -30,11 +31,15 @@ public class FakeIikoApiClient : IIikoApiClient
     public void SetBalance(string phone, decimal balance)
     {
         _balancesByPhone[phone] = balance;
+        _knownPhones.Add(phone);
         _lastPhone = phone;
     }
 
     public Task<IikoCustomerInfo?> GetCustomerByPhoneAsync(string phone, CancellationToken ct = default)
     {
+        // Mirrors real iiko: unregistered phones report "not found", not a zero-balance customer.
+        if (!_knownPhones.Contains(phone)) return Task.FromResult<IikoCustomerInfo?>(null);
+
         _balancesByPhone.TryGetValue(phone, out var balance);
         var available = balance - _activeHolds.Values.Sum();
         return Task.FromResult<IikoCustomerInfo?>(new IikoCustomerInfo(
@@ -46,6 +51,7 @@ public class FakeIikoApiClient : IIikoApiClient
         string phone, string? name, string? surname, CancellationToken ct = default)
     {
         _lastPhone = phone;
+        _knownPhones.Add(phone);
         _balancesByPhone.TryAdd(phone, 0);
         return Task.FromResult(CustomerId);
     }

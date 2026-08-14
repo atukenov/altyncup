@@ -127,6 +127,44 @@ public class LoyaltyTests(YurtWebAppFactory factory)
     }
 
     [Fact]
+    public async Task AdminLoyaltyEndpoint_UnlinkedCustomerAlreadyInIiko_SelfHealsLinkAndReturnsBalance()
+    {
+        // Simulates a customer enrolled in iiko's loyalty program through another channel
+        // (or whose local link ids were lost) — iiko already knows their phone number, our
+        // CustomerUser row just doesn't have IikoCustomerId/IikoWalletId recorded yet.
+        var fake = new FakeIikoApiClient();
+        const string phone = "+77001000808";
+        fake.SetBalance(phone, 42m);
+
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client = enabledFactory.CreateClient();
+        var (_, customerId) = await ApiHelpers.CreateCustomerAsync(client, phone);
+
+        var adminToken = await ApiHelpers.CreateAdminTokenAsync(enabledFactory.Services, client);
+        ApiHelpers.Authorize(client, adminToken);
+
+        var balance = await client.GetFromJsonAsync<LoyaltyBalanceResult>(
+            $"/api/v1/admin/customers/{customerId}/loyalty", ApiHelpers.JsonOpts);
+
+        // Viewing the customer's admin page discovers and adopts the existing iiko link
+        Assert.NotNull(balance);
+        Assert.True(balance.Linked);
+        Assert.Equal(42m, balance.Balance);
+
+        await using var scope = enabledFactory.Services.CreateAsyncScope();
+        var db   = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var user = await db.CustomerUsers.FirstAsync(u => u.Id == customerId);
+        Assert.Equal(FakeIikoApiClient.CustomerId, user.IikoCustomerId);
+        Assert.Equal(FakeIikoApiClient.WalletId, user.IikoWalletId);
+    }
+
+    [Fact]
     public async Task AdminLoyaltyEndpoint_LinkedCustomer_ReturnsBalance()
     {
         var fake = new FakeIikoApiClient();
