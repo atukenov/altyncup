@@ -55,3 +55,13 @@ export class Currency2Pipe implements PipeTransform {
     return `₸${formatted}`;
   }
 }
+
+/** Like currency2, but keeps 2 decimal places — for loyalty/bonus balances, which iiko tracks fractionally. */
+@Pipe({ name: 'currencyDecimal', standalone: true })
+export class CurrencyDecimalPipe implements PipeTransform {
+  transform(value: number): string {
+    const [whole, decimals] = value.toFixed(2).split('.');
+    const formatted = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return `₸${formatted}.${decimals}`;
+  }
+}
