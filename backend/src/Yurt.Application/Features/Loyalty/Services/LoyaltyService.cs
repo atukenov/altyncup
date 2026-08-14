@@ -297,7 +297,7 @@ public class LoyaltyService
         if (existing == null) return; // not registered in iiko — nothing to adopt
 
         user.IikoCustomerId = existing.Id;
-        user.IikoWalletId = await _iiko.AddCustomerToProgramAsync(existing.Id, ct);
+        user.IikoWalletId = await ResolveWalletIdAsync(existing.Id, existing, ct);
         await _db.SaveChangesAsync(ct);
 
         _logger.LogInformation(
@@ -311,7 +311,7 @@ public class LoyaltyService
     /// Repairs a cached wallet id that doesn't match any of the customer's real iiko
     /// wallets — e.g. records linked before a fix that made us prefer iiko's per-customer
     /// userWalletId over the shared, non-balance-holding program walletId returned by
-    /// program/add. Re-enrolling is idempotent in iiko and recovers the correct id.
+    /// program/add.
     /// </summary>
     private async Task SelfHealWalletIdAsync(CustomerUser user, IikoCustomerInfo info, CancellationToken ct)
     {
@@ -320,9 +320,24 @@ public class LoyaltyService
 
         _logger.LogInformation(
             "Repairing stale iiko wallet id for customer {CustomerId}", user.Id);
-        user.IikoWalletId = await _iiko.AddCustomerToProgramAsync(user.IikoCustomerId!.Value, ct);
+        user.IikoWalletId = await ResolveWalletIdAsync(user.IikoCustomerId!.Value, info, ct);
         await _db.SaveChangesAsync(ct);
     }
+
+    /// <summary>
+    /// Picks the wallet id that actually holds the customer's balance. customer/info's
+    /// walletBalances is authoritative when unambiguous (exactly one wallet) — trust it
+    /// directly rather than re-querying program/add, whose response for an
+    /// already-enrolled customer isn't reliably the same shape as for a fresh enrollment:
+    /// it can echo back the shared, non-balance-holding program walletId instead of the
+    /// customer's own userWalletId, which silently zeroes out the balance lookup. Only
+    /// fall back to program/add when there's no wallet yet (needs real enrollment) or
+    /// genuine ambiguity between multiple wallets.
+    /// </summary>
+    private async Task<Guid> ResolveWalletIdAsync(Guid iikoCustomerId, IikoCustomerInfo info, CancellationToken ct)
+        => info.WalletBalances.Count == 1
+            ? info.WalletBalances[0].Id
+            : await _iiko.AddCustomerToProgramAsync(iikoCustomerId, ct);
 
     /// <summary>Create/enroll the customer in iiko on first use and persist the link ids.</summary>
     private async Task EnsureLinkedAsync(CustomerUser user, CancellationToken ct)

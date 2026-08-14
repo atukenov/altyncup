@@ -26,6 +26,10 @@ public class FakeIikoApiClient : IIikoApiClient
     public bool FailCancelHold { get; set; }
     public bool FailChargeoff { get; set; }
 
+    // Simulates iiko's program/add returning the shared program walletId instead of the
+    // customer's own balance-holding userWalletId — observed for already-enrolled customers.
+    public Guid? AddToProgramReturnsWrongWalletId { get; set; }
+
     public int ActiveHoldCount => _activeHolds.Count;
 
     public void SetBalance(string phone, decimal balance)
@@ -57,7 +61,7 @@ public class FakeIikoApiClient : IIikoApiClient
     }
 
     public Task<Guid> AddCustomerToProgramAsync(Guid iikoCustomerId, CancellationToken ct = default)
-        => Task.FromResult(WalletId);
+        => Task.FromResult(AddToProgramReturnsWrongWalletId ?? WalletId);
 
     public Task TopupAsync(Guid iikoCustomerId, Guid walletId, decimal sum, string? comment, CancellationToken ct = default)
     {

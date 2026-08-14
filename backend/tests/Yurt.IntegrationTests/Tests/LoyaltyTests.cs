@@ -165,6 +165,60 @@ public class LoyaltyTests(YurtWebAppFactory factory)
     }
 
     [Fact]
+    public async Task StaleCachedWalletId_ProgramAddReturnsWrongId_SelfHealStillResolvesCorrectBalance()
+    {
+        // Reproduces a real bug report: customer/info correctly returns one wallet with a
+        // real balance, but the cached IikoWalletId is stale (e.g. from before the
+        // userWalletId-priority fix). The old self-heal "repaired" this by re-querying
+        // program/add — but for an already-enrolled customer, iiko's program/add response
+        // isn't reliably the same shape as for a fresh enrollment, and can hand back the
+        // shared program walletId instead of the customer's own userWalletId. That
+        // "repair" then points at a wallet that isn't in walletBalances, so every future
+        // balance check still silently sums to zero. Self-heal must trust the unambiguous
+        // single-wallet customer/info response instead of program/add's answer.
+        var fake = new FakeIikoApiClient();
+        const string phone = "+77001000810";
+        fake.SetBalance(phone, 272.5m);
+        var wrongIdFromProgramAdd = Guid.NewGuid();
+        fake.AddToProgramReturnsWrongWalletId = wrongIdFromProgramAdd;
+
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client = enabledFactory.CreateClient();
+        var (_, customerId) = await ApiHelpers.CreateCustomerAsync(client, phone);
+
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var user = await db.CustomerUsers.FirstAsync(u => u.Id == customerId);
+            user.IikoCustomerId = FakeIikoApiClient.CustomerId;
+            user.IikoWalletId = Guid.NewGuid(); // stale — matches nothing in walletBalances
+            await db.SaveChangesAsync();
+        }
+
+        var adminToken = await ApiHelpers.CreateAdminTokenAsync(enabledFactory.Services, client);
+        ApiHelpers.Authorize(client, adminToken);
+
+        var balance = await client.GetFromJsonAsync<LoyaltyBalanceResult>(
+            $"/api/v1/admin/customers/{customerId}/loyalty", ApiHelpers.JsonOpts);
+
+        Assert.NotNull(balance);
+        Assert.True(balance.Linked);
+        Assert.Equal(272.5m, balance.Balance);
+
+        await using var scopeAfter = enabledFactory.Services.CreateAsyncScope();
+        var dbAfter = scopeAfter.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var userAfter = await dbAfter.CustomerUsers.FirstAsync(u => u.Id == customerId);
+        Assert.Equal(FakeIikoApiClient.WalletId, userAfter.IikoWalletId);
+        Assert.NotEqual(wrongIdFromProgramAdd, userAfter.IikoWalletId);
+    }
+
+    [Fact]
     public async Task AdminLoyaltyEndpoint_LinkedCustomer_ReturnsBalance()
     {
         var fake = new FakeIikoApiClient();
