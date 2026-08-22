@@ -103,6 +103,22 @@ public class AuthController : ApiControllerBase
         return ToResult(result);
     }
 
+    /// <summary>Change current customer's mobile number.</summary>
+    [HttpPut("me/phone")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> ChangeMobileNumber(
+        [FromBody] ChangeMobileNumberDto dto, CancellationToken ct)
+    {
+        var validator = new ChangeMobileNumberValidator();
+        var validation = await validator.ValidateAsync(dto, ct);
+        if (!validation.IsValid)
+            return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+
+        var userId = _currentUser.UserId!.Value;
+        var result = await _authService.ChangeMobileNumberAsync(userId, dto, ct);
+        return ToResult(result);
+    }
+
     /// <summary>Change customer's 4-digit PIN.</summary>
     [HttpPut("pin")]
     [Authorize(Policy = "CustomerOnly")]

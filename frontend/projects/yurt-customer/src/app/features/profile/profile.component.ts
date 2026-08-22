@@ -43,6 +43,12 @@ export class ProfileComponent implements OnInit {
   newPin = '';
   pinLoading = signal(false);
 
+  // Change phone number
+  showPhoneForm = signal(false);
+  phoneFormatted = '';
+  phoneLoading = signal(false);
+  phoneError = signal('');
+
   // Delete account
   showDeleteConfirm = signal(false);
   deleteLoading = signal(false);
@@ -91,6 +97,58 @@ export class ProfileComponent implements OnInit {
       error: (err) => {
         this.pinLoading.set(false);
         this.toast.error(err.status === 401 ? 'Current PIN is incorrect.' : 'Failed to change PIN.');
+      },
+    });
+  }
+
+  get phoneDigits(): string {
+    return this.phoneFormatted.replace(/\D/g, '').slice(-10);
+  }
+
+  private formatPhone(raw: string): string {
+    let digits = raw.replace(/\D/g, '');
+    if (raw.trimStart().startsWith('+')) {
+      digits = digits.slice(1);
+    } else if (digits.length > 10) {
+      digits = digits.slice(1);
+    }
+    const s = digits.slice(0, 10);
+    if (!s.length) return '';
+    if (s.length <= 3) return `+7 (${s}`;
+    if (s.length <= 6) return `+7 (${s.slice(0, 3)}) ${s.slice(3)}`;
+    return `+7 (${s.slice(0, 3)}) ${s.slice(3, 6)}-${s.slice(6)}`;
+  }
+
+  onPhoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const formatted = this.formatPhone(input.value);
+    this.phoneFormatted = formatted;
+    input.value = formatted;
+    this.phoneError.set('');
+  }
+
+  submitPhoneChange(): void {
+    this.phoneError.set('');
+    if (!/^\d{10}$/.test(this.phoneDigits)) {
+      this.phoneError.set(this.langService.t('profile.invalidPhone'));
+      return;
+    }
+    this.phoneLoading.set(true);
+    this.api.changeMobileNumber('+7' + this.phoneDigits).subscribe({
+      next: (p) => {
+        this.profile.set(p);
+        this.showPhoneForm.set(false);
+        this.phoneFormatted = '';
+        this.phoneLoading.set(false);
+        this.toast.success(this.langService.t('profile.phoneChanged'));
+      },
+      error: (err) => {
+        this.phoneLoading.set(false);
+        if (err.status === 409) {
+          this.phoneError.set(this.langService.t('profile.phoneInUse'));
+        } else {
+          this.toast.error(this.langService.t('profile.phoneChangeFailed'));
+        }
       },
     });
   }

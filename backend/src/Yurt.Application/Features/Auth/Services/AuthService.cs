@@ -236,6 +236,28 @@ public class AuthService
             new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt));
     }
 
+    public async Task<Result<CustomerProfileDto>> ChangeMobileNumberAsync(
+        Guid userId, ChangeMobileNumberDto dto, CancellationToken ct = default)
+    {
+        var user = await _db.CustomerUsers.FindAsync([userId], ct);
+        if (user == null)
+            return Result<CustomerProfileDto>.NotFound("User not found.");
+
+        var normalizedMobile = NormalizeMobile(dto.MobileNumber);
+
+        var exists = await _db.CustomerUsers
+            .AnyAsync(u => u.MobileNumber == normalizedMobile && u.Id != userId, ct);
+        if (exists)
+            return Result<CustomerProfileDto>.Failure("Mobile number already in use.", 409);
+
+        user.MobileNumber = normalizedMobile;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        return Result<CustomerProfileDto>.Success(
+            new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt));
+    }
+
     public async Task<Result<bool>> ChangeAdminPasswordAsync(
         Guid adminId, ChangeAdminPasswordDto dto, CancellationToken ct = default)
     {

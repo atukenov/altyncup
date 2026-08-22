@@ -74,6 +74,10 @@ export class YurtApiService {
     return this.http.put<CustomerProfile>(`${this.api}/auth/me`, data);
   }
 
+  changeMobileNumber(mobileNumber: string): Observable<CustomerProfile> {
+    return this.http.put<CustomerProfile>(`${this.api}/auth/me/phone`, { mobileNumber });
+  }
+
   refreshToken(refreshToken: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.api}/auth/refresh`, { refreshToken });
   }

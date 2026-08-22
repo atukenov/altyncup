@@ -33,6 +33,17 @@ public class CustomerLoginValidator : AbstractValidator<CustomerLoginDto>
     }
 }
 
+public class ChangeMobileNumberValidator : AbstractValidator<ChangeMobileNumberDto>
+{
+    public ChangeMobileNumberValidator()
+    {
+        RuleFor(x => x.MobileNumber)
+            .NotEmpty()
+            .Matches(@"^\+?[1-9]\d{6,14}$")
+            .WithMessage("Invalid mobile number format.");
+    }
+}
+
 public class AdminLoginValidator : AbstractValidator<AdminLoginDto>
 {
     public AdminLoginValidator()
