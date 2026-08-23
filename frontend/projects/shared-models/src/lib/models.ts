@@ -70,6 +70,7 @@ export interface CustomerProfile {
   firstName: string;
   lastName: string;
   createdAt: string;
+  dateOfBirth?: string | null;
 }
 
 // ── Location ──────────────────────────────────────────────────────────────────

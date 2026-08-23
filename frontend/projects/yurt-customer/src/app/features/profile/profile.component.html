@@ -19,6 +19,11 @@
           <p style="font-size:12.5px;font-weight:600;color:rgba(28,25,23,.6);margin-top:3px">
             {{ p.mobileNumber }}{{ p.firstName ? ' · ' : '' }}{{ p.firstName ? (('profile.memberSince' | t) + ' ' + (p.createdAt | date:'MMMM yyyy')) : '' }}
           </p>
+          @if (p.dateOfBirth) {
+            <p style="font-size:12.5px;font-weight:600;color:rgba(28,25,23,.6);margin-top:2px">
+              🎂 {{ p.dateOfBirth | date:'d MMMM y' }}
+            </p>
+          }
         } @else {
           <div style="height:22px;background:rgba(28,25,23,.12);border-radius:6px;width:150px;margin-bottom:5px"></div>
           <div style="height:14px;background:rgba(28,25,23,.12);border-radius:6px;width:190px"></div>
@@ -52,6 +57,11 @@
           <input type="text" [(ngModel)]="editLastName" style="font-size:16px"
             class="profile-input"/>
         </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label class="field-label">{{ 'profile.birthday' | t }}</label>
+        <input type="date" [(ngModel)]="editDateOfBirth" [max]="maxDateOfBirth" style="font-size:16px"
+          class="profile-input"/>
       </div>
       <div style="display:flex;gap:8px">
         <button (click)="saveProfile()" [disabled]="saving()"

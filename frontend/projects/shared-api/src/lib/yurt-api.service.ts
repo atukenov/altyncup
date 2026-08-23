@@ -70,7 +70,11 @@ export class YurtApiService {
     return this.http.get<CustomerProfile>(`${this.api}/auth/me`);
   }
 
-  updateProfile(data: { firstName: string; lastName: string }): Observable<CustomerProfile> {
+  updateProfile(data: {
+    firstName: string;
+    lastName: string;
+    dateOfBirth?: string | null;
+  }): Observable<CustomerProfile> {
     return this.http.put<CustomerProfile>(`${this.api}/auth/me`, data);
   }
 

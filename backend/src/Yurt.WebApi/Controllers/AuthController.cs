@@ -89,7 +89,7 @@ public class AuthController : ApiControllerBase
         var userId = _currentUser.UserId!.Value;
         var user = await _db.CustomerUsers.FindAsync([userId], ct);
         if (user == null) return NotFound();
-        return Ok(new { user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt });
+        return Ok(new { user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth });
     }
 
     /// <summary>Update current customer's name.</summary>

@@ -14,9 +14,9 @@ public record RefreshRequestDto(string RefreshToken);
 public record CustomerRegisterDto(string MobileNumber, string Pin4, string FirstName = "", string LastName = "");
 public record CustomerLoginDto(string MobileNumber, string Pin4);
 public record AdminLoginDto(string Username, string Password);
-public record UpdateProfileDto(string FirstName, string LastName);
+public record UpdateProfileDto(string FirstName, string LastName, DateOnly? DateOfBirth = null);
 public record ChangeMobileNumberDto(string MobileNumber);
 
-public record CustomerProfileDto(Guid Id, string MobileNumber, string FirstName, string LastName, DateTime CreatedAt);
+public record CustomerProfileDto(Guid Id, string MobileNumber, string FirstName, string LastName, DateTime CreatedAt, DateOnly? DateOfBirth = null);
 public record ChangePinDto(string CurrentPin, string NewPin);
 public record ChangeAdminPasswordDto(string CurrentPassword, string NewPassword);

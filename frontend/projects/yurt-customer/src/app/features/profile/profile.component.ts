@@ -36,6 +36,8 @@ export class ProfileComponent implements OnInit {
   saving = signal(false);
   editFirstName = '';
   editLastName = '';
+  editDateOfBirth = '';
+  readonly maxDateOfBirth = new Date().toISOString().slice(0, 10);
 
   // Change PIN
   showPinForm = signal(false);
@@ -172,6 +174,7 @@ export class ProfileComponent implements OnInit {
     const p = this.profile();
     this.editFirstName = p?.firstName ?? '';
     this.editLastName = p?.lastName ?? '';
+    this.editDateOfBirth = p?.dateOfBirth ?? '';
     this.editMode.set(true);
   }
 
@@ -180,9 +183,17 @@ export class ProfileComponent implements OnInit {
       this.toast.error('First and last name are required.');
       return;
     }
+    if (this.editDateOfBirth && this.editDateOfBirth > this.maxDateOfBirth) {
+      this.toast.error(this.langService.t('profile.invalidBirthday'));
+      return;
+    }
     this.saving.set(true);
     this.api
-      .updateProfile({ firstName: this.editFirstName.trim(), lastName: this.editLastName.trim() })
+      .updateProfile({
+        firstName: this.editFirstName.trim(),
+        lastName: this.editLastName.trim(),
+        dateOfBirth: this.editDateOfBirth || null,
+      })
       .subscribe({
         next: (p) => {
           this.profile.set(p);

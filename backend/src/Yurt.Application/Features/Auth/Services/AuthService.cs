@@ -228,12 +228,16 @@ public class AuthService
         if (user == null)
             return Result<CustomerProfileDto>.NotFound("User not found.");
 
+        if (dto.DateOfBirth.HasValue && dto.DateOfBirth.Value > DateOnly.FromDateTime(DateTime.UtcNow))
+            return Result<CustomerProfileDto>.Failure("Date of birth cannot be in the future.", 422);
+
         user.FirstName = dto.FirstName.Trim();
         user.LastName = dto.LastName.Trim();
+        user.DateOfBirth = dto.DateOfBirth;
         await _db.SaveChangesAsync(ct);
 
         return Result<CustomerProfileDto>.Success(
-            new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt));
+            new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth));
     }
 
     public async Task<Result<CustomerProfileDto>> ChangeMobileNumberAsync(
@@ -255,7 +259,7 @@ public class AuthService
         await _db.SaveChangesAsync(ct);
 
         return Result<CustomerProfileDto>.Success(
-            new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt));
+            new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth));
     }
 
     public async Task<Result<bool>> ChangeAdminPasswordAsync(
