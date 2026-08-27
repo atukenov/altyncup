@@ -25,6 +25,7 @@ public class FakeIikoApiClient : IIikoApiClient
     // Failure injection
     public bool FailCancelHold { get; set; }
     public bool FailChargeoff { get; set; }
+    public bool FailTopup { get; set; }
 
     // Simulates iiko's program/add returning the shared program walletId instead of the
     // customer's own balance-holding userWalletId — observed for already-enrolled customers.
@@ -65,6 +66,7 @@ public class FakeIikoApiClient : IIikoApiClient
 
     public Task TopupAsync(Guid iikoCustomerId, Guid walletId, decimal sum, string? comment, CancellationToken ct = default)
     {
+        if (FailTopup) throw new IikoApiException("topup failed (injected)");
         TopupCalls.Add((iikoCustomerId, walletId, sum, comment));
         if (_lastPhone != null)
             _balancesByPhone[_lastPhone] = _balancesByPhone.GetValueOrDefault(_lastPhone) + sum;

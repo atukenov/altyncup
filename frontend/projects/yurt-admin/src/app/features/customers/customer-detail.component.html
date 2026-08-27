@@ -46,7 +46,17 @@
         </div>
         @if (loyalty(); as l) {
           @if (l.enabled) {
-            <div class="bg-yellow-50 rounded-xl p-4 text-center">
+            <div class="bg-yellow-50 rounded-xl p-4 text-center relative">
+              <button
+                (click)="refreshLoyalty()"
+                [disabled]="loyaltyLoading()"
+                class="absolute top-2 right-2 text-slate-400 hover:text-slate-600 disabled:opacity-50 transition-colors"
+                [attr.aria-label]="'customers.loyaltyRefresh' | t"
+                title="{{ 'customers.loyaltyRefresh' | t }}">
+                <svg class="w-3.5 h-3.5" [class.animate-spin]="loyaltyLoading()" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
               @if (l.available && l.linked && l.balance !== null) {
                 <p class="text-2xl font-bold text-yellow-600">{{ l.balance | currencyDecimal }}</p>
                 <p class="text-xs text-slate-500 mt-0.5">{{ 'customers.loyaltyBalance' | t }}</p>

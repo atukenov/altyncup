@@ -15,5 +15,8 @@ public enum LoyaltyPendingAction
     ChargeOff = 2,
 
     /// <summary>Order was declined/cancelled but the hold could not be released — points are stranded until released.</summary>
-    Release = 3
+    Release = 3,
+
+    /// <summary>Order completed but the earn-credit topup failed — retry the credit.</summary>
+    Credit = 4
 }

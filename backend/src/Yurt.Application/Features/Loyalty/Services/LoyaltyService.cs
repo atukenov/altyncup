@@ -88,7 +88,15 @@ public class LoyaltyService
     public async Task CreditForOrderAsync(Order order, CancellationToken ct = default)
     {
         if (!_options.Enabled) return;
-        if (order.LoyaltyPointsEarned != null) return; // already credited
+        if (order.LoyaltyPointsEarned != null)
+        {
+            if (order.LoyaltyPendingAction == LoyaltyPendingAction.Credit)
+            {
+                order.LoyaltyPendingAction = LoyaltyPendingAction.None;
+                await _db.SaveChangesAsync(ct);
+            }
+            return; // already credited
+        }
 
         // Earn only on the money portion — the part paid with points earns nothing
         var earnBase = order.Total - (order.LoyaltyPointsSpent ?? 0m);
@@ -114,6 +122,11 @@ public class LoyaltyService
                 ct);
 
             order.LoyaltyPointsEarned = points;
+            // Only clear our own flag — completion runs FinalizeSpendForOrderAsync just
+            // before this, and its pending action (e.g. ChargeOff) must survive a credit
+            // that succeeds in the same pass; the two operations share this single field.
+            if (order.LoyaltyPendingAction == LoyaltyPendingAction.Credit)
+                order.LoyaltyPendingAction = LoyaltyPendingAction.None;
             await _db.SaveChangesAsync(ct);
 
             await _audit.LogAsync("LoyaltyPointsCredited", "Order", order.Id.ToString(),
@@ -124,6 +137,12 @@ public class LoyaltyService
             _logger.LogError(ex,
                 "Failed to credit loyalty points for order {OrderId} (customer {CustomerId})",
                 order.Id, order.CustomerUserId);
+            // Don't steal the pending-action slot from an already-flagged spend-side
+            // failure (ChargeOff/FinalizeSpend/Release) — once that clears, the safety-net
+            // sweep will pick up this still-missing credit via LoyaltyPointsEarned == null.
+            if (order.LoyaltyPendingAction == LoyaltyPendingAction.None)
+                order.LoyaltyPendingAction = LoyaltyPendingAction.Credit;
+            await _db.SaveChangesAsync(ct);
         }
     }
 
@@ -280,8 +299,94 @@ public class LoyaltyService
                 case LoyaltyPendingAction.Release:
                     await ReleaseHoldForOrderAsync(order, ct);
                     break;
+                case LoyaltyPendingAction.Credit:
+                    await CreditForOrderAsync(order, ct);
+                    break;
             }
         }
+    }
+
+    /// <summary>
+    /// Safety net for completed orders where no earn-credit attempt is on record at all —
+    /// e.g. a crash between a successful iiko topup and the SaveChangesAsync that would
+    /// have persisted it, or any future code path that forgets to call
+    /// CreditForOrderAsync. Gated by a grace period so it never races an order whose
+    /// completion flow is still in flight. Batched; safe to call repeatedly.
+    /// </summary>
+    public async Task SweepMissedCreditsAsync(
+        TimeSpan? gracePeriod = null, int batchSize = 50, CancellationToken ct = default)
+    {
+        if (!_options.Enabled) return;
+
+        var cutoff = DateTime.UtcNow - (gracePeriod ?? TimeSpan.FromMinutes(10));
+
+        var missed = await _db.Orders
+            .Include(o => o.CustomerUser)
+            .Where(o => o.Status == OrderStatus.Completed
+                     && o.LoyaltyPointsEarned == null
+                     && o.LoyaltyPendingAction == LoyaltyPendingAction.None
+                     && o.CompletedAt != null
+                     && o.CompletedAt <= cutoff
+                     // Orders fully paid with points legitimately never earn anything —
+                     // exclude them so they aren't re-selected and re-logged every cycle.
+                     && o.Total - (o.LoyaltyPointsSpent ?? 0m) > 0)
+            .OrderBy(o => o.CompletedAt)
+            .Take(batchSize)
+            .ToListAsync(ct);
+
+        foreach (var order in missed)
+        {
+            _logger.LogWarning(
+                "Loyalty sweep: completed order {OrderId} has no earn-credit record; retrying credit",
+                order.Id);
+
+            await CreditForOrderAsync(order, ct);
+
+            if (order.LoyaltyPointsEarned != null)
+            {
+                await _audit.LogAsync("LoyaltySweepCreditRecovered", "Order", order.Id.ToString(),
+                    $"{order.LoyaltyPointsEarned} points recovered by safety-net sweep", ct);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Proactively re-validates cached iiko wallet ids for every linked customer, instead
+    /// of relying solely on the reactive self-heal that only runs when a mismatch is hit
+    /// during a live balance/order call. Intended for a slow (daily) cadence — processes
+    /// the full linked-customer set in one pass, sequentially (no concurrency) out of
+    /// deference to iiko's undocumented rate limits. Per-customer failures are logged and
+    /// skipped so one bad customer/phone can't abort the whole run.
+    /// </summary>
+    public async Task RevalidateWalletLinksAsync(CancellationToken ct = default)
+    {
+        if (!_options.Enabled) return;
+
+        var linked = await _db.CustomerUsers
+            .Where(u => u.IikoCustomerId != null)
+            .ToListAsync(ct);
+
+        var repaired = 0;
+        foreach (var user in linked)
+        {
+            try
+            {
+                var info = await _iiko.GetCustomerByPhoneAsync(user.MobileNumber, ct);
+                if (info == null) continue;
+
+                var before = user.IikoWalletId;
+                await SelfHealWalletIdAsync(user, info, ct);
+                if (user.IikoWalletId != before) repaired++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "Wallet-id revalidation failed for customer {CustomerId}; will retry next cycle", user.Id);
+            }
+        }
+
+        if (repaired > 0)
+            _logger.LogInformation("Wallet-id revalidation repaired {Count} customer(s)", repaired);
     }
 
     /// <summary>

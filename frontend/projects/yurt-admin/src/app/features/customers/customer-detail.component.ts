@@ -24,6 +24,7 @@ export class CustomerDetailComponent implements OnInit {
   loading = signal(true);
   error = signal(false);
   toggleLoading = signal(false);
+  loyaltyLoading = signal(false);
 
   ngOnInit(): void {
     this.api.configure(environment.apiUrl);
@@ -34,6 +35,17 @@ export class CustomerDetailComponent implements OnInit {
     this.api.getAdminCustomerLoyalty(this.id).subscribe({
       next: (l) => this.loyalty.set(l),
       error: () => {},
+    });
+  }
+
+  refreshLoyalty(): void {
+    this.loyaltyLoading.set(true);
+    this.api.getAdminCustomerLoyalty(this.id).subscribe({
+      next: (l) => { this.loyalty.set(l); this.loyaltyLoading.set(false); },
+      error: () => {
+        this.loyaltyLoading.set(false);
+        this.toast.error('Failed to refresh bonus balance.');
+      },
     });
   }
 

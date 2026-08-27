@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.Loyalty;
+using Yurt.Application.Features.Loyalty.Services;
+using Yurt.Domain.Enums;
 using Yurt.IntegrationTests.Helpers;
 
 namespace Yurt.IntegrationTests.Tests;
@@ -323,6 +325,163 @@ public class LoyaltyTests(YurtWebAppFactory factory)
         var order = await db.Orders.FirstAsync(o => o.Id == completed.Id);
         Assert.Equal("Completed", order.Status.ToString());
         Assert.Null(order.LoyaltyPointsEarned); // not credited, but completion succeeded
+    }
+
+    // ── Earn-credit retry / safety-net sweep ────────────────────────────────
+
+    [Fact]
+    public async Task TopupFailsAtCompletion_MarksPendingCredit_RetrySweepCreditsPoints()
+    {
+        var fake = new FakeIikoApiClient();
+        fake.FailTopup = true;
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client    = enabledFactory.CreateClient();
+        var completed = await PlaceAndCompleteOrderAsync(enabledFactory, client, "+77001000920");
+
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var db    = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var order = await db.Orders.FirstAsync(o => o.Id == completed.Id);
+            Assert.Null(order.LoyaltyPointsEarned);
+            Assert.Equal(LoyaltyPendingAction.Credit, order.LoyaltyPendingAction);
+        }
+
+        fake.FailTopup = false;
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var loyalty = scope.ServiceProvider.GetRequiredService<LoyaltyService>();
+            await loyalty.RetryPendingAsync();
+        }
+
+        Assert.Single(fake.TopupCalls);
+        await using (var scopeAfter = enabledFactory.Services.CreateAsyncScope())
+        {
+            var db    = scopeAfter.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var order = await db.Orders.FirstAsync(o => o.Id == completed.Id);
+            Assert.NotNull(order.LoyaltyPointsEarned);
+            Assert.Equal(LoyaltyPendingAction.None, order.LoyaltyPendingAction);
+        }
+    }
+
+    [Fact]
+    public async Task CompletedOrderWithNoCreditRecord_SweepRecoversTheMissedCredit()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client    = enabledFactory.CreateClient();
+        var completed = await PlaceAndCompleteOrderAsync(enabledFactory, client, "+77001000921");
+        fake.TopupCalls.Clear();
+
+        // Simulate the gap: pretend the earn-credit attempt never happened and the
+        // order completed well past the sweep's grace period.
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var db    = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var order = await db.Orders.FirstAsync(o => o.Id == completed.Id);
+            order.LoyaltyPointsEarned = null;
+            order.CompletedAt = DateTime.UtcNow.AddMinutes(-20);
+            await db.SaveChangesAsync();
+        }
+
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var loyalty = scope.ServiceProvider.GetRequiredService<LoyaltyService>();
+            await loyalty.SweepMissedCreditsAsync();
+        }
+
+        Assert.Single(fake.TopupCalls);
+        await using var verifyScope = enabledFactory.Services.CreateAsyncScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var verified = await verifyDb.Orders.FirstAsync(o => o.Id == completed.Id);
+        Assert.NotNull(verified.LoyaltyPointsEarned);
+        Assert.True(await verifyDb.AuditLogs.AnyAsync(a =>
+            a.Action == "LoyaltySweepCreditRecovered" && a.EntityId == completed.Id.ToString()));
+    }
+
+    [Fact]
+    public async Task RecentlyCompletedOrder_WithinGracePeriod_SweepDoesNotTouchIt()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client    = enabledFactory.CreateClient();
+        var completed = await PlaceAndCompleteOrderAsync(enabledFactory, client, "+77001000922");
+
+        // Real earn already happened during completion; reset it to null to simulate
+        // "no credit yet" while CompletedAt stays fresh (just now).
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var db    = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var order = await db.Orders.FirstAsync(o => o.Id == completed.Id);
+            order.LoyaltyPointsEarned = null;
+            await db.SaveChangesAsync();
+        }
+        fake.TopupCalls.Clear();
+
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var loyalty = scope.ServiceProvider.GetRequiredService<LoyaltyService>();
+            await loyalty.SweepMissedCreditsAsync(); // default 10-min grace period
+        }
+
+        Assert.Empty(fake.TopupCalls); // too recent — sweep must not touch it
+    }
+
+    [Fact]
+    public async Task RevalidateWalletLinksAsync_RepairsStaleWalletIdWithoutALiveBalanceCall()
+    {
+        var fake = new FakeIikoApiClient();
+        const string phone = "+77001000923";
+        fake.SetBalance(phone, 42m);
+
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client = enabledFactory.CreateClient();
+        var (_, customerId) = await ApiHelpers.CreateCustomerAsync(client, phone);
+
+        var staleWalletId = Guid.NewGuid();
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var db   = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var user = await db.CustomerUsers.FirstAsync(u => u.Id == customerId);
+            user.IikoCustomerId = FakeIikoApiClient.CustomerId;
+            user.IikoWalletId = staleWalletId;
+            await db.SaveChangesAsync();
+        }
+
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var loyalty = scope.ServiceProvider.GetRequiredService<LoyaltyService>();
+            await loyalty.RevalidateWalletLinksAsync();
+        }
+
+        await using var verifyScope = enabledFactory.Services.CreateAsyncScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var healed   = await verifyDb.CustomerUsers.FirstAsync(u => u.Id == customerId);
+        Assert.Equal(FakeIikoApiClient.WalletId, healed.IikoWalletId);
+        Assert.NotEqual(staleWalletId, healed.IikoWalletId);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
