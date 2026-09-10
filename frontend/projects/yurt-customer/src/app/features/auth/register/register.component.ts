@@ -1,4 +1,4 @@
-import { Component, inject, signal, viewChildren, ElementRef } from '@angular/core';
+import { Component, inject, signal, viewChildren, ElementRef, OnDestroy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -13,7 +13,7 @@ import { TranslatePipe } from '../../../core/translate.pipe';
   templateUrl: './register.component.html',
   styleUrl: './register.component.css',
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnDestroy {
   private api = inject(YurtApiService);
   private auth = inject(AuthStateService);
   private router = inject(Router);
@@ -21,14 +21,26 @@ export class RegisterComponent {
 
   readonly pinInputs = viewChildren<ElementRef>('pinInput');
   readonly confirmInputs = viewChildren<ElementRef>('confirmInput');
+  readonly otpInputs = viewChildren<ElementRef>('otpInput');
+
+  step = signal<'form' | 'otp'>('form');
 
   phoneFormatted = '';
   firstName = '';
   lastName = '';
   pins: string[] = ['', '', '', ''];
   confirmPins: string[] = ['', '', '', ''];
+  otp: string[] = ['', '', '', ''];
   loading = signal(false);
   error = signal('');
+  resendIn = signal(0);
+
+  private pendingPhone = '';
+  private resendTimer: ReturnType<typeof setInterval> | null = null;
+
+  ngOnDestroy(): void {
+    this.clearResendTimer();
+  }
 
   get phoneDigits(): string {
     return this.phoneFormatted.replace(/\D/g, '').slice(-10);
@@ -61,6 +73,9 @@ export class RegisterComponent {
   get confirmPin4(): string {
     return this.confirmPins.join('');
   }
+  get otpCode(): string {
+    return this.otp.join('');
+  }
 
   onPinInput(index: number, event: Event): void {
     const val = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(-1);
@@ -77,6 +92,17 @@ export class RegisterComponent {
     const val = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(-1);
     this.confirmPins[index] = val;
     if (val && index < 3) this.confirmInputs()[index + 1]?.nativeElement.focus();
+  }
+
+  onOtpInput(index: number, event: Event): void {
+    const val = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(-1);
+    this.otp[index] = val;
+    if (val && index < 3) this.otpInputs()[index + 1]?.nativeElement.focus();
+  }
+
+  onOtpKeydown(index: number, event: KeyboardEvent): void {
+    if (event.key === 'Backspace' && !this.otp[index] && index > 0)
+      this.otpInputs()[index - 1]?.nativeElement.focus();
   }
 
   onRegister(): void {
@@ -102,25 +128,96 @@ export class RegisterComponent {
       return;
     }
 
+    const phone = '+7' + this.phoneDigits;
     this.loading.set(true);
     this.api
-      .register('+7' + this.phoneDigits, this.pin4, this.firstName.trim(), this.lastName.trim())
+      .registerStart(phone, this.pin4, this.firstName.trim(), this.lastName.trim())
       .subscribe({
         next: (res) => {
-          this.auth.setUser({
-            accessToken: res.accessToken,
-            refreshToken: res.refreshToken,
-            userId: res.userId,
-            displayName: res.displayName,
-            userType: res.userType,
-          });
-          this.toast.success('Account created! Welcome to Altyncup ☕');
-          this.router.navigate(['/locations']);
+          this.loading.set(false);
+          this.pendingPhone = res.mobileNumber || phone;
+          this.otp = ['', '', '', ''];
+          this.step.set('otp');
+          this.startResendCountdown();
+          if (res.devCode) {
+            this.toast.success('Dev code: ' + res.devCode);
+          }
         },
         error: (err) => {
           this.loading.set(false);
           this.error.set(err.error?.title ?? 'Registration failed.');
         },
       });
+  }
+
+  onVerify(): void {
+    this.error.set('');
+    if (this.otpCode.length !== 4) {
+      this.error.set('Enter the 4-digit code.');
+      return;
+    }
+
+    this.loading.set(true);
+    this.api.registerVerify(this.pendingPhone, this.otpCode).subscribe({
+      next: (res) => {
+        this.auth.setUser({
+          accessToken: res.accessToken,
+          refreshToken: res.refreshToken,
+          userId: res.userId,
+          displayName: res.displayName,
+          userType: res.userType,
+        });
+        this.toast.success('Account created! Welcome to Altyncup ☕');
+        this.router.navigate(['/locations']);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set(err.error?.title ?? 'Verification failed.');
+      },
+    });
+  }
+
+  onResend(): void {
+    if (this.resendIn() > 0) return;
+    this.error.set('');
+    this.loading.set(true);
+    this.api
+      .registerStart(this.pendingPhone, this.pin4, this.firstName.trim(), this.lastName.trim())
+      .subscribe({
+        next: (res) => {
+          this.loading.set(false);
+          this.startResendCountdown();
+          if (res.devCode) this.toast.success('Dev code: ' + res.devCode);
+          else this.toast.success('Code sent.');
+        },
+        error: (err) => {
+          this.loading.set(false);
+          this.error.set(err.error?.title ?? 'Could not resend the code.');
+        },
+      });
+  }
+
+  onBack(): void {
+    this.error.set('');
+    this.clearResendTimer();
+    this.resendIn.set(0);
+    this.step.set('form');
+  }
+
+  private startResendCountdown(): void {
+    this.clearResendTimer();
+    this.resendIn.set(60);
+    this.resendTimer = setInterval(() => {
+      const next = this.resendIn() - 1;
+      this.resendIn.set(next);
+      if (next <= 0) this.clearResendTimer();
+    }, 1000);
+  }
+
+  private clearResendTimer(): void {
+    if (this.resendTimer) {
+      clearInterval(this.resendTimer);
+      this.resendTimer = null;
+    }
   }
 }

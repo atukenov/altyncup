@@ -10,6 +10,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         : base(options) { }
 
     public DbSet<CustomerUser> CustomerUsers => Set<CustomerUser>();
+    public DbSet<PhoneVerification> PhoneVerifications => Set<PhoneVerification>();
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<Location> Locations => Set<Location>();
     public DbSet<MenuCategory> MenuCategories => Set<MenuCategory>();

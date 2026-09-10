@@ -64,6 +64,12 @@ export interface AuthResponse {
   mustChangePassword?: boolean;
 }
 
+export interface RegistrationStartResponse {
+  mobileNumber: string;
+  expiresAt: string;
+  devCode?: string | null;
+}
+
 export interface CustomerProfile {
   id: string;
   mobileNumber: string;

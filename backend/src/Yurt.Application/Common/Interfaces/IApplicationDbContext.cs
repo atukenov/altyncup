@@ -6,6 +6,7 @@ namespace Yurt.Application.Common.Interfaces;
 public interface IApplicationDbContext
 {
     DbSet<CustomerUser> CustomerUsers { get; }
+    DbSet<PhoneVerification> PhoneVerifications { get; }
     DbSet<AdminUser> AdminUsers { get; }
     DbSet<Location> Locations { get; }
     DbSet<MenuCategory> MenuCategories { get; }

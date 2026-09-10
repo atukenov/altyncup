@@ -20,6 +20,22 @@ public class CustomerRegisterValidator : AbstractValidator<CustomerRegisterDto>
     }
 }
 
+public class RegisterVerifyValidator : AbstractValidator<RegisterVerifyDto>
+{
+    public RegisterVerifyValidator()
+    {
+        RuleFor(x => x.MobileNumber)
+            .NotEmpty()
+            .Matches(@"^\+?[1-9]\d{6,14}$")
+            .WithMessage("Invalid mobile number format.");
+
+        RuleFor(x => x.Code)
+            .NotEmpty()
+            .Matches(@"^\d{4}$")
+            .WithMessage("Code must be exactly 4 digits.");
+    }
+}
+
 public class CustomerLoginValidator : AbstractValidator<CustomerLoginDto>
 {
     public CustomerLoginValidator()

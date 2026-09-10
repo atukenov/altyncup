@@ -15,6 +15,20 @@ public class CustomerUserConfiguration : IEntityTypeConfiguration<CustomerUser>
     }
 }
 
+public class PhoneVerificationConfiguration : IEntityTypeConfiguration<PhoneVerification>
+{
+    public void Configure(EntityTypeBuilder<PhoneVerification> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.HasIndex(e => e.MobileNumber).IsUnique();
+        builder.Property(e => e.MobileNumber).HasMaxLength(20).IsRequired();
+        builder.Property(e => e.CodeHash).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.PinHash).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.FirstName).HasMaxLength(100);
+        builder.Property(e => e.LastName).HasMaxLength(100);
+    }
+}
+
 public class AdminUserConfiguration : IEntityTypeConfiguration<AdminUser>
 {
     public void Configure(EntityTypeBuilder<AdminUser> builder)

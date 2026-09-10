@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Yurt.Application.Common.Interfaces;
+using Yurt.Application.Features.Auth;
 using Yurt.Application.Features.Auth.Services;
 using Yurt.Application.Features.Favorites.Services;
 using Yurt.Application.Features.Locations.Services;
@@ -27,6 +28,7 @@ using Yurt.Application.Features.Loyalty.Services;
 using Yurt.Infrastructure.Health;
 using Yurt.Infrastructure.Hubs;
 using Yurt.Infrastructure.Iiko;
+using Yurt.Infrastructure.Messaging;
 using Yurt.Infrastructure.Payments;
 using Yurt.Infrastructure.Persistence;
 using Yurt.Infrastructure.Services;
@@ -72,6 +74,10 @@ public static class DependencyInjection
         // Payment services
         services.Configure<PaymentOptions>(configuration.GetSection("Payment"));
         services.AddHttpClient();
+
+        // WhatsApp OTP for customer registration (feature-flagged via Otp:Enabled; secrets via env vars)
+        services.AddSingleton(configuration.GetSection("Otp").Get<OtpOptions>() ?? new OtpOptions());
+        services.AddHttpClient<IOtpSender, WhatsAppOtpSender>();
 
         // iiko loyalty (feature-flagged via Iiko:Enabled; secrets via env vars)
         services.AddSingleton(configuration.GetSection("Iiko").Get<IikoOptions>() ?? new IikoOptions());

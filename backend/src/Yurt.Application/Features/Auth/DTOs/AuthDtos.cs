@@ -12,6 +12,8 @@ public record AuthResponseDto(
 public record RefreshRequestDto(string RefreshToken);
 
 public record CustomerRegisterDto(string MobileNumber, string Pin4, string FirstName = "", string LastName = "");
+public record RegisterVerifyDto(string MobileNumber, string Code);
+public record RegistrationStartResponseDto(string MobileNumber, DateTime ExpiresAt, string? DevCode = null);
 public record CustomerLoginDto(string MobileNumber, string Pin4);
 public record AdminLoginDto(string Username, string Password);
 public record UpdateProfileDto(string FirstName, string LastName, DateOnly? DateOfBirth = null);

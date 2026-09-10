@@ -21,11 +21,18 @@ internal static class ApiHelpers
     internal static async Task<(string Token, Guid UserId)> CreateCustomerAsync(
         HttpClient client, string phone, string pin = "1234")
     {
-        var reg = await client.PostAsJsonAsync("/api/v1/auth/register", new
+        var start = await client.PostAsJsonAsync("/api/v1/auth/register/start", new
         {
             mobileNumber = phone, pin4 = pin, firstName = "Test", lastName = "User"
         });
-        reg.EnsureSuccessStatusCode();
+        start.EnsureSuccessStatusCode();
+        var startBody = await start.Content.ReadFromJsonAsync<RegisterStartResult>(JsonOpts);
+
+        var verify = await client.PostAsJsonAsync("/api/v1/auth/register/verify", new
+        {
+            mobileNumber = phone, code = startBody!.DevCode
+        });
+        verify.EnsureSuccessStatusCode();
 
         var login = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
@@ -129,6 +136,8 @@ internal static class ApiHelpers
         => client.DefaultRequestHeaders.Authorization = null;
 
     // ── Local response shapes ────────────────────────────────────────────────
+
+    internal record RegisterStartResult(string MobileNumber, DateTime ExpiresAt, string? DevCode);
 
     internal record AuthResult(
         string AccessToken,

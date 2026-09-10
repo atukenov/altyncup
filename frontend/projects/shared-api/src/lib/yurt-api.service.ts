@@ -27,6 +27,7 @@ import {
   PaymentInvoiceResponse,
   PaymentStatusResponse,
   Promotion,
+  RegistrationStartResponse,
   UpdatePaymentRequest,
   UpdateStatusRequest,
   UserReport,
@@ -48,17 +49,24 @@ export class YurtApiService {
   }
 
   // ── Auth ───────────────────────────────────────────────────────────────────
-  register(
+  registerStart(
     mobileNumber: string,
     pin4: string,
     firstName: string = '',
     lastName: string = '',
-  ): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.api}/auth/register`, {
+  ): Observable<RegistrationStartResponse> {
+    return this.http.post<RegistrationStartResponse>(`${this.api}/auth/register/start`, {
       mobileNumber,
       pin4,
       firstName,
       lastName,
+    });
+  }
+
+  registerVerify(mobileNumber: string, code: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.api}/auth/register/verify`, {
+      mobileNumber,
+      code,
     });
   }
 

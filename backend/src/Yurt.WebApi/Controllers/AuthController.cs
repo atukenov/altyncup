@@ -33,9 +33,12 @@ public class AuthController : ApiControllerBase
         _hasher = hasher;
     }
 
-    /// <summary>Register a new customer using mobile number and 4-digit PIN.</summary>
-    [HttpPost("register")]
-    public async Task<IActionResult> Register(
+    /// <summary>
+    /// Start registration: sends a 4-digit verification code to the customer's mobile
+    /// number over WhatsApp. Call <c>register/verify</c> with the code to finish.
+    /// </summary>
+    [HttpPost("register/start")]
+    public async Task<IActionResult> RegisterStart(
         [FromBody] CustomerRegisterDto dto, CancellationToken ct)
     {
         var validator = new CustomerRegisterValidator();
@@ -43,8 +46,22 @@ public class AuthController : ApiControllerBase
         if (!validation.IsValid)
             return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
 
+        var result = await _authService.StartRegistrationAsync(dto, ct);
+        return ToResult(result);
+    }
+
+    /// <summary>Confirm the verification code and complete registration.</summary>
+    [HttpPost("register/verify")]
+    public async Task<IActionResult> RegisterVerify(
+        [FromBody] RegisterVerifyDto dto, CancellationToken ct)
+    {
+        var validator = new RegisterVerifyValidator();
+        var validation = await validator.ValidateAsync(dto, ct);
+        if (!validation.IsValid)
+            return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var result = await _authService.RegisterCustomerAsync(dto, ip, ct);
+        var result = await _authService.VerifyRegistrationAsync(dto, ip, ct);
         return ToResult(result);
     }
 

@@ -12,6 +12,8 @@ public class AuthService
     private readonly IApplicationDbContext _db;
     private readonly ITokenService _tokenService;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IOtpSender _otpSender;
+    private readonly OtpOptions _otpOptions;
     private readonly ILogger<AuthService> _logger;
 
     private const int MaxFailedAttempts = 5;
@@ -21,33 +23,138 @@ public class AuthService
         IApplicationDbContext db,
         ITokenService tokenService,
         IPasswordHasher passwordHasher,
+        IOtpSender otpSender,
+        OtpOptions otpOptions,
         ILogger<AuthService> logger)
     {
         _db = db;
         _tokenService = tokenService;
         _passwordHasher = passwordHasher;
+        _otpSender = otpSender;
+        _otpOptions = otpOptions;
         _logger = logger;
     }
 
-    public async Task<Result<AuthResponseDto>> RegisterCustomerAsync(
-        CustomerRegisterDto dto, string? ip = null, CancellationToken ct = default)
+    /// <summary>
+    /// Step 1 of registration: validate the payload, generate a 4-digit code, persist it
+    /// (hashed, with the pending registration data) and send it over WhatsApp.
+    /// The CustomerUser is not created until the code is confirmed.
+    /// </summary>
+    public async Task<Result<RegistrationStartResponseDto>> StartRegistrationAsync(
+        CustomerRegisterDto dto, CancellationToken ct = default)
     {
         var normalizedMobile = NormalizeMobile(dto.MobileNumber);
-        var exists = await _db.CustomerUsers
-            .AnyAsync(u => u.MobileNumber == normalizedMobile, ct);
 
-        if (exists)
+        var alreadyRegistered = await _db.CustomerUsers
+            .AnyAsync(u => u.MobileNumber == normalizedMobile, ct);
+        if (alreadyRegistered)
+            return Result<RegistrationStartResponseDto>.Failure("Mobile number already registered.", 409);
+
+        var now = DateTime.UtcNow;
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile, ct);
+
+        if (pending != null &&
+            pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) > now)
+        {
+            var wait = (int)Math.Ceiling(
+                (pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) - now).TotalSeconds);
+            return Result<RegistrationStartResponseDto>.Failure(
+                $"Please wait {wait}s before requesting another code.", 429);
+        }
+
+        var code = Random.Shared.Next(0, 10000).ToString("D4");
+        var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+
+        if (pending == null)
+        {
+            pending = new PhoneVerification { MobileNumber = normalizedMobile };
+            _db.PhoneVerifications.Add(pending);
+        }
+
+        pending.CodeHash = _passwordHasher.Hash(code);
+        pending.ExpiresAt = expiresAt;
+        pending.LastSentAt = now;
+        pending.Attempts = 0;
+        pending.PinHash = _passwordHasher.Hash(dto.Pin4);
+        pending.FirstName = dto.FirstName.Trim();
+        pending.LastName = dto.LastName.Trim();
+
+        await _db.SaveChangesAsync(ct);
+
+        if (_otpOptions.Enabled)
+        {
+            try
+            {
+                await _otpSender.SendAsync(normalizedMobile, code, ct);
+            }
+            catch (OtpSendException ex)
+            {
+                _logger.LogError(ex, "Failed to send OTP to {Mobile}", normalizedMobile);
+                return Result<RegistrationStartResponseDto>.Failure(
+                    "Could not send the verification code. Please try again.", 502);
+            }
+        }
+        else
+        {
+            _logger.LogWarning(
+                "OTP delivery disabled — verification code for {Mobile} is {Code}", normalizedMobile, code);
+        }
+
+        return Result<RegistrationStartResponseDto>.Success(
+            new RegistrationStartResponseDto(
+                normalizedMobile, expiresAt, _otpOptions.Enabled ? null : code));
+    }
+
+    /// <summary>
+    /// Step 2 of registration: confirm the code, create the CustomerUser and issue tokens.
+    /// </summary>
+    public async Task<Result<AuthResponseDto>> VerifyRegistrationAsync(
+        RegisterVerifyDto dto, string? ip = null, CancellationToken ct = default)
+    {
+        var normalizedMobile = NormalizeMobile(dto.MobileNumber);
+
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile, ct);
+
+        if (pending == null)
+            return Result<AuthResponseDto>.Failure("No pending verification. Start registration again.", 400);
+
+        if (pending.ExpiresAt <= DateTime.UtcNow)
+        {
+            _db.PhoneVerifications.Remove(pending);
+            await _db.SaveChangesAsync(ct);
+            return Result<AuthResponseDto>.Failure("The code has expired. Request a new one.", 400);
+        }
+
+        if (pending.Attempts >= _otpOptions.MaxAttempts)
+            return Result<AuthResponseDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
+
+        if (!_passwordHasher.Verify(dto.Code, pending.CodeHash))
+        {
+            pending.Attempts++;
+            await _db.SaveChangesAsync(ct);
+            return Result<AuthResponseDto>.Failure("Incorrect code.", 400);
+        }
+
+        var alreadyRegistered = await _db.CustomerUsers
+            .AnyAsync(u => u.MobileNumber == normalizedMobile, ct);
+        if (alreadyRegistered)
+        {
+            _db.PhoneVerifications.Remove(pending);
+            await _db.SaveChangesAsync(ct);
             return Result<AuthResponseDto>.Failure("Mobile number already registered.", 409);
+        }
 
         var user = new CustomerUser
         {
             MobileNumber = normalizedMobile,
-            PinHash = _passwordHasher.Hash(dto.Pin4),
-            FirstName = dto.FirstName.Trim(),
-            LastName = dto.LastName.Trim()
+            PinHash = pending.PinHash,
+            FirstName = pending.FirstName,
+            LastName = pending.LastName
         };
-
         _db.CustomerUsers.Add(user);
+        _db.PhoneVerifications.Remove(pending);
         await _db.SaveChangesAsync(ct);
 
         var displayName = string.IsNullOrWhiteSpace(user.FirstName)
