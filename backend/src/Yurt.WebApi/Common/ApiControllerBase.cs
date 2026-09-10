@@ -33,6 +33,8 @@ public abstract class ApiControllerBase : ControllerBase
             404 => NotFound(new ProblemDetails { Title = result.Error }),
             409 => Conflict(new ProblemDetails { Title = result.Error }),
             422 => UnprocessableEntity(new ProblemDetails { Title = result.Error }),
+            >= 400 and not 400 => StatusCode(
+                result.StatusCode, new ProblemDetails { Status = result.StatusCode, Title = result.Error }),
             _ => BadRequest(new ProblemDetails { Title = result.Error })
         };
     }
