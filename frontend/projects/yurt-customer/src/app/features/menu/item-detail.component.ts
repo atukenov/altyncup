@@ -88,7 +88,22 @@ export class ItemDetailComponent implements OnInit {
     return key ? this.SYRUP_COLORS[key] : '#e8cf9a';
   }
 
+  // Category names come back localized (en/ru/kk) from the API, so match on the
+  // shared "coffee"/"tea" word roots rather than a hardcoded category id/name —
+  // works across all three languages without needing a structured category tag.
+  private static readonly DRINK_KEYWORDS = ['coffee', 'кофе', 'tea', 'чай', 'шай'];
+
+  private readonly isDrinkItem = computed(() => {
+    const category = this.item()?.categoryName?.toLowerCase() ?? '';
+    return ItemDetailComponent.DRINK_KEYWORDS.some((k) => category.includes(k));
+  });
+
+  readonly modelSrc = computed(() => (this.isDrinkItem() ? 'cup.glb' : 'dish.glb'));
+
   readonly cupScale = computed(() => {
+    // Dishes have no size variants, so they always fell through to the cup's
+    // base scale — bump them up a bit since the dish model reads small at that size.
+    if (!this.isDrinkItem()) return 0.95;
     const variants = this.item()?.variants ?? [];
     const sel = this.selectedVariant();
     if (!sel || !variants.length) return 0.76;

@@ -24,7 +24,7 @@
       @if (i.imageUrl && !imageError()) {
         <img [src]="i.imageUrl" [alt]="i.name"
           class="absolute inset-0 w-full h-full object-cover"
-          style="filter:brightness(0.22) blur(6px);transform:scale(1.08)"
+          style="filter:brightness(0.5) blur(3px);transform:scale(1.08)"
           (error)="onImageError()" />
       } @else {
         <div class="absolute inset-0" style="background:linear-gradient(135deg,#3d2b1a,#1c1008)"></div>
@@ -32,7 +32,7 @@
 
       <!-- Gradient overlay for bottom vignette + safe-area fade -->
       <div class="absolute inset-0"
-        style="background:linear-gradient(to top,rgba(20,16,13,.92) 0%,rgba(20,16,13,.3) 55%,rgba(20,16,13,.5) 100%)"></div>
+        style="background:linear-gradient(to top,rgba(20,16,13,.92) 0%,rgba(20,16,13,.15) 55%,rgba(20,16,13,.35) 100%)"></div>
 
       <!-- Radial amber glow behind cup -->
       <div class="absolute" style="width:340px;height:340px;bottom:-40px;left:50%;transform:translateX(-50%);
@@ -69,7 +69,7 @@
            style="left:50%;bottom:2px;transform-origin:50% 100%;transition:transform .45s cubic-bezier(.34,1.56,.64,1)"
            [style.transform]="'translateX(-50%) scale(' + cupScale() + ')'">
         <cup-viewer
-          src="cup.glb"
+          [src]="modelSrc()"
           [tint]="liquidColor()"
           style="width:260px;height:280px;display:block">
         </cup-viewer>

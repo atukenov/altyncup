@@ -9,6 +9,16 @@
         </svg>
         {{ locationName() }}
       </span>
+    } @else {
+      <button (click)="goToLocations()"
+        style="font-size:12px;font-weight:700;color:#b45309;background:#fef3c7;border:none;border-radius:999px;padding:5px 12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-family:inherit"
+        class="active:scale-95 transition-transform">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+          <circle cx="12" cy="11" r="3"></circle>
+        </svg>
+        {{ 'cart.selectLocation' | t }}
+      </button>
     }
   </div>
 
@@ -248,7 +258,7 @@
   >
     @if (cart.items().length) {
       <button
-        (click)="showConfirm.set(true)"
+        (click)="openConfirm()"
         [disabled]="(!selectedPaymentMethod() && !fullyCoveredByBonus()) || loading()"
         style="width:100%;background:#1c1917;color:#ffd119;font-weight:800;border:none;border-radius:18px;padding:17px 22px;font-size:15.5px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 10px 20px -6px rgba(28,25,23,.35);cursor:pointer;font-family:inherit"
         class="active:scale-[0.98] transition-transform disabled:opacity-50 disabled:cursor-not-allowed"

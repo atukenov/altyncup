@@ -1,5 +1,5 @@
 import { Component, inject, signal, effect } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { YurtApiService } from 'shared-api';
 import { Location } from 'shared-models';
@@ -110,6 +110,7 @@ function buildScheduleInfo(wh: string, now: Date): ScheduleInfo {
 export class LocationsComponent {
   private api = inject(YurtApiService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private toast = inject(ToastService);
   private langService = inject(LangService);
   private locationSvc = inject(LocationService);
@@ -143,6 +144,9 @@ export class LocationsComponent {
     if (selectedLoc) {
       this.locationSvc.setLocation(selectedLoc.id, selectedLoc.name);
     }
-    this.router.navigate(['/menu']);
+    // Sent here from checkout (no location chosen yet) lands back on /cart to finish
+    // the order in progress, instead of dropping the customer onto the menu.
+    const returnTo = this.route.snapshot.queryParamMap.get('returnTo') || '/menu';
+    this.router.navigateByUrl(returnTo);
   }
 }

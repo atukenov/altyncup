@@ -26,7 +26,7 @@ public class IikoOptions
     public Guid ProgramId { get; set; }
 
     /// <summary>Percent of the completed order total credited as points (e.g. 5 = 5%).</summary>
-    public decimal EarnPercent { get; set; } = 5m;
+    public decimal EarnPercent { get; set; } = 10m;
 
     /// <summary>Session token lifetime safety margin — tokens live ~1h; refresh after this many minutes.</summary>
     public int TokenLifetimeMinutes { get; set; } = 50;

@@ -118,6 +118,19 @@ export class CartComponent implements OnInit {
     this.router.navigate(['/menu']);
   }
 
+  goToLocations(): void {
+    this.router.navigate(['/locations'], { queryParams: { returnTo: '/cart' } });
+  }
+
+  openConfirm(): void {
+    if (!this.locationSvc.locationId()) {
+      this.toast.warning('Please select a location first.');
+      this.goToLocations();
+      return;
+    }
+    this.showConfirm.set(true);
+  }
+
   applyPromoCode(): void {
     const code = this.promoCodeInput().trim();
     if (!code) return;
@@ -160,7 +173,7 @@ export class CartComponent implements OnInit {
     const locationId = this.locationSvc.locationId();
     if (!locationId) {
       this.toast.warning('Please select a location first.');
-      this.router.navigate(['/locations']);
+      this.goToLocations();
       return;
     }
     if (!this.cart.items().length) {

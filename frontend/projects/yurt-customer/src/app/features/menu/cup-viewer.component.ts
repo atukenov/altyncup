@@ -1,5 +1,11 @@
 import {
-  Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges,
+  Component,
+  ElementRef,
+  Input,
+  OnChanges,
+  OnDestroy,
+  OnInit,
+  SimpleChanges,
 } from '@angular/core';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -15,10 +21,12 @@ export class CupViewerComponent implements OnInit, OnChanges, OnDestroy {
   @Input() src = 'cup.glb';
   /** Target hex color for the coffee surface material */
   @Input() tint = '#c9a06e';
-  /** Auto-rotate speed in degrees/s */
-  @Input() speed = 40;
-  /** Initial Y rotation offset in degrees so logo faces camera at start */
-  @Input() offset = 0;
+  /** How far the cup sways left/right from center, in degrees */
+  @Input() swayDegrees = 40;
+  /** Seconds for one full sway cycle (center → right → center → left → center) */
+  @Input() swaySeconds = 4.5;
+  /** Y rotation offset in degrees so the logo faces camera at the center of the sway */
+  @Input() offset = -60;
 
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
@@ -27,7 +35,7 @@ export class CupViewerComponent implements OnInit, OnChanges, OnDestroy {
   private coffeeMat: THREE.MeshStandardMaterial | THREE.MeshBasicMaterial | null = null;
   private tgtColor = new THREE.Color('#c9a06e');
   private raf = 0;
-  private t0 = 0;
+  private startTime = 0;
   private destroyed = false;
 
   constructor(private host: ElementRef<HTMLElement>) {}
@@ -53,7 +61,6 @@ export class CupViewerComponent implements OnInit, OnChanges, OnDestroy {
     if (document.hidden) {
       cancelAnimationFrame(this.raf);
     } else {
-      this.t0 = performance.now();
       this.raf = requestAnimationFrame(this.tick);
     }
   };
@@ -125,7 +132,7 @@ export class CupViewerComponent implements OnInit, OnChanges, OnDestroy {
 
     pivot.rotation.y = (this.offset * Math.PI) / 180;
 
-    this.t0 = performance.now();
+    this.startTime = performance.now();
     this.raf = requestAnimationFrame(this.tick);
 
     document.addEventListener('visibilitychange', this.onVisibility);
@@ -133,9 +140,13 @@ export class CupViewerComponent implements OnInit, OnChanges, OnDestroy {
 
   private tick = (t: number) => {
     if (this.destroyed) return;
-    const speedRad = (this.speed * Math.PI) / 180;
-    this.pivot.rotation.y += speedRad * (t - this.t0) / 1000;
-    this.t0 = t;
+    // Sways center → right → center → left → center rather than spinning all the
+    // way around, so the logo stays roughly camera-facing at all times.
+    const elapsed = (t - this.startTime) / 1000;
+    const offsetRad = (this.offset * Math.PI) / 180;
+    const amplitudeRad = (this.swayDegrees * Math.PI) / 180;
+    const angularFreq = (2 * Math.PI) / this.swaySeconds;
+    this.pivot.rotation.y = offsetRad + amplitudeRad * Math.sin(elapsed * angularFreq);
     if (this.coffeeMat) this.coffeeMat.color.lerp(this.tgtColor, 0.08);
     this.renderer.render(this.scene, this.camera);
     this.raf = requestAnimationFrame(this.tick);
