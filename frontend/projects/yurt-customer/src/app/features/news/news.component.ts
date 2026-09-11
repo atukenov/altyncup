@@ -1,16 +1,16 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { YurtApiService } from 'shared-api';
-import { CustomerStats, MenuItem, Order, Promotion } from 'shared-models';
+import { CustomerStats, EMPTY_CUSTOMER_STATS, MenuItem, Order, Promotion } from 'shared-models';
 import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
 import { PromoViewerService } from '../../core/promo-viewer.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { Currency2Pipe, SkeletonNewsComponent } from 'shared-ui';
 import { DatePipe } from '@angular/common';
-import { ACHIEVEMENTS, Achievement } from './achievements';
+import { ACHIEVEMENTS, Achievement, buildAchievementFlags } from './achievements';
 
 @Component({
   selector: 'app-news',
@@ -27,7 +27,7 @@ export class NewsComponent implements OnInit {
   readonly lang = inject(LangService);
 
   readonly loading = signal(true);
-  readonly stats = signal<CustomerStats>({ totalOrders: 0, totalSpent: 0 });
+  readonly stats = signal<CustomerStats>(EMPTY_CUSTOMER_STATS);
   readonly promotions = signal<Promotion[]>([]);
   readonly menuItems = signal<MenuItem[]>([]);
   readonly orderHistory = signal<Order[]>([]);
@@ -72,7 +72,9 @@ export class NewsComponent implements OnInit {
 
   readonly unlockedAchievements = computed(() => {
     const s = this.stats();
-    const flags = { wolt: localStorage.getItem('yurt_wolt_clicked') };
+    // No loyalty-balance fetch on this summary — bean_collector reads as locked here
+    // even when earned; the Achievements page is the source of truth for it.
+    const flags = buildAchievementFlags();
     return ACHIEVEMENTS.filter((a) => a.condition(s, flags));
   });
 
@@ -80,7 +82,10 @@ export class NewsComponent implements OnInit {
 
   ngOnInit(): void {
     forkJoin({
-      stats: this.api.getCustomerStats().pipe(catchError(() => of<CustomerStats>({ totalOrders: 0, totalSpent: 0 }))),
+      stats: this.api.getCustomerStats().pipe(
+        map((s) => ({ ...EMPTY_CUSTOMER_STATS, ...s })),
+        catchError(() => of<CustomerStats>(EMPTY_CUSTOMER_STATS))
+      ),
       promotions: this.api.getActivePromotions().pipe(catchError(() => of<Promotion[]>([]))),
       items: this.api.getMenuItems(undefined, undefined, this.lang.lang()).pipe(catchError(() => of<MenuItem[]>([]))),
       orders: this.api.getOrderHistory().pipe(catchError(() => of<Order[]>([]))),
@@ -91,9 +96,7 @@ export class NewsComponent implements OnInit {
       this.orderHistory.set(orders);
       this.loading.set(false);
 
-      const unlocked = ACHIEVEMENTS.filter((a) =>
-        a.condition(stats, { wolt: localStorage.getItem('yurt_wolt_clicked') })
-      ).length;
+      const unlocked = ACHIEVEMENTS.filter((a) => a.condition(stats, buildAchievementFlags())).length;
 
       setTimeout(() => this.animateCount(0, stats.totalOrders, 800, this.animatedOrders.set.bind(this.animatedOrders)), 100);
       setTimeout(() => this.animateCount(0, 0, 800, this.animatedBonuses.set.bind(this.animatedBonuses)), 200);

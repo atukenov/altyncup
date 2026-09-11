@@ -174,7 +174,8 @@ public class AuthController : ApiControllerBase
         return NoContent();
     }
 
-    /// <summary>Get lifetime order stats for the current customer.</summary>
+    /// <summary>Get lifetime order stats for the current customer, including the
+    /// derived figures the achievements grid needs (streaks, timing, repeat items).</summary>
     [HttpGet("me/stats")]
     [Authorize(Policy = "CustomerOnly")]
     public async Task<IActionResult> GetStats(CancellationToken ct)
@@ -182,12 +183,71 @@ public class AuthController : ApiControllerBase
         var userId = _currentUser.UserId!.Value;
         var orders = await _db.Orders
             .Where(o => o.CustomerUserId == userId && o.Status == OrderStatus.Completed)
+            .Include(o => o.Items)
             .ToListAsync(ct);
+
+        // All customers currently order from Kazakhstan locations (UTC+5, no DST) —
+        // fixed offset avoids a timezone-database dependency for this.
+        var almatyOffset = TimeSpan.FromHours(5);
+        var localTimestamps = orders
+            .Select(o => (o.CompletedAt ?? o.CreatedAt) + almatyOffset)
+            .ToList();
+        var localDates = localTimestamps.Select(t => t.Date).Distinct().OrderBy(d => d).ToList();
+
+        var weekStarts = localDates.Select(MondayOf).Distinct().OrderBy(d => d).ToList();
+        var weekendStarts = localDates
+            .Where(d => d.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+            .Select(d => d.DayOfWeek == DayOfWeek.Sunday ? d.AddDays(-1) : d)
+            .Distinct()
+            .OrderBy(d => d)
+            .ToList();
+
+        var drinksByDate = orders
+            .GroupBy(o => ((o.CompletedAt ?? o.CreatedAt) + almatyOffset).Date)
+            .Select(g => g.Sum(o => o.Items.Sum(i => i.Quantity)));
+
+        var repeatItemCounts = orders
+            .SelectMany(o => o.Items)
+            .GroupBy(i => (i.MenuItemId, i.VariantId))
+            .Select(g => g.Sum(i => i.Quantity));
 
         return Ok(new
         {
             totalOrders = orders.Count,
-            totalSpent = orders.Sum(o => o.Total)
+            totalSpent = orders.Sum(o => o.Total),
+            totalDrinks = orders.Sum(o => o.Items.Sum(i => i.Quantity)),
+            distinctLocations = orders.Select(o => o.LocationId).Distinct().Count(),
+            redeemedOrders = orders.Count(o => o.LoyaltyPointsSpent is > 0),
+            earlyOrders = localTimestamps.Count(t => t.Hour < 9),
+            lateOrders = localTimestamps.Count(t => t.Hour >= 21),
+            maxDailyDrinks = drinksByDate.DefaultIfEmpty(0).Max(),
+            maxDailyStreak = LongestRun(localDates, TimeSpan.FromDays(1)),
+            maxWeeklyStreak = LongestRun(weekStarts, TimeSpan.FromDays(7)),
+            maxWeekendStreak = LongestRun(weekendStarts, TimeSpan.FromDays(7)),
+            maxRepeatItemCount = repeatItemCounts.DefaultIfEmpty(0).Max(),
         });
+    }
+
+    private static DateTime MondayOf(DateTime date)
+    {
+        var diff = ((int)date.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+        return date.AddDays(-diff);
+    }
+
+    /// <summary>Longest run of consecutive buckets (days/weeks) in a sorted, deduplicated
+    /// date list — the customer's best-ever streak, not just the one active right now,
+    /// since a badge earned this way should never be revoked by an idle day later.</summary>
+    private static int LongestRun(IReadOnlyList<DateTime> sortedDates, TimeSpan step)
+    {
+        if (sortedDates.Count == 0) return 0;
+        var best = 1;
+        var current = 1;
+        for (var i = 1; i < sortedDates.Count; i++)
+        {
+            if (sortedDates[i] - sortedDates[i - 1] == step) current++;
+            else current = 1;
+            if (current > best) best = current;
+        }
+        return best;
     }
 }

@@ -63,8 +63,20 @@ export class ProfileComponent implements OnInit {
   reportText = '';
   reportLoading = signal(false);
 
+  // Avatar picker — stored locally until there's a backend field for it
+  private static readonly AVATAR_KEY = 'yurt_avatar';
+  readonly avatars = Array.from({ length: 24 }, (_, i) => `/avatars/avatar-${String(i + 1).padStart(2, '0')}.png`);
+  showAvatarPicker = signal(false);
+  selectedAvatar = signal<string | null>(localStorage.getItem(ProfileComponent.AVATAR_KEY));
+
   ngOnInit(): void {
     this.loadProfile();
+  }
+
+  chooseAvatar(avatar: string): void {
+    this.selectedAvatar.set(avatar);
+    localStorage.setItem(ProfileComponent.AVATAR_KEY, avatar);
+    this.showAvatarPicker.set(false);
   }
 
   loadProfile(): void {

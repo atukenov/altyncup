@@ -1,5 +1,26 @@
 <div class="min-h-screen bg-stone-50 pb-28">
 
+  <!-- Unlock celebration toast -->
+  @if (newlyUnlocked().length) {
+    <div class="fixed top-4 inset-x-4 z-50 flex flex-col gap-2 celebration-stack">
+      @for (a of newlyUnlocked(); track a.id) {
+        <button type="button" (click)="dismissCelebration()"
+                class="celebration-toast flex items-center gap-3 rounded-2xl p-3 pr-4 shadow-lg shadow-amber-300/40 text-left"
+                style="background: linear-gradient(135deg, #ffd119 0%, #ea580c 100%);">
+          @if (a.badge) {
+            <img [src]="a.badge" [alt]="name(a)" width="40" height="40" class="w-10 h-10 object-contain shrink-0">
+          } @else {
+            <span class="text-3xl shrink-0">{{ a.icon }}</span>
+          }
+          <div class="min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-white/80">{{ 'achievements.unlocked' | t }}</p>
+            <p class="text-sm font-extrabold text-white truncate">{{ name(a) }}</p>
+          </div>
+        </button>
+      }
+    </div>
+  }
+
   <!-- Header -->
   <div class="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-stone-100 px-4 py-3.5 flex items-center gap-3">
     <a routerLink="/news" class="text-amber-600 font-semibold text-sm active:opacity-60 transition-opacity shrink-0">
@@ -96,11 +117,17 @@
                    style="background: radial-gradient(circle, rgba(255,209,25,0.35) 0%, transparent 70%)"></div>
             }
 
-            <!-- Emoji -->
-            <span class="relative text-4xl leading-none select-none"
-                  [class]="unlocked ? 'unlocked-emoji' : 'grayscale opacity-40'">
-              {{ a.icon }}
-            </span>
+            <!-- Badge art, falling back to the emoji when no image is assigned -->
+            @if (a.badge) {
+              <img [src]="a.badge" [alt]="name(a)" width="64" height="64" loading="lazy"
+                   class="relative w-16 h-16 object-contain transition-all duration-300"
+                   [class]="unlocked ? 'unlocked-emoji' : 'grayscale opacity-40'">
+            } @else {
+              <span class="relative text-4xl leading-none select-none"
+                    [class]="unlocked ? 'unlocked-emoji' : 'grayscale opacity-40'">
+                {{ a.icon }}
+              </span>
+            }
 
             <!-- Unlock checkmark badge -->
             @if (unlocked) {

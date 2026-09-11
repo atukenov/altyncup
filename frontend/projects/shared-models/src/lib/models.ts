@@ -439,7 +439,32 @@ export interface DashboardData {
 export interface CustomerStats {
   totalOrders: number;
   totalSpent: number;
+  totalDrinks: number;
+  distinctLocations: number;
+  redeemedOrders: number;
+  earlyOrders: number;
+  lateOrders: number;
+  maxDailyDrinks: number;
+  maxDailyStreak: number;
+  maxWeeklyStreak: number;
+  maxWeekendStreak: number;
+  maxRepeatItemCount: number;
 }
+
+export const EMPTY_CUSTOMER_STATS: CustomerStats = {
+  totalOrders: 0,
+  totalSpent: 0,
+  totalDrinks: 0,
+  distinctLocations: 0,
+  redeemedOrders: 0,
+  earlyOrders: 0,
+  lateOrders: 0,
+  maxDailyDrinks: 0,
+  maxDailyStreak: 0,
+  maxWeeklyStreak: 0,
+  maxWeekendStreak: 0,
+  maxRepeatItemCount: 0,
+};
 
 // ── Loyalty (iiko) ────────────────────────────────────────────────────────────
 
