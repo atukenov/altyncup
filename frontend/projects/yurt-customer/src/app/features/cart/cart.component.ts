@@ -36,15 +36,17 @@ export class CartComponent implements OnInit {
   // iiko loyalty — pay with bonus points
   loyalty = signal<LoyaltyBalance | null>(null);
   bonusInput = signal<number | null>(null);
-  readonly maxBonus = computed(() => {
+  readonly fullBonusBalance = computed(() => {
     const l = this.loyalty();
     if (!l?.enabled || !l.available || !l.balance || l.balance <= 0) return 0;
-    return Math.min(l.balance, this.cart.total());
+    return l.balance;
   });
+  readonly maxBonus = computed(() => Math.min(this.fullBonusBalance(), this.cart.total()));
   readonly appliedBonus = computed(() => {
     const raw = this.bonusInput() ?? 0;
     return Math.min(Math.max(raw, 0), this.maxBonus());
   });
+  readonly remainingBonus = computed(() => this.fullBonusBalance() - this.appliedBonus());
   readonly payableTotal = computed(() => this.cart.total() - this.appliedBonus());
   readonly fullyCoveredByBonus = computed(() => this.appliedBonus() >= this.cart.total());
 

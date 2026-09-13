@@ -43,7 +43,8 @@
       "Bash(curl -s http://localhost:5000/api/v1/menu/categories)",
       "Bash(grep -v \".js$\")",
       "Bash(python3 -)",
-      "Bash(dotnet test *)"
+      "Bash(dotnet test *)",
+      "Bash(gh auth *)"
     ],
     "additionalDirectories": [
       "/private/tmp"

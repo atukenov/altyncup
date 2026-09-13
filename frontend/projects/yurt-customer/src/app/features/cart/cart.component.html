@@ -174,7 +174,7 @@
             <span style="width:30px;height:30px;border-radius:999px;background:#fff8dd;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">🎁</span>
             <span style="flex:1;min-width:0">
               <span style="display:block;font-size:13px;font-weight:700;color:#1c1917">{{ 'cart.bonuses' | t }}</span>
-              <span style="display:block;font-size:11.5px;font-weight:600;color:#a8a29e">{{ 'cart.bonusAvailable' | t }} {{ maxBonus() | currency2 }}</span>
+              <span style="display:block;font-size:11.5px;font-weight:600;color:#a8a29e">{{ 'cart.bonusAvailable' | t }} {{ fullBonusBalance() | currency2 }}</span>
             </span>
             <button
               (click)="appliedBonus() > 0 ? bonusInput.set(0) : useAllBonus()"
@@ -192,6 +192,10 @@
             <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:#a68700;padding:6px 0 0 40px">
               <span>{{ 'cart.bonusApplied' | t }}</span>
               <span style="font-variant-numeric:tabular-nums">− {{ appliedBonus() | currency2 }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;color:#a8a29e;padding:2px 0 0 40px">
+              <span>{{ 'cart.bonusRemaining' | t }}</span>
+              <span style="font-variant-numeric:tabular-nums">{{ remainingBonus() | currency2 }}</span>
             </div>
           }
         }
