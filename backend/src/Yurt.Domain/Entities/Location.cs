@@ -10,5 +10,9 @@ public class Location : BaseEntity
     public string ContactPhone { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
 
+    // iiko terminal group this location's orders are pushed to. Null = don't push
+    // orders for this location (fail closed, same principle as an unmapped menu item).
+    public Guid? IikoTerminalGroupId { get; set; }
+
     public ICollection<Order> Orders { get; set; } = new List<Order>();
 }

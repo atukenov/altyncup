@@ -371,5 +371,17 @@ public class LoyaltySpendTests(YurtWebAppFactory factory)
             => throw new IikoApiException("down");
         public Task CancelHoldAsync(Guid holdTransactionId, CancellationToken ct = default)
             => throw new IikoApiException("down");
+        public Task<List<IikoNomenclatureProduct>> GetNomenclatureAsync(CancellationToken ct = default)
+            => throw new IikoApiException("down");
+        public Task<List<IikoPaymentType>> GetPaymentTypesAsync(CancellationToken ct = default)
+            => throw new IikoApiException("down");
+        public Task<List<IikoTerminalGroup>> GetTerminalGroupsAsync(CancellationToken ct = default)
+            => throw new IikoApiException("down");
+        public Task<Guid> CreateDeliveryOrderAsync(IikoCreateOrderRequest request, CancellationToken ct = default)
+            => throw new IikoApiException("down");
+        public Task CloseDeliveryOrderAsync(Guid iikoOrderId, CancellationToken ct = default)
+            => throw new IikoApiException("down");
+        public Task RegisterWebhookAsync(string webhookUrl, string authToken, CancellationToken ct = default)
+            => throw new IikoApiException("down");
     }
 }

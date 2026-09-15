@@ -2,13 +2,14 @@ import { Component, inject, OnInit, OnDestroy, signal, computed, effect } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService, SignalrService } from 'shared-api';
-import { Order, OrderStatus, Location } from 'shared-models';
+import { Order, OrderStatus, Location, IikoOrderSyncStatus } from 'shared-models';
 import {
   BadgeComponent,
   ButtonComponent,
   ToastService,
   OrderStatusColorPipe,
   Currency2Pipe,
+  BadgeVariant,
 } from 'shared-ui';
 import { environment } from '../../../environments/environment';
 import { Subscription } from 'rxjs';
@@ -235,6 +236,23 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
     if (d.length === 11 && d[0] === '7')
       return `+7 ${d.slice(1, 4)} ${d.slice(4, 7)} ${d.slice(7)}`;
     return phone;
+  }
+
+  // iiko order-push status badge — hidden for NotPushed (the default while the feature
+  // is off, or before an accepted order's push attempt runs) since that's the vast
+  // majority of orders and not worth surfacing.
+  iikoSyncBadge(status?: IikoOrderSyncStatus): { label: string; variant: BadgeVariant } | null {
+    switch (status) {
+      case IikoOrderSyncStatus.Pushed:
+      case IikoOrderSyncStatus.Closed:
+        return { label: 'Synced to iiko', variant: 'teal' };
+      case IikoOrderSyncStatus.SkippedUnmapped:
+        return { label: 'Not mapped — check menu settings', variant: 'slate' };
+      case IikoOrderSyncStatus.Failed:
+        return { label: 'iiko sync failed', variant: 'red' };
+      default:
+        return null;
+    }
   }
 
   private upsertOrder(updated: Order): void {

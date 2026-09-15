@@ -24,6 +24,7 @@ using Yurt.Application.Features.DiscountCodes.Services;
 using Yurt.Application.Features.AuditLog.Services;
 using Yurt.Application.Features.Reports;
 using Yurt.Application.Features.AppUpdate;
+using Yurt.Application.Features.IikoIntegration.Services;
 using Yurt.Application.Features.Loyalty;
 using Yurt.Application.Features.Loyalty.Services;
 using Yurt.Infrastructure.Health;
@@ -88,6 +89,8 @@ public static class DependencyInjection
         services.AddSingleton(configuration.GetSection("AppUpdate").Get<AppUpdateOptions>() ?? new AppUpdateOptions());
         services.AddHttpClient<IIikoApiClient, IikoApiClient>();
         services.AddScoped<LoyaltyService>();
+        services.AddScoped<IikoOrderSyncService>();
+        services.AddScoped<IIikoWebhookValidator, IikoWebhookValidator>();
         services.AddScoped<IPaymentProvider, KaspiSandboxPaymentProvider>();
         services.AddScoped<IPaymentProviderFactory, PaymentProviderFactory>();
         services.AddScoped<IPaymentWebhookValidator, PaymentWebhookValidator>();
@@ -111,6 +114,7 @@ public static class DependencyInjection
         services.AddHostedService<OrderArchivalService>();
         services.AddHostedService<OrderTimerService>();
         services.AddHostedService<LoyaltyRetryService>();
+        services.AddHostedService<IikoOrderSyncRetryService>();
 
         // JWT Auth — fail-fast secret validation
         var jwtSecret = configuration["Jwt:Secret"];

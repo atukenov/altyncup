@@ -72,6 +72,37 @@ _Last reviewed against the codebase: 2026-09-15._
 
 ---
 
+### iiko Integration — Phase 3 (see GitHub issue #11)
+
+Full API surface audited 2026-09-15 against `docs/iikoDocs.json` (304 endpoints, 58 tags — iikoCloud + iikoBackOffice). Only 7 customer/wallet endpoints are in use today (`IIikoApiClient`). Prioritized below; `Inventory.*`/`Finance.*`/`Employees.*`/`Nomenclature.*` write-side (back-office/ERP modules) were deliberately excluded — internal accounting/warehouse tooling, not customer-app-relevant.
+
+- [ ] **NEW — Stop-list sync (`POST /api/1/stop_lists`)**
+  - Poll iiko for out-of-stock items per location and hide/disable them in the customer menu in near-real-time, instead of letting customers order something that's 86'd in the shop.
+  - No blockers — standalone read-only endpoint, no menu-mapping dependency.
+
+- [ ] **NEW — Order/bonus history from iiko (issue #11 Part A)**
+  - `GET`-equivalent `POST /api/1/loyalty/iiko/customer/transactions/by_date` (or `by_revision` for incremental sync) surfaced in the customer app's history view, merged with local app-order history — includes offsite/in-shop counter purchases, not just app orders.
+  - Spike needed first: verify whether `order/by_id`/`deliveries/by_id` resolve line-item detail for a walk-in sale, or whether offsite history is amount+date only.
+  - No blockers — builds on the existing `IIikoApiClient` customer link.
+
+- [x] **Push mobile orders into iiko as real orders (issue #11 Part B)**
+  - Shipped 2026-09-15 — `POST /api/1/deliveries/create` on `AcceptOrderAsync` (one-time/anonymous iiko customer, so iiko's own loyalty engine never touches the wallet — the existing hold/chargeoff flow is untouched, runs fully alongside), `deliveries/close` on completion. New `IikoOrderSyncService` + `IikoOrderSyncRetryService` (5-min retry, mirrors `LoyaltyRetryService`'s pattern) in `Yurt.Application/Features/IikoIntegration`.
+  - Gated by a **second** flag, `Iiko:PushOrdersEnabled` (default off, independent of `Iiko:Enabled`) — can be piloted separately from loyalty.
+  - Menu→iiko mapping: `MenuItem.IikoProductId`/`IikoProductSizeId`, `MenuItemVariant.IikoProductSizeId`, `Location.IikoTerminalGroupId` — all admin-editable via live-fetched pickers (new `AdminIikoController`: `GET admin/iiko/nomenclature|payment-types|terminal-groups`, wired into the menu-item dialog and location dialog). Unmapped item or unmapped location → order fails closed (`IikoOrderSyncStatus.SkippedUnmapped`, logged + audited, no retry — needs an admin fix, not a transient retry).
+  - "Paid in app" payment type stays an appsettings value (`Iiko:PaymentTypeId`) — the reference endpoint just helps the operator find the right GUID; no iiko API exists to create a payment type.
+  - Toppings/modifiers are pushed as text on the iiko order item's `comment`, not real iiko modifiers (no modifier-schema mapping) — a stated scope limit, not a bug.
+  - Operator setup checklist: set `Iiko:PaymentTypeId` (via the new reference endpoint), map at least one location's Terminal Group + the menu items sold there, then flip `Iiko:PushOrdersEnabled = true`.
+
+- [x] **Delivery status webhooks (`DeliveryOrderUpdateWebHookEventInfo`/`...Error`)**
+  - Shipped 2026-09-15 — `IikoWebhookController` (`POST /api/v1/webhooks/iiko`, anonymous, shared-token auth via `Iiko:WebhookAuthToken`). **Audit-only in this phase**: flags `IikoOrderSyncStatus.Failed` + logs/audits when iiko reports a cancellation or error on a pushed order — deliberately does **not** drive customer-facing `Order.Status` (the admin panel stays the sole source of that; making iiko's POS terminal part of the live fulfillment workflow is a bigger, separate decision).
+  - One-time setup: `POST /admin/iiko/register-webhook { webhookUrl }` (operator-triggered, not automatic — needs the real public URL).
+  - Webhook auth mechanism (token in the `Authorization` header) is an assumption based on iiko's typical behavior, not explicitly documented in the spec — verify against real webhook traffic on first live registration.
+
+- [ ] **NEW — Coupon/promo integration (`Discounts and promotions` tag)**
+  - Use iiko's coupon-series engine for promo codes instead of building a parallel one, if/when promo codes are prioritized.
+
+---
+
 ### Customer App
 
 - [x] **iiko loyalty integration**

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CdkDropList, CdkDrag, CdkDragHandle, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { YurtApiService } from 'shared-api';
-import { MenuItem, MenuCategory, MenuTopping, Location, MenuItemVariant } from 'shared-models';
+import { MenuItem, MenuCategory, MenuTopping, Location, MenuItemVariant, IikoNomenclatureProduct } from 'shared-models';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { AdminLangService } from '../../core/lang.service';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
@@ -16,6 +16,7 @@ interface VariantRow {
   price: number;
   sortOrder: number;
   isDefault: boolean;
+  iikoProductSizeId: string;
 }
 
 interface MenuItemForm {
@@ -32,6 +33,8 @@ interface MenuItemForm {
   isAvailable: boolean;
   locationIds: string[];
   variants: VariantRow[];
+  iikoProductId: string;
+  iikoProductSizeId: string;
 }
 
 interface ToppingForm {
@@ -84,7 +87,14 @@ export class MenuManagementComponent implements OnInit {
     name: '', nameRu: '', nameKk: '',
     description: '', descriptionRu: '', descriptionKk: '',
     price: 0, categoryId: '', imageUrl: '', isAvailable: true, locationIds: [], variants: [],
+    iikoProductId: '', iikoProductSizeId: '',
   });
+
+  // iiko product catalog for the mapping dropdowns (Phase 3 order-push feature).
+  iikoNomenclature = signal<IikoNomenclatureProduct[]>([]);
+
+  selectedIikoProduct = computed(() =>
+    this.iikoNomenclature().find((p) => p.productId === this.itemForm().iikoProductId));
 
   toppingForm = signal<ToppingForm>({
     name: '', nameRu: '', nameKk: '',
@@ -128,6 +138,10 @@ export class MenuManagementComponent implements OnInit {
     });
     this.api.adminGetToppings().subscribe((toppings) => this.toppings.set(toppings));
     this.api.getAdminLocations().subscribe((locs) => this.locations.set(locs));
+    this.api.getIikoNomenclature().subscribe({
+      next: (products) => this.iikoNomenclature.set(products),
+      error: () => this.iikoNomenclature.set([]), // iiko disabled/unreachable — mapping picker just stays empty
+    });
   }
 
   localizedCatName(cat: MenuCategory): string {
@@ -231,8 +245,11 @@ export class MenuManagementComponent implements OnInit {
         ? item.variants.map((v: MenuItemVariant) => ({
             label: v.label, labelRu: (v as any).labelRu ?? '', labelKk: (v as any).labelKk ?? '',
             price: v.price, sortOrder: v.sortOrder, isDefault: v.isDefault,
+            iikoProductSizeId: v.iikoProductSizeId ?? '',
           }))
         : [],
+      iikoProductId: item?.iikoProductId ?? '',
+      iikoProductSizeId: item?.iikoProductSizeId ?? '',
     });
     this.showItemDialog.set(true);
   }
@@ -242,8 +259,19 @@ export class MenuManagementComponent implements OnInit {
       ...f,
       variants: [
         ...f.variants,
-        { label: '', labelRu: '', labelKk: '', price: 0, sortOrder: f.variants.length, isDefault: f.variants.length === 0 },
+        { label: '', labelRu: '', labelKk: '', price: 0, sortOrder: f.variants.length, isDefault: f.variants.length === 0, iikoProductSizeId: '' },
       ],
+    }));
+  }
+
+  // iiko sizes belong to the item's selected product — switching product invalidates
+  // any size already picked (on the item itself, and on every variant row).
+  onIikoProductChange(productId: string): void {
+    this.itemForm.update((f) => ({
+      ...f,
+      iikoProductId: productId,
+      iikoProductSizeId: '',
+      variants: f.variants.map((v) => ({ ...v, iikoProductSizeId: '' })),
     }));
   }
 
@@ -318,8 +346,11 @@ export class MenuManagementComponent implements OnInit {
         ? f.variants.map((v, i) => ({
             label: v.label, labelRu: v.labelRu || undefined, labelKk: v.labelKk || undefined,
             price: v.price, sortOrder: i, isDefault: v.isDefault,
+            iikoProductSizeId: v.iikoProductSizeId || undefined,
           }))
         : undefined,
+      iikoProductId: f.iikoProductId || undefined,
+      iikoProductSizeId: f.iikoProductSizeId || undefined,
     };
     const obs = f.id ? this.api.adminUpdateMenuItem(f.id, payload) : this.api.adminCreateMenuItem(payload);
     obs.subscribe({

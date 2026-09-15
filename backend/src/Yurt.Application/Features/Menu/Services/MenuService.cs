@@ -266,7 +266,9 @@ public class MenuService
             Price = dto.Price,
             IsAvailable = dto.IsAvailable,
             ImageUrl = dto.ImageUrl,
-            SortOrder = nextSortOrder
+            SortOrder = nextSortOrder,
+            IikoProductId = dto.IikoProductId,
+            IikoProductSizeId = dto.IikoProductSizeId
         };
         _db.MenuItems.Add(item);
 
@@ -282,7 +284,8 @@ public class MenuService
                 LabelKk = v.LabelKk,
                 Price = v.Price,
                 SortOrder = v.SortOrder,
-                IsDefault = v.IsDefault
+                IsDefault = v.IsDefault,
+                IikoProductSizeId = v.IikoProductSizeId
             });
 
         await _db.SaveChangesAsync(ct);
@@ -316,6 +319,8 @@ public class MenuService
         item.Price = dto.Price;
         item.IsAvailable = dto.IsAvailable;
         item.ImageUrl = dto.ImageUrl;
+        item.IikoProductId = dto.IikoProductId;
+        item.IikoProductSizeId = dto.IikoProductSizeId;
         item.UpdatedAt = DateTime.UtcNow;
 
         foreach (var link in item.MenuItemLocations.ToList())
@@ -336,7 +341,8 @@ public class MenuService
                 LabelKk = v.LabelKk,
                 Price = v.Price,
                 SortOrder = v.SortOrder,
-                IsDefault = v.IsDefault
+                IsDefault = v.IsDefault,
+                IikoProductSizeId = v.IikoProductSizeId
             });
 
         await _db.SaveChangesAsync(ct);
@@ -506,11 +512,12 @@ public class MenuService
         var locationIds = i.MenuItemLocations?.Select(l => l.LocationId).ToList();
         var variants = i.Variants?.Count > 0
             ? i.Variants.OrderBy(v => v.SortOrder)
-                .Select(v => new AdminMenuItemVariantDto(v.Id, v.Label, v.LabelRu, v.LabelKk, v.Price, v.SortOrder, v.IsDefault)).ToList()
+                .Select(v => new AdminMenuItemVariantDto(v.Id, v.Label, v.LabelRu, v.LabelKk, v.Price, v.SortOrder, v.IsDefault, v.IikoProductSizeId)).ToList()
             : null;
         return new(i.Id, i.CategoryId, i.Category?.Name ?? "",
                i.Name, i.NameRu, i.NameKk,
                i.Description, i.DescriptionRu, i.DescriptionKk,
-               i.Price, i.IsAvailable, i.ImageUrl, i.SortOrder, locationIds, toppings, variants);
+               i.Price, i.IsAvailable, i.ImageUrl, i.SortOrder, locationIds, toppings, variants,
+               i.IikoProductId, i.IikoProductSizeId);
     }
 }

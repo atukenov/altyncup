@@ -26,8 +26,8 @@ public record MenuToppingDto(Guid Id, string Name, decimal Price, bool IsAvailab
 
 public record AdminMenuCategoryDto(Guid Id, string Name, string? NameRu, string? NameKk, int SortOrder);
 
-public record AdminMenuItemVariantDto(Guid Id, string Label, string? LabelRu, string? LabelKk, decimal Price, int SortOrder, bool IsDefault);
-public record CreateMenuItemVariantDto(string Label, string? LabelRu, string? LabelKk, decimal Price, int SortOrder, bool IsDefault);
+public record AdminMenuItemVariantDto(Guid Id, string Label, string? LabelRu, string? LabelKk, decimal Price, int SortOrder, bool IsDefault, Guid? IikoProductSizeId = null);
+public record CreateMenuItemVariantDto(string Label, string? LabelRu, string? LabelKk, decimal Price, int SortOrder, bool IsDefault, Guid? IikoProductSizeId = null);
 
 public record AdminMenuItemDto(
     Guid Id,
@@ -45,7 +45,9 @@ public record AdminMenuItemDto(
     int SortOrder = 0,
     List<Guid>? LocationIds = null,
     List<MenuToppingDto>? AvailableToppings = null,
-    List<AdminMenuItemVariantDto>? Variants = null);
+    List<AdminMenuItemVariantDto>? Variants = null,
+    Guid? IikoProductId = null,
+    Guid? IikoProductSizeId = null);
 
 public record AdminMenuToppingDto(
     Guid Id,
@@ -76,7 +78,9 @@ public record CreateMenuItemDto(
     bool IsAvailable,
     string? ImageUrl,
     List<Guid>? LocationIds = null,
-    List<CreateMenuItemVariantDto>? Variants = null);
+    List<CreateMenuItemVariantDto>? Variants = null,
+    Guid? IikoProductId = null,
+    Guid? IikoProductSizeId = null);
 
 public record UpdateMenuItemDto(
     Guid CategoryId,
@@ -90,7 +94,9 @@ public record UpdateMenuItemDto(
     bool IsAvailable,
     string? ImageUrl,
     List<Guid>? LocationIds = null,
-    List<CreateMenuItemVariantDto>? Variants = null);
+    List<CreateMenuItemVariantDto>? Variants = null,
+    Guid? IikoProductId = null,
+    Guid? IikoProductSizeId = null);
 
 public record CreateToppingDto
 {

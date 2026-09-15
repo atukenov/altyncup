@@ -18,6 +18,9 @@ import {
   DeclineOrderRequest,
   DiscountCode,
   GroupCart,
+  IikoNomenclatureProduct,
+  IikoPaymentType,
+  IikoTerminalGroup,
   Location,
   LoyaltyBalance,
   MenuCategory,
@@ -477,5 +480,18 @@ export class YurtApiService {
 
   resolveReport(id: string): Observable<void> {
     return this.http.post<void>(`${this.api}/admin/reports/${id}/resolve`, {});
+  }
+
+  // ── iiko (admin reference lookups for the menu-mapping / location pickers) ───
+  getIikoNomenclature(): Observable<IikoNomenclatureProduct[]> {
+    return this.http.get<IikoNomenclatureProduct[]>(`${this.api}/admin/iiko/nomenclature`);
+  }
+
+  getIikoPaymentTypes(): Observable<IikoPaymentType[]> {
+    return this.http.get<IikoPaymentType[]>(`${this.api}/admin/iiko/payment-types`);
+  }
+
+  getIikoTerminalGroups(): Observable<IikoTerminalGroup[]> {
+    return this.http.get<IikoTerminalGroup[]>(`${this.api}/admin/iiko/terminal-groups`);
   }
 }
