@@ -7,15 +7,17 @@
   </div>
 
   <!-- Tabs -->
-  <div class="flex gap-2 mb-6">
+  <div class="flex gap-2 mb-6" role="group" aria-label="Report status">
     <button
       (click)="setTab('open')"
+      [attr.aria-pressed]="tab() === 'open'"
       [class]="tab() === 'open'
         ? 'px-4 py-2 rounded-xl bg-amber-500 text-stone-900 font-semibold text-sm'
         : 'px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50'"
     >Open</button>
     <button
       (click)="setTab('resolved')"
+      [attr.aria-pressed]="tab() === 'resolved'"
       [class]="tab() === 'resolved'
         ? 'px-4 py-2 rounded-xl bg-amber-500 text-stone-900 font-semibold text-sm'
         : 'px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50'"

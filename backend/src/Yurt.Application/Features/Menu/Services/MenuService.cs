@@ -84,7 +84,7 @@ public class MenuService
                 i.MenuItemLocations.Any(l => l.LocationId == locationId.Value));
 
         var items = await query
-            .OrderBy(i => i.Category.SortOrder).ThenBy(i => i.Name)
+            .OrderBy(i => i.Category.SortOrder).ThenBy(i => i.SortOrder).ThenBy(i => i.Name)
             .ToListAsync(ct);
 
         var categoryIds = items.Select(i => i.CategoryId).Distinct().ToList();
@@ -158,7 +158,7 @@ public class MenuService
             .Include(i => i.Category)
             .Include(i => i.MenuItemLocations)
             .Include(i => i.Variants)
-            .OrderBy(i => i.Category.SortOrder).ThenBy(i => i.Name)
+            .OrderBy(i => i.Category.SortOrder).ThenBy(i => i.SortOrder).ThenBy(i => i.Name)
             .ToListAsync(ct);
 
         return items.Select(i => MapAdminItemToDto(i)).ToList();
@@ -226,6 +226,23 @@ public class MenuService
         return Result<bool>.Success(true);
     }
 
+    public async Task<Result<bool>> ReorderCategoriesAsync(List<Guid> orderedIds, CancellationToken ct = default)
+    {
+        var cats = await _db.MenuCategories.Where(c => orderedIds.Contains(c.Id)).ToListAsync(ct);
+        for (var i = 0; i < orderedIds.Count; i++)
+        {
+            var cat = cats.FirstOrDefault(c => c.Id == orderedIds[i]);
+            if (cat == null) continue;
+            cat.SortOrder = i;
+            cat.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("CategoriesReordered", "MenuCategory", "", $"{cats.Count} categories", ct);
+        await _menuCache.InvalidateAllMenuAsync();
+        return Result<bool>.Success(true);
+    }
+
     // ── MenuItem CRUD ─────────────────────────────────────────────────────────
 
     public async Task<Result<AdminMenuItemDto>> CreateItemAsync(
@@ -234,6 +251,8 @@ public class MenuService
         var cat = await _db.MenuCategories.FindAsync([dto.CategoryId], ct);
         if (cat == null)
             return Result<AdminMenuItemDto>.Failure("Category not found.", 400);
+
+        var nextSortOrder = await _db.MenuItems.CountAsync(i => i.CategoryId == dto.CategoryId, ct);
 
         var item = new MenuItem
         {
@@ -246,7 +265,8 @@ public class MenuService
             DescriptionKk = dto.DescriptionKk,
             Price = dto.Price,
             IsAvailable = dto.IsAvailable,
-            ImageUrl = dto.ImageUrl
+            ImageUrl = dto.ImageUrl,
+            SortOrder = nextSortOrder
         };
         _db.MenuItems.Add(item);
 
@@ -334,6 +354,26 @@ public class MenuService
         _db.MenuItems.Remove(item);
         await _db.SaveChangesAsync(ct);
         await _audit.LogAsync("MenuItemDeleted", "MenuItem", id.ToString(), name, ct);
+        await _menuCache.InvalidateAllMenuAsync();
+        return Result<bool>.Success(true);
+    }
+
+    public async Task<Result<bool>> ReorderItemsAsync(Guid categoryId, List<Guid> orderedIds, CancellationToken ct = default)
+    {
+        var items = await _db.MenuItems
+            .Where(i => i.CategoryId == categoryId && orderedIds.Contains(i.Id))
+            .ToListAsync(ct);
+
+        for (var i = 0; i < orderedIds.Count; i++)
+        {
+            var item = items.FirstOrDefault(x => x.Id == orderedIds[i]);
+            if (item == null) continue;
+            item.SortOrder = i;
+            item.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("MenuItemsReordered", "MenuItem", categoryId.ToString(), $"{items.Count} items", ct);
         await _menuCache.InvalidateAllMenuAsync();
         return Result<bool>.Success(true);
     }
@@ -471,6 +511,6 @@ public class MenuService
         return new(i.Id, i.CategoryId, i.Category?.Name ?? "",
                i.Name, i.NameRu, i.NameKk,
                i.Description, i.DescriptionRu, i.DescriptionKk,
-               i.Price, i.IsAvailable, i.ImageUrl, locationIds, toppings, variants);
+               i.Price, i.IsAvailable, i.ImageUrl, i.SortOrder, locationIds, toppings, variants);
     }
 }

@@ -225,6 +225,62 @@
       }
     </div>
 
+    <!-- ── Rating card — only when Completed ────────────────────────────────── -->
+    @if (o.status === OrderStatus.Completed) {
+      <div class="order-card" style="margin:10px 16px 0;text-align:center">
+        @if (o.rating) {
+          <p style="font-size:13px;font-weight:600;color:#78716c;margin-bottom:6px">{{ 'rating.thanks' | t }}</p>
+          <div style="font-size:22px;letter-spacing:2px" aria-hidden="true">
+            @for (s of stars; track s) {
+              <span [style.color]="s <= o.rating! ? '#f59e0b' : '#e7e5e4'">★</span>
+            }
+          </div>
+          @if (o.ratingComment) {
+            <p style="font-size:12.5px;color:#78716c;margin-top:8px;font-style:italic">"{{ o.ratingComment }}"</p>
+          }
+        } @else {
+          <p style="font-size:13px;font-weight:700;color:#1c1917;margin-bottom:10px">{{ 'rating.prompt' | t }}</p>
+          <div
+            role="radiogroup"
+            [attr.aria-label]="'rating.prompt' | t"
+            style="font-size:30px;letter-spacing:6px;line-height:1"
+          >
+            @for (s of stars; track s) {
+              <button
+                type="button"
+                role="radio"
+                [attr.aria-checked]="selectedRating() === s"
+                [attr.aria-label]="s + ' / 5'"
+                (click)="selectedRating.set(s)"
+                (mouseenter)="hoverRating.set(s)"
+                (mouseleave)="hoverRating.set(0)"
+                style="background:none;border:none;padding:2px;cursor:pointer"
+                [style.color]="s <= (hoverRating() || selectedRating()) ? '#f59e0b' : '#e7e5e4'"
+              >★</button>
+            }
+          </div>
+          <textarea
+            [ngModel]="ratingComment()"
+            (ngModelChange)="ratingComment.set($event)"
+            [placeholder]="'rating.commentPlaceholder' | t"
+            rows="2"
+            style="width:100%;margin-top:12px;padding:10px 12px;border:1px solid #e7e5e4;border-radius:14px;
+              font-size:13px;font-family:inherit;resize:none;box-sizing:border-box"
+          ></textarea>
+          <button
+            type="button"
+            [disabled]="selectedRating() === 0 || submittingRating()"
+            (click)="submitRating()"
+            style="width:100%;margin-top:10px;padding:11px;border:none;border-radius:14px;
+              background:#f59e0b;color:#1c1917;font-weight:700;font-size:13.5px;cursor:pointer"
+            [style.opacity]="selectedRating() === 0 || submittingRating() ? 0.5 : 1"
+          >
+            {{ 'rating.submit' | t }}
+          </button>
+        }
+      </div>
+    }
+
   }
 
   <!-- ── Receipt bottom sheet (unchanged) ─────────────────────────────────────── -->

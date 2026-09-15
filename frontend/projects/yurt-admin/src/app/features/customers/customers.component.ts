@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { YurtApiService } from 'shared-api';
 import { Currency2Pipe } from 'shared-ui';
 import { CustomerSummary } from 'shared-models';
@@ -15,6 +15,8 @@ import { AdminTranslatePipe } from '../../core/translate.pipe';
 })
 export class CustomersComponent implements OnInit {
   private api = inject(YurtApiService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   customers = signal<CustomerSummary[]>([]);
   loading = signal(true);
@@ -48,5 +50,9 @@ export class CustomersComponent implements OnInit {
 
   get totalPages(): number {
     return Math.ceil(this.total() / this.pageSize);
+  }
+
+  goToCustomer(id: string): void {
+    this.router.navigate([id], { relativeTo: this.route });
   }
 }

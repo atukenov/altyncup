@@ -11,12 +11,14 @@ import {
 } from 'shared-api';
 import { environment } from '../environments/environment';
 import { SplashComponent } from './features/loading/splash.component';
+import { AppUpdateGateComponent } from './features/app-update/app-update-gate.component';
 import { AppStateService } from './core/app-state.service';
 import { AppResumeService } from './core/app-resume.service';
+import { AppUpdateService } from './core/app-update.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, SplashComponent],
+  imports: [RouterOutlet, SplashComponent, AppUpdateGateComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -28,6 +30,7 @@ export class App implements OnInit, OnDestroy {
   private notifications = inject(NotificationService);
   private appState = inject(AppStateService);
   private appResume = inject(AppResumeService);
+  private appUpdate = inject(AppUpdateService);
 
   readonly appReady = this.appState.refreshReady;
 
@@ -39,6 +42,7 @@ export class App implements OnInit, OnDestroy {
 
     this.api.configure(environment.apiUrl);
     this.signalr.configure(environment.apiUrl);
+    this.appUpdate.check();
 
     if (this.auth.isLoggedIn) {
       const rt = this.auth.refreshToken;

@@ -95,6 +95,9 @@ const T: Record<Lang, Record<string, string>> = {
     'empty.ordersTitle': 'No orders yet', 'empty.ordersHint': 'Your history will appear here — with statuses, receipts and one-tap reorder.', 'empty.ordersCta': 'Place first order',
     'empty.favTitle': 'Nothing saved yet', 'empty.favHintPre': 'Tap ', 'empty.favHintPost': ' on your favourite drinks — they\'ll gather here for quick ordering.', 'empty.favCta': 'Find your favourite',
     'auth.locked': 'Account locked. Try again in {minutes} min.',
+    'update.title': 'Update required', 'update.body': 'A new version of Altyncup is available. Please update to continue.', 'update.cta': 'Update Now',
+    'rating.prompt': 'How was your order?', 'rating.commentPlaceholder': 'Add a comment (optional)',
+    'rating.submit': 'Submit rating', 'rating.thanks': 'Thanks for your feedback!',
   },
   ru: {
     'nav.menu': 'Меню', 'nav.cart': 'Корзина', 'nav.orders': 'Заказы', 'nav.saved': 'Избранное', 'nav.profile': 'Профиль', 'nav.news': 'Новости',
@@ -188,6 +191,9 @@ const T: Record<Lang, Record<string, string>> = {
     'empty.ordersTitle': 'Заказов ещё не было', 'empty.ordersHint': 'Здесь появится история — со статусами, чеками и повтором в один тап.', 'empty.ordersCta': 'Сделать первый заказ',
     'empty.favTitle': 'Здесь пусто', 'empty.favHintPre': 'Нажимайте ', 'empty.favHintPost': ' на любимых напитках — они соберутся здесь для быстрого заказа.', 'empty.favCta': 'Найти любимый',
     'auth.locked': 'Аккаунт заблокирован. Попробуйте через {minutes} мин.',
+    'update.title': 'Требуется обновление', 'update.body': 'Доступна новая версия Altyncup. Обновите приложение, чтобы продолжить.', 'update.cta': 'Обновить',
+    'rating.prompt': 'Как вам заказ?', 'rating.commentPlaceholder': 'Комментарий (необязательно)',
+    'rating.submit': 'Отправить оценку', 'rating.thanks': 'Спасибо за отзыв!',
   },
   kk: {
     'nav.menu': 'Мәзір', 'nav.cart': 'Себет', 'nav.orders': 'Тапсырыстар', 'nav.saved': 'Сақталған', 'nav.profile': 'Профиль', 'nav.news': 'Жаңалықтар',
@@ -281,6 +287,9 @@ const T: Record<Lang, Record<string, string>> = {
     'empty.ordersTitle': 'Тапсырыс болған жоқ', 'empty.ordersHint': 'Тарих осында пайда болады — күйлерімен, чектерімен.', 'empty.ordersCta': 'Алғашқы тапсырыс беру',
     'empty.favTitle': 'Бұл жерде бос', 'empty.favHintPre': 'Басыңыз ', 'empty.favHintPost': ' сүйікті сусындарда — тез тапсырыс үшін осында жиналады.', 'empty.favCta': 'Сүйіктісін табу',
     'auth.locked': 'Аккаунт бұғатталған. {minutes} минуттан кейін қайталаңыз.',
+    'update.title': 'Жаңарту қажет', 'update.body': 'Altyncup қосымшасының жаңа нұсқасы бар. Жалғастыру үшін жаңартыңыз.', 'update.cta': 'Жаңарту',
+    'rating.prompt': 'Тапсырыс қалай болды?', 'rating.commentPlaceholder': 'Пікір қалдыру (міндетті емес)',
+    'rating.submit': 'Бағалауды жіберу', 'rating.thanks': 'Пікіріңіз үшін рахмет!',
   },
 };
 

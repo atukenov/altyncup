@@ -42,6 +42,7 @@ public record AdminMenuItemDto(
     decimal Price,
     bool IsAvailable,
     string? ImageUrl,
+    int SortOrder = 0,
     List<Guid>? LocationIds = null,
     List<MenuToppingDto>? AvailableToppings = null,
     List<AdminMenuItemVariantDto>? Variants = null);
@@ -60,6 +61,8 @@ public record AdminMenuToppingDto(
 
 public record CreateCategoryDto(string Name, string? NameRu, string? NameKk, int SortOrder);
 public record UpdateCategoryDto(string Name, string? NameRu, string? NameKk, int SortOrder);
+public record ReorderCategoriesDto(List<Guid> OrderedIds);
+public record ReorderMenuItemsDto(Guid CategoryId, List<Guid> OrderedIds);
 
 public record CreateMenuItemDto(
     Guid CategoryId,

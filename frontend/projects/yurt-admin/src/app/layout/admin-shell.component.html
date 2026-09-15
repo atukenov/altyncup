@@ -24,6 +24,7 @@
         [class]="collapsed() ? 'absolute left-2 top-14.5' : ''"
         class="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
         [title]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
       >
         <svg class="w-4 h-4 transition-transform duration-200" [class.rotate-180]="collapsed()"
              fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -33,11 +34,13 @@
     </div>
 
     <!-- Nav links -->
-    <nav class="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+    <nav class="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto" aria-label="Main">
       <a
         routerLink="/orders"
         routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
+        ariaCurrentWhenActive="page"
         [title]="collapsed() ? ('nav.orders' | t) : ''"
+        [attr.aria-label]="'nav.orders' | t"
         [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
         class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
       >
@@ -51,7 +54,9 @@
         <a
           routerLink="/menu"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
+          ariaCurrentWhenActive="page"
           [title]="collapsed() ? ('nav.menu' | t) : ''"
+          [attr.aria-label]="'nav.menu' | t"
           [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
@@ -64,7 +69,9 @@
         <a
           routerLink="/locations"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
+          ariaCurrentWhenActive="page"
           [title]="collapsed() ? ('nav.locations' | t) : ''"
+          [attr.aria-label]="'nav.locations' | t"
           [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
@@ -78,7 +85,9 @@
         <a
           routerLink="/analytics"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
+          ariaCurrentWhenActive="page"
           [title]="collapsed() ? ('nav.analytics' | t) : ''"
+          [attr.aria-label]="'nav.analytics' | t"
           [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
@@ -91,7 +100,9 @@
         <a
           routerLink="/promotions"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
+          ariaCurrentWhenActive="page"
           [title]="collapsed() ? ('nav.promotions' | t) : ''"
+          [attr.aria-label]="'nav.promotions' | t"
           [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
@@ -104,7 +115,9 @@
         <a
           routerLink="/discount-codes"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
+          ariaCurrentWhenActive="page"
           [title]="collapsed() ? ('nav.discountCodes' | t) : ''"
+          [attr.aria-label]="'nav.discountCodes' | t"
           [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
@@ -117,7 +130,9 @@
         <a
           routerLink="/customers"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
+          ariaCurrentWhenActive="page"
           [title]="collapsed() ? ('nav.customers' | t) : ''"
+          [attr.aria-label]="'nav.customers' | t"
           [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
@@ -130,7 +145,9 @@
         <a
           routerLink="/workers"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
+          ariaCurrentWhenActive="page"
           [title]="collapsed() ? ('nav.workers' | t) : ''"
+          [attr.aria-label]="'nav.workers' | t"
           [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
@@ -143,7 +160,9 @@
         <a
           routerLink="/audit-log"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
+          ariaCurrentWhenActive="page"
           [title]="collapsed() ? ('nav.auditLog' | t) : ''"
+          [attr.aria-label]="'nav.auditLog' | t"
           [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
@@ -156,7 +175,9 @@
         <a
           routerLink="/reports"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
+          ariaCurrentWhenActive="page"
           [title]="collapsed() ? ('nav.reports' | t) : ''"
+          [attr.aria-label]="'nav.reports' | t"
           [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
@@ -173,10 +194,11 @@
          [class]="collapsed() ? 'px-2 py-3 flex flex-col items-center gap-2' : 'px-4 py-4'">
       @if (!collapsed()) {
         <!-- Language switcher -->
-        <div class="flex gap-1 mb-3">
+        <div class="flex gap-1 mb-3" role="group" aria-label="Language">
           @for (l of ['ru', 'en', 'kk']; track l) {
             <button
               (click)="langService.setLang(l)"
+              [attr.aria-pressed]="langService.lang() === l"
               [class]="langService.lang() === l
                 ? 'flex-1 py-1 text-xs font-semibold rounded-lg bg-amber-100 text-amber-700'
                 : 'flex-1 py-1 text-xs rounded-lg text-slate-500 hover:bg-slate-100 transition-colors'"
@@ -205,8 +227,13 @@
         <!-- Collapsed: avatar only with logout on click -->
         <div
           class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-sm font-bold text-amber-700 cursor-pointer"
+          role="button"
+          tabindex="0"
           [title]="(auth.currentUser?.displayName ?? '') + ' · ' + ('nav.signOut' | t)"
+          [attr.aria-label]="('nav.signOut' | t)"
           (click)="logout()"
+          (keydown.enter)="logout()"
+          (keydown.space)="$event.preventDefault(); logout()"
         >
           {{ initials() }}
         </div>

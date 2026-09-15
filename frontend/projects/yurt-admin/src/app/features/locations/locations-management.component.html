@@ -65,11 +65,11 @@
 
 <!-- Dialog -->
 @if (showDialog()) {
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (keydown.escape)="showDialog.set(false)">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]" role="dialog" aria-modal="true" aria-labelledby="location-dialog-title">
       <!-- Dialog header -->
       <div class="px-6 pt-6 pb-4 border-b border-slate-100 shrink-0">
-        <h3 class="text-lg font-bold text-slate-800">
+        <h3 id="location-dialog-title" class="text-lg font-bold text-slate-800">
           {{ form().id ? ('locations.editTitle' | t) : ('locations.addTitle' | t) }}
         </h3>
       </div>
@@ -110,6 +110,9 @@
                 <!-- Toggle switch -->
                 <button
                   type="button"
+                  role="switch"
+                  [attr.aria-checked]="slot.enabled"
+                  [attr.aria-label]="DAY_NAMES[slot.day - 1]"
                   (click)="toggleDay(i)"
                   class="relative shrink-0 w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-1"
                   [class]="slot.enabled ? 'bg-amber-500' : 'bg-slate-200'"

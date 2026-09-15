@@ -10,16 +10,20 @@ import { ToastService, ToastType } from './toast.service';
     <div
       class="fixed right-0 z-50 flex flex-col items-end gap-2 pointer-events-none px-4"
       style="top: max(1rem, env(safe-area-inset-top))"
+      role="status"
+      aria-live="polite"
+      aria-atomic="false"
     >
       @for (toast of toastService.toasts(); track toast.id) {
         <div
           [class]="toastClass(toast.type)"
           class="pointer-events-auto max-w-sm w-full shadow-lg rounded-2xl px-4 py-3 flex items-center gap-3 text-sm font-medium"
         >
-          <span>{{ toastIcon(toast.type) }}</span>
+          <span aria-hidden="true">{{ toastIcon(toast.type) }}</span>
           <span>{{ toast.message }}</span>
           <button
             (click)="toastService.remove(toast.id)"
+            aria-label="Dismiss"
             class="ml-auto opacity-70 hover:opacity-100"
           >
             &times;

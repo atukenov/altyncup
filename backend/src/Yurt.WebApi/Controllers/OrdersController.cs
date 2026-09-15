@@ -56,4 +56,9 @@ public class OrdersController : ApiControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
         => ToResult(await _orderService.GetOrderAsync(id, _currentUser.UserId!.Value, ct));
+
+    /// <summary>Rate a completed order (1-5 stars, optional comment). Once only.</summary>
+    [HttpPost("{id:guid}/rating")]
+    public async Task<IActionResult> Rate(Guid id, [FromBody] RateOrderDto dto, CancellationToken ct)
+        => ToResult(await _orderService.RateOrderAsync(id, _currentUser.UserId!.Value, dto, ct));
 }

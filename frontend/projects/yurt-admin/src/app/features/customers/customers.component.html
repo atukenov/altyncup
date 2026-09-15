@@ -13,6 +13,7 @@
       [(ngModel)]="phone"
       (ngModelChange)="onSearch()"
       [placeholder]="'customers.searchPhone' | t"
+      [attr.aria-label]="'customers.searchPhone' | t"
       class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300"
     />
   </div>
@@ -40,7 +41,12 @@
         </thead>
         <tbody>
           @for (c of customers(); track c.id) {
-            <tr [routerLink]="[c.id]" class="border-b border-slate-50 last:border-0 hover:bg-slate-50 cursor-pointer transition-colors">
+            <tr
+              [routerLink]="[c.id]"
+              tabindex="0"
+              (keydown.enter)="goToCustomer(c.id)"
+              class="border-b border-slate-50 last:border-0 hover:bg-slate-50 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-amber-400"
+            >
               <td class="px-5 py-3 font-mono text-slate-700">{{ c.phone }}</td>
               <td class="px-5 py-3 text-slate-800">{{ c.displayName || '—' }}</td>
               <td class="px-5 py-3 text-slate-400">{{ c.registeredAt | date: 'MMM d, y' }}</td>
@@ -55,7 +61,12 @@
     <!-- Mobile cards -->
     <div class="md:hidden space-y-3">
       @for (c of customers(); track c.id) {
-        <div [routerLink]="[c.id]" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 cursor-pointer hover:border-amber-200 transition-colors">
+        <div
+          [routerLink]="[c.id]"
+          tabindex="0"
+          (keydown.enter)="goToCustomer(c.id)"
+          class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 cursor-pointer hover:border-amber-200 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400"
+        >
           <div class="flex items-start justify-between mb-2">
             <div>
               <p class="font-semibold text-slate-800">{{ c.displayName || '—' }}</p>
@@ -79,12 +90,14 @@
           <button
             [disabled]="page() <= 1"
             (click)="load(page() - 1)"
+            aria-label="{{ 'action.previous' | t }}"
             class="px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 transition-colors"
           >←</button>
           <span class="font-medium text-slate-700">{{ page() }} / {{ totalPages }}</span>
           <button
             [disabled]="page() >= totalPages"
             (click)="load(page() + 1)"
+            aria-label="{{ 'action.next' | t }}"
             class="px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 transition-colors"
           >→</button>
         </div>

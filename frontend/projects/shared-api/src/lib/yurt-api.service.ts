@@ -5,6 +5,7 @@ import {
   AcceptOrderRequest,
   AddGroupOrderItemRequest,
   AnalyticsResponse,
+  AppUpdateInfo,
   AuditLogEntry,
   AuthResponse,
   CreateOrderRequest,
@@ -46,6 +47,11 @@ export class YurtApiService {
 
   private get api(): string {
     return `${this.baseUrl}/api/v1`;
+  }
+
+  // ── App ────────────────────────────────────────────────────────────────────
+  getAppUpdateInfo(): Observable<AppUpdateInfo> {
+    return this.http.get<AppUpdateInfo>(`${this.api}/app/update-info`);
   }
 
   // ── Auth ───────────────────────────────────────────────────────────────────
@@ -183,6 +189,10 @@ export class YurtApiService {
     return this.http.delete<void>(`${this.api}/admin/menu/items/${id}`);
   }
 
+  adminReorderMenuItems(categoryId: string, orderedIds: string[]): Observable<void> {
+    return this.http.patch<void>(`${this.api}/admin/menu/items/reorder`, { categoryId, orderedIds });
+  }
+
   adminGetCategories(): Observable<MenuCategory[]> {
     return this.http.get<MenuCategory[]>(`${this.api}/admin/menu/categories`);
   }
@@ -197,6 +207,10 @@ export class YurtApiService {
 
   adminDeleteCategory(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/admin/menu/categories/${id}`);
+  }
+
+  adminReorderCategories(orderedIds: string[]): Observable<void> {
+    return this.http.patch<void>(`${this.api}/admin/menu/categories/reorder`, { orderedIds });
   }
 
   adminGetToppings(): Observable<MenuTopping[]> {
@@ -264,6 +278,10 @@ export class YurtApiService {
 
   getOrder(id: string): Observable<Order> {
     return this.http.get<Order>(`${this.api}/orders/${id}`);
+  }
+
+  rateOrder(id: string, rating: number, comment?: string): Observable<Order> {
+    return this.http.post<Order>(`${this.api}/orders/${id}/rating`, { rating, comment });
   }
 
   // Admin orders

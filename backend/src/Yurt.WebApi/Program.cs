@@ -111,6 +111,8 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
         ForwardedHeaders.XForwardedProto
 });
 
+app.UseHttpsRedirection();
+
 if (!app.Environment.IsDevelopment())
     app.UseHsts();
 
@@ -153,12 +155,17 @@ app.UseSerilogRequestLogging(opts =>
     });
 
 // Security headers
+var isDev = app.Environment.IsDevelopment();
 app.Use(async (ctx, next) =>
 {
     ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
     ctx.Response.Headers["X-Frame-Options"] = "DENY";
     ctx.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     ctx.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    // Skip in Development so it doesn't interfere with the self-hosted Swagger UI.
+    // This is a pure JSON API in production with no first-party HTML/JS to allow-list.
+    if (!isDev)
+        ctx.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
     await next();
 });
 

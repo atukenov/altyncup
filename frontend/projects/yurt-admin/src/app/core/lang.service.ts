@@ -18,6 +18,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'action.add': 'Add', 'action.edit': 'Edit', 'action.delete': 'Delete', 'action.save': 'Save',
     'action.cancel': 'Cancel', 'action.close': 'Close', 'action.confirm': 'Confirm',
     'action.search': 'Search…', 'action.refresh': 'Refresh', 'action.retry': 'Retry',
+    'action.previous': 'Previous', 'action.next': 'Next',
 
     // Common labels
     'label.name': 'Name', 'label.description': 'Description', 'label.price': 'Price',
@@ -56,6 +57,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'orders.eta': 'ETA (minutes)', 'orders.etaPlaceholder': 'Enter minutes',
     'orders.declineReason': 'Reason for declining…', 'orders.items': 'Items',
     'orders.subtotal': 'Subtotal', 'orders.total': 'Total', 'orders.payment': 'Payment', 'orders.cash': 'Cash',
+    'orders.rating': 'Customer rating',
     'orders.bonusPaid': 'Paid with bonuses', 'orders.dueAtCounter': 'Due at counter',
     'orders.declineReasonLabel': 'Decline Reason',
     'orders.card': 'Card', 'orders.other': 'Other', 'orders.paid': 'Paid',
@@ -180,6 +182,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'action.save': 'Сохранить', 'action.cancel': 'Отмена', 'action.close': 'Закрыть',
     'action.confirm': 'Подтвердить', 'action.search': 'Поиск…',
     'action.refresh': 'Обновить', 'action.retry': 'Повторить',
+    'action.previous': 'Назад', 'action.next': 'Далее',
 
     // Common labels
     'label.name': 'Название', 'label.description': 'Описание', 'label.price': 'Цена',
@@ -218,6 +221,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'orders.eta': 'Время (мин)', 'orders.etaPlaceholder': 'Введите минуты',
     'orders.declineReason': 'Причина отклонения…', 'orders.items': 'Позиции',
     'orders.subtotal': 'Подытог', 'orders.total': 'Итого', 'orders.payment': 'Оплата', 'orders.cash': 'Наличные',
+    'orders.rating': 'Оценка клиента',
     'orders.bonusPaid': 'Оплачено бонусами', 'orders.dueAtCounter': 'К оплате на кассе',
     'orders.declineReasonLabel': 'Причина отклонения',
     'orders.card': 'Карта', 'orders.other': 'Другое', 'orders.paid': 'Оплачено',
@@ -342,6 +346,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'action.save': 'Сақтау', 'action.cancel': 'Болдырмау', 'action.close': 'Жабу',
     'action.confirm': 'Растау', 'action.search': 'Іздеу…',
     'action.refresh': 'Жаңарту', 'action.retry': 'Қайталау',
+    'action.previous': 'Артқа', 'action.next': 'Алға',
 
     // Common labels
     'label.name': 'Атауы', 'label.description': 'Сипаттама', 'label.price': 'Баға',
@@ -380,6 +385,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'orders.eta': 'Уақыт (мин)', 'orders.etaPlaceholder': 'Минут енгізіңіз',
     'orders.declineReason': 'Қабылдамау себебі…', 'orders.items': 'Позициялар',
     'orders.subtotal': 'Аралық сома', 'orders.total': 'Жиыны', 'orders.payment': 'Төлем', 'orders.cash': 'Қолма-қол',
+    'orders.rating': 'Клиент бағасы',
     'orders.bonusPaid': 'Бонуспен төленді', 'orders.dueAtCounter': 'Кассада төленетіні',
     'orders.declineReasonLabel': 'Қабылдамау себебі',
     'orders.card': 'Карта', 'orders.other': 'Басқа', 'orders.paid': 'Төленді',
@@ -493,9 +499,14 @@ export class AdminLangService {
   private readonly KEY = 'yurt_admin_lang';
   readonly lang = signal<AdminLang>((localStorage.getItem(this.KEY) as AdminLang) || 'ru');
 
+  constructor() {
+    document.documentElement.lang = this.lang();
+  }
+
   setLang(lang: string): void {
     this.lang.set(lang as AdminLang);
     localStorage.setItem(this.KEY, lang);
+    document.documentElement.lang = lang;
   }
 
   t(key: string): string {

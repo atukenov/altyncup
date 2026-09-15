@@ -134,6 +134,7 @@ export interface MenuItem {
   price: number;
   isAvailable: boolean;
   imageUrl?: string;
+  sortOrder?: number;
   createdAt?: string;
   locationIds?: string[];
   availableToppings?: MenuTopping[];
@@ -239,6 +240,8 @@ export interface Order {
   items: OrderItem[];
   loyaltyPointsSpent?: number;
   loyaltyPointsEarned?: number;
+  rating?: number;
+  ratingComment?: string;
 }
 
 // ── Favorites ────────────────────────────────────────────────────────────────
@@ -474,6 +477,15 @@ export interface LoyaltyBalance {
   linked: boolean;
   balance: number | null;
   earnPercent: number;
+}
+
+// ── App update gate ─────────────────────────────────────────────────────────
+
+export interface AppUpdateInfo {
+  minVersionIos: string;
+  minVersionAndroid: string;
+  storeUrlIos: string;
+  storeUrlAndroid: string;
 }
 
 // ── Discount Codes ────────────────────────────────────────────────────────────

@@ -29,6 +29,12 @@ public class Order : BaseEntity
     public bool IsArchived { get; set; } = false;
     public DateTime? ArchivedAt { get; set; }
 
+    // Customer's post-completion feedback. Null until rated; a completed order may be
+    // rated at most once.
+    public int? Rating { get; set; }
+    public string? RatingComment { get; set; }
+    public DateTime? RatedAt { get; set; }
+
     public string? IdempotencyKey { get; set; }
 
     // Loyalty points credited to the customer's iiko wallet when the order completed.

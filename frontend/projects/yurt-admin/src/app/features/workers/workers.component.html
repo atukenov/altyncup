@@ -132,9 +132,9 @@
 
 <!-- Create modal -->
 @if (showCreate()) {
-  <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" (click)="showCreate.set(false)">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" (click)="$event.stopPropagation()">
-      <h2 class="text-lg font-bold text-slate-800 mb-4">{{ 'workers.newAccount' | t }}</h2>
+  <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" (click)="showCreate.set(false)" (keydown.escape)="showCreate.set(false)">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" role="dialog" aria-modal="true" aria-labelledby="worker-create-title" (click)="$event.stopPropagation()">
+      <h2 id="worker-create-title" class="text-lg font-bold text-slate-800 mb-4">{{ 'workers.newAccount' | t }}</h2>
       <div class="space-y-3">
         <input [(ngModel)]="createUsername" [placeholder]="'workers.username' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
         <input [(ngModel)]="createPassword" type="password" [placeholder]="'workers.pwMinChars' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
@@ -151,9 +151,9 @@
 
 <!-- Edit modal -->
 @if (editWorker()) {
-  <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" (click)="editWorker.set(null)">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" (click)="$event.stopPropagation()">
-      <h2 class="text-lg font-bold text-slate-800 mb-4">{{ 'workers.editWorker' | t }}</h2>
+  <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" (click)="editWorker.set(null)" (keydown.escape)="editWorker.set(null)">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" role="dialog" aria-modal="true" aria-labelledby="worker-edit-title" (click)="$event.stopPropagation()">
+      <h2 id="worker-edit-title" class="text-lg font-bold text-slate-800 mb-4">{{ 'workers.editWorker' | t }}</h2>
       <div class="space-y-3">
         <input [(ngModel)]="editUsername" [placeholder]="'workers.username' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
         <label class="flex items-center gap-3 cursor-pointer">
@@ -173,9 +173,9 @@
 
 <!-- Reset password modal -->
 @if (resetWorker()) {
-  <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" (click)="resetWorker.set(null)">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" (click)="$event.stopPropagation()">
-      <h2 class="text-lg font-bold text-slate-800 mb-1">{{ 'workers.resetTitle' | t }}</h2>
+  <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" (click)="resetWorker.set(null)" (keydown.escape)="resetWorker.set(null)">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" role="dialog" aria-modal="true" aria-labelledby="worker-reset-title" (click)="$event.stopPropagation()">
+      <h2 id="worker-reset-title" class="text-lg font-bold text-slate-800 mb-1">{{ 'workers.resetTitle' | t }}</h2>
       <p class="text-sm text-slate-400 mb-4">{{ resetWorker()!.username }}</p>
       <input [(ngModel)]="resetPassword" type="password" [placeholder]="'workers.newPw' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
       <div class="flex gap-3 mt-5">

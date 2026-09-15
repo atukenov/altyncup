@@ -37,6 +37,11 @@ public class AdminMenuController : ApiControllerBase
     public async Task<IActionResult> DeleteCategory(Guid id, CancellationToken ct)
         => ToResult(await _menuService.DeleteCategoryAsync(id, ct));
 
+    [HttpPatch("categories/reorder")]
+    public async Task<IActionResult> ReorderCategories(
+        [FromBody] ReorderCategoriesDto dto, CancellationToken ct)
+        => ToResult(await _menuService.ReorderCategoriesAsync(dto.OrderedIds, ct));
+
     // ── ITEMS ────────────────────────────────────────────────────────────────────
 
     [HttpGet("items")]
@@ -60,6 +65,11 @@ public class AdminMenuController : ApiControllerBase
     [HttpDelete("items/{id:guid}")]
     public async Task<IActionResult> DeleteItem(Guid id, CancellationToken ct)
         => ToResult(await _menuService.DeleteItemAsync(id, ct));
+
+    [HttpPatch("items/reorder")]
+    public async Task<IActionResult> ReorderItems(
+        [FromBody] ReorderMenuItemsDto dto, CancellationToken ct)
+        => ToResult(await _menuService.ReorderItemsAsync(dto.CategoryId, dto.OrderedIds, ct));
 
     // ── TOPPINGS ─────────────────────────────────────────────────────────────────
 

@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CdkDropList, CdkDrag, CdkDragHandle, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { YurtApiService } from 'shared-api';
 import { MenuItem, MenuCategory, MenuTopping, Location, MenuItemVariant } from 'shared-models';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
@@ -54,7 +55,7 @@ interface CatInput {
 @Component({
   selector: 'app-menu-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, Currency2Pipe, AdminTranslatePipe],
+  imports: [CommonModule, FormsModule, CdkDropList, CdkDrag, CdkDragHandle, ButtonComponent, Currency2Pipe, AdminTranslatePipe],
   templateUrl: './menu-management.component.html',
   styleUrl: './menu-management.component.css',
 })
@@ -153,6 +154,59 @@ export class MenuManagementComponent implements OnInit {
   categoryName(id: string): string {
     const cat = this.categories().find((c) => c.id === id);
     return cat ? this.localizedCatName(cat) : '';
+  }
+
+  // Items can only be reordered while viewing a single, unfiltered category — otherwise
+  // the visible row order doesn't correspond 1:1 to that category's backend order.
+  itemsReorderable(): boolean {
+    return !!this.selectedCategoryId() && !this.itemSearch().trim();
+  }
+
+  dropCategory(event: CdkDragDrop<MenuCategory[]>): void {
+    if (event.previousIndex === event.currentIndex) return;
+    const cats = [...this.categories()];
+    moveItemInArray(cats, event.previousIndex, event.currentIndex);
+    this.reorderCategories(cats);
+  }
+
+  moveCategory(index: number, direction: -1 | 1): void {
+    const target = index + direction;
+    const cats = [...this.categories()];
+    if (target < 0 || target >= cats.length) return;
+    [cats[index], cats[target]] = [cats[target], cats[index]];
+    this.reorderCategories(cats);
+  }
+
+  private reorderCategories(cats: MenuCategory[]): void {
+    this.categories.set(cats);
+    this.api.adminReorderCategories(cats.map((c) => c.id)).subscribe({
+      error: () => { this.toast.error('Failed to save new order'); this.loadAll(); },
+    });
+  }
+
+  dropItem(event: CdkDragDrop<MenuItem[]>): void {
+    if (event.previousIndex === event.currentIndex) return;
+    const catItems = [...this.filteredItems()];
+    moveItemInArray(catItems, event.previousIndex, event.currentIndex);
+    this.reorderItems(catItems);
+  }
+
+  moveItem(index: number, direction: -1 | 1): void {
+    const target = index + direction;
+    const catItems = [...this.filteredItems()];
+    if (target < 0 || target >= catItems.length) return;
+    [catItems[index], catItems[target]] = [catItems[target], catItems[index]];
+    this.reorderItems(catItems);
+  }
+
+  private reorderItems(catItems: MenuItem[]): void {
+    const catId = this.selectedCategoryId();
+    if (!catId) return;
+    const queue = [...catItems];
+    this.items.update((all) => all.map((i) => (i.categoryId === catId ? queue.shift()! : i)));
+    this.api.adminReorderMenuItems(catId, catItems.map((i) => i.id)).subscribe({
+      error: () => { this.toast.error('Failed to save new order'); this.loadAll(); },
+    });
   }
 
   toppingCategoryNames(categoryIds: string[]): string {

@@ -81,17 +81,22 @@
     <div
       class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
       (click)="showDialog.set(false)"
+      (keydown.escape)="showDialog.set(false)"
     >
       <div
         class="bg-white rounded-2xl shadow-xl w-full max-w-lg"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="promo-dialog-title"
         (click)="$event.stopPropagation()"
       >
         <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 class="font-semibold text-slate-800">
+          <h3 id="promo-dialog-title" class="font-semibold text-slate-800">
             {{ form().id ? ('promotions.editTitle' | t) : ('promotions.addTitle' | t) }}
           </h3>
           <button
             (click)="showDialog.set(false)"
+            aria-label="Close"
             class="text-slate-400 hover:text-slate-600 text-xl leading-none"
           >
             ✕

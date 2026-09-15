@@ -10,6 +10,7 @@ public record AcceptOrderDto(int EtaMinutes);
 public record DeclineOrderDto(string Reason);
 public record UpdateOrderStatusDto(OrderStatus Status);
 public record UpdatePaymentDto(PaymentStatus PaymentStatus);
+public record RateOrderDto(int Rating, string? Comment = null);
 
 public record OrderDto(
     Guid Id,
@@ -32,7 +33,9 @@ public record OrderDto(
     string? DiscountCode,
     List<OrderItemDto> Items,
     decimal? LoyaltyPointsSpent = null,
-    decimal? LoyaltyPointsEarned = null);
+    decimal? LoyaltyPointsEarned = null,
+    int? Rating = null,
+    string? RatingComment = null);
 
 public record OrderItemDto(
     Guid Id,

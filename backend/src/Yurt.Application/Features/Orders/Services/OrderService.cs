@@ -183,6 +183,32 @@ public class OrderService
         return Result<OrderDto>.Success(MapToDto(order));
     }
 
+    public async Task<Result<OrderDto>> RateOrderAsync(
+        Guid orderId, Guid customerId, RateOrderDto dto, CancellationToken ct = default)
+    {
+        if (dto.Rating < 1 || dto.Rating > 5)
+            return Result<OrderDto>.Failure("Rating must be between 1 and 5.", 422);
+
+        var order = await LoadOrderAsync(orderId, ct);
+        if (order == null) return Result<OrderDto>.NotFound();
+        if (order.CustomerUserId != customerId) return Result<OrderDto>.Forbidden();
+
+        if (order.Status != OrderStatus.Completed)
+            return Result<OrderDto>.Failure("Only completed orders can be rated.", 422);
+
+        if (order.Rating.HasValue)
+            return Result<OrderDto>.Failure("This order has already been rated.", 422);
+
+        order.Rating = dto.Rating;
+        order.RatingComment = string.IsNullOrWhiteSpace(dto.Comment) ? null : dto.Comment.Trim();
+        order.RatedAt = DateTime.UtcNow;
+        order.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync("OrderRated", "Order", orderId.ToString(), $"{dto.Rating} stars", ct);
+        return Result<OrderDto>.Success(MapToDto(order));
+    }
+
     public async Task<Result<OrderDto>> GetOrderForAdminAsync(
         Guid orderId, CancellationToken ct = default)
     {
@@ -412,6 +438,8 @@ public class OrderService
                 i.Notes, i.VariantLabel
             )).ToList(),
             o.LoyaltyPointsSpent,
-            o.LoyaltyPointsEarned);
+            o.LoyaltyPointsEarned,
+            o.Rating,
+            o.RatingComment);
     }
 }

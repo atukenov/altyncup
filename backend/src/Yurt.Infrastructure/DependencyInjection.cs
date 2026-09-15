@@ -23,6 +23,7 @@ using Yurt.Application.Features.Promotions.Services;
 using Yurt.Application.Features.DiscountCodes.Services;
 using Yurt.Application.Features.AuditLog.Services;
 using Yurt.Application.Features.Reports;
+using Yurt.Application.Features.AppUpdate;
 using Yurt.Application.Features.Loyalty;
 using Yurt.Application.Features.Loyalty.Services;
 using Yurt.Infrastructure.Health;
@@ -82,6 +83,9 @@ public static class DependencyInjection
         // iiko loyalty (feature-flagged via Iiko:Enabled; secrets via env vars)
         services.AddSingleton(configuration.GetSection("Iiko").Get<IikoOptions>() ?? new IikoOptions());
         services.AddSingleton<IikoTokenStore>();
+
+        // Forced-update gate (blank MinVersion* disables the gate for that platform)
+        services.AddSingleton(configuration.GetSection("AppUpdate").Get<AppUpdateOptions>() ?? new AppUpdateOptions());
         services.AddHttpClient<IIikoApiClient, IikoApiClient>();
         services.AddScoped<LoyaltyService>();
         services.AddScoped<IPaymentProvider, KaspiSandboxPaymentProvider>();

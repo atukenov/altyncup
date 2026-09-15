@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, Input, OnDestroy, OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SignalrService, YurtApiService } from 'shared-api';
@@ -19,6 +20,7 @@ import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     OrderStatusLabelPipe,
     Currency2Pipe,
     TranslatePipe,
@@ -42,6 +44,12 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   loading = signal(true);
   showReceipt = signal(false);
   private subs: Subscription[] = [];
+
+  readonly stars = [1, 2, 3, 4, 5];
+  hoverRating = signal(0);
+  selectedRating = signal(0);
+  ratingComment = signal('');
+  submittingRating = signal(false);
 
   readonly timelineSteps = [
     { status: OrderStatus.Created, labelKey: 'timeline.Created' },
@@ -151,5 +159,23 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
 
   toppingList(toppings: { toppingName: string }[]): string {
     return toppings.map(t => t.toppingName).join(', ');
+  }
+
+  submitRating(): void {
+    const rating = this.selectedRating();
+    if (rating < 1 || rating > 5 || this.submittingRating()) return;
+
+    this.submittingRating.set(true);
+    this.api.rateOrder(this.id, rating, this.ratingComment().trim() || undefined).subscribe({
+      next: (o) => {
+        this.order.set(o);
+        this.submittingRating.set(false);
+        this.toast.success('Thanks for your feedback!');
+      },
+      error: () => {
+        this.submittingRating.set(false);
+        this.toast.error('Failed to submit rating.');
+      },
+    });
   }
 }
