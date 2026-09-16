@@ -5,16 +5,21 @@ using Microsoft.Extensions.DependencyInjection;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.IikoIntegration.Services;
 using Yurt.Application.Features.Loyalty;
+using Yurt.Domain.Entities;
 using Yurt.Domain.Enums;
 using Yurt.IntegrationTests.Helpers;
 
 namespace Yurt.IntegrationTests.Tests;
 
+// Every test creates its own dedicated Location + MenuItem rather than mutating the
+// shared seeded "Cappuccino" item / seeded LocationId that other test files (and other
+// tests in this file) also rely on — those writes are otherwise never rolled back and
+// leak across tests sharing the same collection-fixture database, e.g. one test's
+// IikoTerminalGroupId/IikoProductId assignment silently "unblocking" a later test that
+// deliberately wants an unmapped item or location.
 [Collection("Integration")]
 public class IikoOrderSyncTests(YurtWebAppFactory factory)
 {
-    private static readonly Guid LocationId = Guid.Parse("11111111-0000-0000-0000-000000000001");
-
     private record PlacedOrder(Guid Id, string CustomerToken);
 
     // ── Push on accept ───────────────────────────────────────────────────────
@@ -32,11 +37,11 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
                 services.AddSingleton<IIikoApiClient>(fake);
             }));
 
-        await MapMenuItemAsync(enabledFactory.Services, "Cappuccino", iikoProductId);
-        await SetTerminalGroupAsync(enabledFactory.Services, terminalGroupId);
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, terminalGroupId);
+        var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, iikoProductId);
 
         var client = enabledFactory.CreateClient();
-        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000801");
+        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000801", locationId, menuItemId);
 
         var call = Assert.Single(fake.PushCalls);
         Assert.Equal(terminalGroupId, call.TerminalGroupId);
@@ -63,11 +68,11 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
                 services.AddSingleton<IIikoApiClient>(fake);
             }));
 
-        await MapMenuItemAsync(factoryWithLoyaltyOnly.Services, "Cappuccino", Guid.NewGuid());
-        await SetTerminalGroupAsync(factoryWithLoyaltyOnly.Services, Guid.NewGuid());
+        var locationId = await CreateTestLocationAsync(factoryWithLoyaltyOnly.Services, Guid.NewGuid());
+        var menuItemId = await CreateTestMenuItemAsync(factoryWithLoyaltyOnly.Services, Guid.NewGuid());
 
         var client = factoryWithLoyaltyOnly.CreateClient();
-        await PlaceAndAcceptOrderAsync(factoryWithLoyaltyOnly, client, "+77002000802");
+        await PlaceAndAcceptOrderAsync(factoryWithLoyaltyOnly, client, "+77002000802", locationId, menuItemId);
 
         Assert.Empty(fake.PushCalls);
     }
@@ -84,10 +89,11 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
             }));
 
         // Terminal group configured, but the menu item is left unmapped (no IikoProductId).
-        await SetTerminalGroupAsync(enabledFactory.Services, Guid.NewGuid());
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
+        var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, iikoProductId: null);
 
         var client = enabledFactory.CreateClient();
-        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000803");
+        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000803", locationId, menuItemId);
 
         Assert.Empty(fake.PushCalls);
 
@@ -111,11 +117,12 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
                 services.AddSingleton<IIikoApiClient>(fake);
             }));
 
-        await MapMenuItemAsync(enabledFactory.Services, "Cappuccino", Guid.NewGuid());
-        // Terminal group deliberately left unset on the location.
+        // Menu item mapped, but the location is deliberately left with no terminal group.
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, terminalGroupId: null);
+        var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, Guid.NewGuid());
 
         var client = enabledFactory.CreateClient();
-        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000804");
+        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000804", locationId, menuItemId);
 
         Assert.Empty(fake.PushCalls);
         await using var scope = enabledFactory.Services.CreateAsyncScope();
@@ -137,11 +144,11 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
                 services.AddSingleton<IIikoApiClient>(fake);
             }));
 
-        await MapMenuItemAsync(enabledFactory.Services, "Cappuccino", Guid.NewGuid());
-        await SetTerminalGroupAsync(enabledFactory.Services, Guid.NewGuid());
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
+        var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, Guid.NewGuid());
 
         var client = enabledFactory.CreateClient();
-        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000805");
+        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000805", locationId, menuItemId);
 
         await using (var scope = enabledFactory.Services.CreateAsyncScope())
         {
@@ -179,11 +186,11 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
                 services.AddSingleton<IIikoApiClient>(fake);
             }));
 
-        await MapMenuItemAsync(enabledFactory.Services, "Cappuccino", Guid.NewGuid());
-        await SetTerminalGroupAsync(enabledFactory.Services, Guid.NewGuid());
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
+        var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, Guid.NewGuid());
 
         var client = enabledFactory.CreateClient();
-        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000806");
+        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000806", locationId, menuItemId);
 
         var adminToken = await ApiHelpers.CreateAdminTokenAsync(enabledFactory.Services, client);
         ApiHelpers.Authorize(client, adminToken);
@@ -211,10 +218,11 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
                 services.AddSingleton<IIikoApiClient>(fake);
             }));
 
-        await SetTerminalGroupAsync(enabledFactory.Services, Guid.NewGuid());
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
+        var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, iikoProductId: null);
 
         var client = enabledFactory.CreateClient();
-        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000807");
+        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000807", locationId, menuItemId);
 
         var adminToken = await ApiHelpers.CreateAdminTokenAsync(enabledFactory.Services, client);
         ApiHelpers.Authorize(client, adminToken);
@@ -240,11 +248,11 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
                 services.AddSingleton<IIikoApiClient>(fake);
             }));
 
-        await MapMenuItemAsync(enabledFactory.Services, "Cappuccino", Guid.NewGuid());
-        await SetTerminalGroupAsync(enabledFactory.Services, Guid.NewGuid());
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
+        var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, Guid.NewGuid());
 
         var client = enabledFactory.CreateClient();
-        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000808");
+        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000808", locationId, menuItemId);
         var iikoOrderId = fake.PushCalls.Count > 0 ? fake.NextIikoOrderId : Guid.Empty;
         Assert.NotEqual(Guid.Empty, iikoOrderId);
 
@@ -306,36 +314,59 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
         PaymentTypeId    = Guid.NewGuid(),
     };
 
-    private static async Task MapMenuItemAsync(IServiceProvider services, string menuItemName, Guid iikoProductId)
+    // Dedicated Location per test — never reuse/mutate the shared seeded location, since
+    // that write would leak into every other test (in this file and others) that reads it.
+    private static async Task<Guid> CreateTestLocationAsync(IServiceProvider services, Guid? terminalGroupId)
     {
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var item = await db.MenuItems.FirstAsync(m => m.Name == menuItemName);
-        item.IikoProductId = iikoProductId;
+        var location = new Location
+        {
+            Name = $"iiko sync test location {Guid.NewGuid():N}",
+            Address = "Test address",
+            WorkingHours = "",
+            ContactPhone = "",
+            IsActive = true,
+            IikoTerminalGroupId = terminalGroupId,
+        };
+        db.Locations.Add(location);
         await db.SaveChangesAsync();
+        return location.Id;
     }
 
-    private static async Task SetTerminalGroupAsync(IServiceProvider services, Guid terminalGroupId)
+    // Dedicated MenuItem per test — never reuse/mutate the shared seeded "Cappuccino"
+    // item, for the same reason as CreateTestLocationAsync above.
+    private static async Task<Guid> CreateTestMenuItemAsync(IServiceProvider services, Guid? iikoProductId)
     {
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var location = await db.Locations.FirstAsync(l => l.Id == LocationId);
-        location.IikoTerminalGroupId = terminalGroupId;
+        var category = await db.MenuCategories.FirstAsync();
+        var item = new MenuItem
+        {
+            CategoryId = category.Id,
+            Name = $"iiko sync test item {Guid.NewGuid():N}",
+            Description = "",
+            Price = 500,
+            IsAvailable = true,
+            IikoProductId = iikoProductId,
+        };
+        db.MenuItems.Add(item);
         await db.SaveChangesAsync();
+        return item.Id;
     }
 
     private static async Task<PlacedOrder> PlaceAndAcceptOrderAsync(
-        WebApplicationFactory<Program> appFactory, HttpClient client, string phone)
+        WebApplicationFactory<Program> appFactory, HttpClient client, string phone,
+        Guid locationId, Guid menuItemId)
     {
         var (customerToken, _) = await ApiHelpers.CreateCustomerAsync(client, phone);
         ApiHelpers.Authorize(client, customerToken);
 
-        var (itemId, _, _) = await ApiHelpers.GetMenuItemAsync(appFactory.Services, "Cappuccino");
         var resp = await client.PostAsJsonAsync("/api/v1/orders", new
         {
-            locationId    = LocationId,
+            locationId,
             paymentMethod = "Cash",
-            items         = new[] { new { menuItemId = itemId, quantity = 1 } }
+            items         = new[] { new { menuItemId, quantity = 1 } }
         });
         resp.EnsureSuccessStatusCode();
         var order = await resp.Content.ReadFromJsonAsync<ApiHelpers.OrderResult>(ApiHelpers.JsonOpts);
