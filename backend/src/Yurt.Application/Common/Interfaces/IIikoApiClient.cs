@@ -28,11 +28,53 @@ public interface IIikoApiClient
 
     /// <summary>Release a previously placed hold.</summary>
     Task CancelHoldAsync(Guid holdTransactionId, CancellationToken ct = default);
+
+    // ── Order push (reporting/kitchen-routing side-channel; see IikoOrderSyncService) ──
+
+    /// <summary>iiko's product/size catalog, for the admin menu-mapping UI. Modifiers are excluded.</summary>
+    Task<List<IikoNomenclatureProduct>> GetNomenclatureAsync(CancellationToken ct = default);
+
+    /// <summary>Payment types configured for the organization — for the admin "paid in app" reference lookup.</summary>
+    Task<List<IikoPaymentType>> GetPaymentTypesAsync(CancellationToken ct = default);
+
+    /// <summary>Terminal groups configured for the organization — for the per-location routing picker.</summary>
+    Task<List<IikoTerminalGroup>> GetTerminalGroupsAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Push an order into iiko as a real delivery order (self-pickup, one-time customer —
+    /// not bound to the iiko loyalty customer, so iiko's own loyalty engine never touches
+    /// the wallet the rest of this client already manages). Returns the created iiko order id.
+    /// </summary>
+    Task<Guid> CreateDeliveryOrderAsync(IikoCreateOrderRequest request, CancellationToken ct = default);
+
+    /// <summary>Close a previously created delivery order.</summary>
+    Task CloseDeliveryOrderAsync(Guid iikoOrderId, CancellationToken ct = default);
+
+    /// <summary>Register (or update) the webhook endpoint iiko calls for delivery order update/error events.</summary>
+    Task RegisterWebhookAsync(string webhookUrl, string authToken, CancellationToken ct = default);
 }
 
 public record IikoWalletBalance(Guid Id, string? Name, int Type, decimal Balance);
 
 public record IikoCustomerInfo(Guid Id, string? Phone, List<IikoWalletBalance> WalletBalances);
+
+public record IikoNomenclatureSize(Guid ProductSizeId, string? Name);
+
+public record IikoNomenclatureProduct(Guid ProductId, string Name, decimal Price, List<IikoNomenclatureSize> Sizes);
+
+public record IikoPaymentType(Guid Id, string Name);
+
+public record IikoTerminalGroup(Guid Id, string Name);
+
+public record IikoOrderItemRequest(Guid ProductId, Guid? ProductSizeId, decimal Amount, decimal Price, string? Comment);
+
+public record IikoCreateOrderRequest(
+    Guid TerminalGroupId,
+    string CustomerPhone,
+    string? CustomerName,
+    List<IikoOrderItemRequest> Items,
+    decimal PaymentSum,
+    string? Comment);
 
 public class IikoApiException : Exception
 {

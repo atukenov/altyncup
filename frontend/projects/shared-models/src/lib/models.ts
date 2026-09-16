@@ -88,6 +88,7 @@ export interface Location {
   workingHours: string;
   contactPhone: string;
   isActive: boolean;
+  iikoTerminalGroupId?: string | null;
 }
 
 // ── Menu ──────────────────────────────────────────────────────────────────────
@@ -119,6 +120,7 @@ export interface MenuItemVariant {
   price: number;
   sortOrder: number;
   isDefault: boolean;
+  iikoProductSizeId?: string | null;
 }
 
 export interface MenuItem {
@@ -139,6 +141,32 @@ export interface MenuItem {
   locationIds?: string[];
   availableToppings?: MenuTopping[];
   variants?: MenuItemVariant[];
+  iikoProductId?: string | null;
+  iikoProductSizeId?: string | null;
+}
+
+// ── iiko reference lookups (admin mapping UI) ──────────────────────────────────
+
+export interface IikoNomenclatureSize {
+  productSizeId: string;
+  name?: string | null;
+}
+
+export interface IikoNomenclatureProduct {
+  productId: string;
+  name: string;
+  price: number;
+  sizes: IikoNomenclatureSize[];
+}
+
+export interface IikoPaymentType {
+  id: string;
+  name: string;
+}
+
+export interface IikoTerminalGroup {
+  id: string;
+  name: string;
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────
@@ -242,6 +270,15 @@ export interface Order {
   loyaltyPointsEarned?: number;
   rating?: number;
   ratingComment?: string;
+  iikoOrderSyncStatus?: IikoOrderSyncStatus;
+}
+
+export enum IikoOrderSyncStatus {
+  NotPushed = 'NotPushed',
+  Pushed = 'Pushed',
+  Closed = 'Closed',
+  Failed = 'Failed',
+  SkippedUnmapped = 'SkippedUnmapped',
 }
 
 // ── Favorites ────────────────────────────────────────────────────────────────

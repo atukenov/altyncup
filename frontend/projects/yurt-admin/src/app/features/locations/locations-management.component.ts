@@ -2,7 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
-import { Location } from 'shared-models';
+import { Location, IikoTerminalGroup } from 'shared-models';
 import { ButtonComponent, ToastService } from 'shared-ui';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
@@ -21,6 +21,7 @@ interface LocationForm {
   workingSlots: WorkingSlot[];
   contactPhone: string;
   isActive: boolean;
+  iikoTerminalGroupId: string;
 }
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -64,12 +65,20 @@ export class LocationsManagementComponent implements OnInit {
     workingSlots: DEFAULT_SLOTS.map((s) => ({ ...s })),
     contactPhone: '',
     isActive: true,
+    iikoTerminalGroupId: '',
   });
+
+  // iiko terminal groups for the routing picker (Phase 3 order-push feature).
+  iikoTerminalGroups = signal<IikoTerminalGroup[]>([]);
 
   ngOnInit(): void {
     this.api.getAdminLocations().subscribe({
       next: (locs) => { this.locations.set(locs); this.loading.set(false); },
       error: () => this.loading.set(false),
+    });
+    this.api.getIikoTerminalGroups().subscribe({
+      next: (groups) => this.iikoTerminalGroups.set(groups),
+      error: () => this.iikoTerminalGroups.set([]), // iiko disabled/unreachable — picker just stays empty
     });
   }
 
@@ -81,6 +90,7 @@ export class LocationsManagementComponent implements OnInit {
       workingSlots: parseSlots(loc?.workingHours ?? ''),
       contactPhone: loc?.contactPhone ?? '',
       isActive: loc?.isActive ?? true,
+      iikoTerminalGroupId: loc?.iikoTerminalGroupId ?? '',
     });
     this.showDialog.set(true);
   }
@@ -136,6 +146,7 @@ export class LocationsManagementComponent implements OnInit {
       workingHours: JSON.stringify(f.workingSlots),
       contactPhone: f.contactPhone,
       isActive: f.isActive,
+      iikoTerminalGroupId: f.iikoTerminalGroupId || null,
     };
     const obs = f.id
       ? this.api.updateLocation(f.id, payload)

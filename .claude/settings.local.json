@@ -44,7 +44,9 @@
       "Bash(grep -v \".js$\")",
       "Bash(python3 -)",
       "Bash(dotnet test *)",
-      "Bash(gh auth *)"
+      "Bash(gh auth *)",
+      "Bash(python3 -c ' *)",
+      "Bash(docker info *)"
     ],
     "additionalDirectories": [
       "/private/tmp"

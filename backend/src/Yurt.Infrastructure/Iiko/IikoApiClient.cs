@@ -204,6 +204,148 @@ public class IikoApiClient : IIikoApiClient
         await EnsureSuccessAsync(resp, "wallet/cancel_hold", ct);
     }
 
+    // ── Order push (reporting/kitchen-routing side-channel) ─────────────────────
+
+    private record NomenclatureRequest(Guid OrganizationId);
+    private record NomenclatureSizePriceDto(Guid? SizeId, NomenclaturePriceDto Price);
+    private record NomenclaturePriceDto(decimal CurrentPrice);
+    private record NomenclatureProductDto(Guid Id, string? Name, string? Type, bool IsDeleted, List<NomenclatureSizePriceDto>? SizePrices);
+    private record NomenclatureSizeDto(Guid Id, string? Name);
+    private record NomenclatureResponse(List<NomenclatureProductDto>? Products, List<NomenclatureSizeDto>? Sizes);
+
+    public async Task<List<IikoNomenclatureProduct>> GetNomenclatureAsync(CancellationToken ct = default)
+    {
+        // Deprecated but still the endpoint deliveries/create's productId docs point to;
+        // startRevision omitted (null) always fetches the full current catalog.
+        var resp = await PostAsync<NomenclatureResponse>(
+            "api/1/nomenclature", new NomenclatureRequest(_options.OrganizationId), ct);
+
+        var sizeNames = (resp.Sizes ?? []).ToDictionary(s => s.Id, s => s.Name);
+
+        return (resp.Products ?? [])
+            .Where(p => !p.IsDeleted && p.Type is "dish" or "good")
+            .Select(p =>
+            {
+                var sizes = (p.SizePrices ?? [])
+                    .Where(sp => sp.SizeId.HasValue)
+                    .Select(sp => new IikoNomenclatureSize(
+                        sp.SizeId!.Value, sizeNames.GetValueOrDefault(sp.SizeId.Value)))
+                    .ToList();
+                var price = p.SizePrices?.FirstOrDefault()?.Price.CurrentPrice ?? 0m;
+                return new IikoNomenclatureProduct(p.Id, p.Name ?? "", price, sizes);
+            })
+            .ToList();
+    }
+
+    private record PaymentTypesRequest(List<Guid> OrganizationIds);
+    private record PaymentTypeDto(Guid? Id, string? Name);
+    private record PaymentTypesResponse(List<PaymentTypeDto>? PaymentTypes);
+
+    public async Task<List<IikoPaymentType>> GetPaymentTypesAsync(CancellationToken ct = default)
+    {
+        var resp = await PostAsync<PaymentTypesResponse>(
+            "api/1/payment_types", new PaymentTypesRequest([_options.OrganizationId]), ct);
+
+        return (resp.PaymentTypes ?? [])
+            .Where(p => p.Id.HasValue)
+            .Select(p => new IikoPaymentType(p.Id!.Value, p.Name ?? ""))
+            .ToList();
+    }
+
+    private record TerminalGroupsRequest(List<Guid> OrganizationIds);
+    private record TerminalGroupDto(Guid Id, string Name);
+    private record TerminalGroupsWrapperDto(Guid OrganizationId, List<TerminalGroupDto>? Items);
+    private record TerminalGroupsResponse(List<TerminalGroupsWrapperDto>? TerminalGroups);
+
+    public async Task<List<IikoTerminalGroup>> GetTerminalGroupsAsync(CancellationToken ct = default)
+    {
+        var resp = await PostAsync<TerminalGroupsResponse>(
+            "api/1/terminal_groups", new TerminalGroupsRequest([_options.OrganizationId]), ct);
+
+        return (resp.TerminalGroups ?? [])
+            .SelectMany(w => w.Items ?? [])
+            .Select(g => new IikoTerminalGroup(g.Id, g.Name))
+            .ToList();
+    }
+
+    private record CreateOrderCustomer(string Type, string Name);
+    private record CreateOrderItem(string Type, decimal Amount, Guid ProductId, Guid? ProductSizeId, decimal Price, string? Comment);
+    private record CreateOrderPayment(string PaymentTypeKind, decimal Sum, Guid PaymentTypeId, bool IsProcessedExternally);
+    private record CreateDeliveryOrder(
+        string Phone, string OrderServiceType, CreateOrderCustomer Customer,
+        List<CreateOrderItem> Items, List<CreateOrderPayment> Payments, string? Comment);
+    private record CreateDeliveryOrderRequest(Guid OrganizationId, Guid TerminalGroupId, CreateDeliveryOrder Order);
+    private record CreationErrorDto(string? Message);
+    private record CreateOrderInfoDto(Guid Id, string CreationStatus, CreationErrorDto? ErrorInfo);
+    private record CreateDeliveryOrderResponse(Guid CorrelationId, CreateOrderInfoDto OrderInfo);
+    private record CommandStatusRequest(Guid OrganizationId, Guid CorrelationId);
+    private record CommandStatusResponse(string State);
+
+    public async Task<Guid> CreateDeliveryOrderAsync(IikoCreateOrderRequest request, CancellationToken ct = default)
+    {
+        var order = new CreateDeliveryOrder(
+            Phone: request.CustomerPhone,
+            OrderServiceType: "DeliveryByClient",
+            // One-time customer: kept out of iiko's own loyalty processing entirely — the
+            // wallet earn/spend flow in this client already owns that, and double-binding
+            // the order to the loyalty customer would double-credit bonus on close.
+            Customer: new CreateOrderCustomer("one-time", request.CustomerName ?? request.CustomerPhone),
+            Items: request.Items.Select(i => new CreateOrderItem(
+                "Product", i.Amount, i.ProductId, i.ProductSizeId, i.Price, i.Comment)).ToList(),
+            Payments: [new CreateOrderPayment("External", request.PaymentSum, _options.PaymentTypeId, true)],
+            Comment: request.Comment);
+
+        var resp = await PostAsync<CreateDeliveryOrderResponse>(
+            "api/1/deliveries/create",
+            new CreateDeliveryOrderRequest(_options.OrganizationId, request.TerminalGroupId, order), ct);
+
+        var info = resp.OrderInfo;
+        if (info.CreationStatus == "InProgress")
+            info = await PollCommandStatusAsync(resp.CorrelationId, info, ct);
+
+        if (info.CreationStatus != "Success")
+            throw new IikoApiException(
+                $"iiko deliveries/create did not succeed: {info.CreationStatus} — {info.ErrorInfo?.Message}");
+
+        return info.Id;
+    }
+
+    private async Task<CreateOrderInfoDto> PollCommandStatusAsync(
+        Guid correlationId, CreateOrderInfoDto lastKnown, CancellationToken ct)
+    {
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1), ct);
+            var status = await PostAsync<CommandStatusResponse>(
+                "api/1/commands/status",
+                new CommandStatusRequest(_options.OrganizationId, correlationId), ct);
+            if (status.State != "InProgress")
+                return lastKnown with { CreationStatus = status.State };
+        }
+        return lastKnown; // still InProgress after the bounded wait — caller treats as failure/retry
+    }
+
+    private record CloseOrderRequest(Guid OrganizationId, Guid OrderId);
+
+    public async Task CloseDeliveryOrderAsync(Guid iikoOrderId, CancellationToken ct = default)
+    {
+        var resp = await SendAsync("api/1/deliveries/close",
+            new CloseOrderRequest(_options.OrganizationId, iikoOrderId), ct);
+        await EnsureSuccessAsync(resp, "deliveries/close", ct);
+    }
+
+    private record WebhookFilter(List<string> WebHooksEventType);
+    private record RegisterWebhookRequest(Guid OrganizationId, string WebHooksUri, string AuthToken, WebhookFilter WebHooksFilter);
+
+    public async Task RegisterWebhookAsync(string webhookUrl, string authToken, CancellationToken ct = default)
+    {
+        var resp = await SendAsync("api/1/webhooks/update_settings",
+            new RegisterWebhookRequest(
+                _options.OrganizationId, webhookUrl, authToken,
+                new WebhookFilter(["DeliveryOrderUpdate", "DeliveryOrderError"])), ct);
+        await EnsureSuccessAsync(resp, "webhooks/update_settings", ct);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage resp, string op, CancellationToken ct)

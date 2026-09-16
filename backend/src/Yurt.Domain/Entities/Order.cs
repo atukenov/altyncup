@@ -51,6 +51,11 @@ public class Order : BaseEntity
     // Wallet operation still owed to iiko (retried by LoyaltyRetryService).
     public LoyaltyPendingAction LoyaltyPendingAction { get; set; } = LoyaltyPendingAction.None;
 
+    // Order-push side-channel (reporting/kitchen-routing only — never drives Status above).
+    public Guid? IikoDeliveryOrderId { get; set; }
+    public IikoOrderSyncStatus IikoOrderSyncStatus { get; set; } = IikoOrderSyncStatus.NotPushed;
+    public IikoOrderSyncPendingAction IikoOrderSyncPendingAction { get; set; } = IikoOrderSyncPendingAction.None;
+
     public CustomerUser CustomerUser { get; set; } = null!;
     public Location Location { get; set; } = null!;
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();

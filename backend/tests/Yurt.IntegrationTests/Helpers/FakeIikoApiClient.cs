@@ -26,6 +26,12 @@ public class FakeIikoApiClient : IIikoApiClient
     public bool FailCancelHold { get; set; }
     public bool FailChargeoff { get; set; }
     public bool FailTopup { get; set; }
+    public bool FailPush { get; set; }
+    public bool FailClose { get; set; }
+
+    public readonly List<IikoCreateOrderRequest> PushCalls = [];
+    public readonly List<Guid> CloseCalls = [];
+    public Guid NextIikoOrderId { get; set; } = Guid.NewGuid();
 
     // Simulates iiko's program/add returning the shared program walletId instead of the
     // customer's own balance-holding userWalletId — observed for already-enrolled customers.
@@ -97,4 +103,32 @@ public class FakeIikoApiClient : IIikoApiClient
         _activeHolds.Remove(holdTransactionId);
         return Task.CompletedTask;
     }
+
+    // ── Order push (Phase 3 Part B) ─────────────────────────────────────────
+
+    public Task<List<IikoNomenclatureProduct>> GetNomenclatureAsync(CancellationToken ct = default)
+        => Task.FromResult(new List<IikoNomenclatureProduct>());
+
+    public Task<List<IikoPaymentType>> GetPaymentTypesAsync(CancellationToken ct = default)
+        => Task.FromResult(new List<IikoPaymentType>());
+
+    public Task<List<IikoTerminalGroup>> GetTerminalGroupsAsync(CancellationToken ct = default)
+        => Task.FromResult(new List<IikoTerminalGroup>());
+
+    public Task<Guid> CreateDeliveryOrderAsync(IikoCreateOrderRequest request, CancellationToken ct = default)
+    {
+        if (FailPush) throw new IikoApiException("deliveries/create failed (injected)");
+        PushCalls.Add(request);
+        return Task.FromResult(NextIikoOrderId);
+    }
+
+    public Task CloseDeliveryOrderAsync(Guid iikoOrderId, CancellationToken ct = default)
+    {
+        if (FailClose) throw new IikoApiException("deliveries/close failed (injected)");
+        CloseCalls.Add(iikoOrderId);
+        return Task.CompletedTask;
+    }
+
+    public Task RegisterWebhookAsync(string webhookUrl, string authToken, CancellationToken ct = default)
+        => Task.CompletedTask;
 }

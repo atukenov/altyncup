@@ -130,9 +130,14 @@
             }
             <p class="text-slate-500 text-sm">{{ o.createdAt | date: 'MMM d, yyyy HH:mm' }}</p>
           </div>
-          <yurt-badge [variant]="o.status | orderStatusColor" class="text-sm">
-            {{ 'order.status.' + o.status | t }}
-          </yurt-badge>
+          <div class="flex flex-col items-end gap-1.5">
+            <yurt-badge [variant]="o.status | orderStatusColor" class="text-sm">
+              {{ 'order.status.' + o.status | t }}
+            </yurt-badge>
+            @if (iikoSyncBadge(o.iikoOrderSyncStatus); as sync) {
+              <yurt-badge [variant]="sync.variant" class="text-xs">{{ sync.label }}</yurt-badge>
+            }
+          </div>
         </div>
 
         <!-- Decline reason -->

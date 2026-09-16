@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Common.Models;
 using Yurt.Application.Features.DiscountCodes.Services;
+using Yurt.Application.Features.IikoIntegration.Services;
 using Yurt.Application.Features.Loyalty.Services;
 using Yurt.Application.Features.Orders.DTOs;
 using Yurt.Domain.Entities;
@@ -16,14 +17,18 @@ public class OrderService
     private readonly IAuditLogService _audit;
     private readonly DiscountCodeService _discountCodes;
     private readonly LoyaltyService _loyalty;
+    private readonly IikoOrderSyncService _iikoSync;
 
-    public OrderService(IApplicationDbContext db, IOrdersHubService hub, IAuditLogService audit, DiscountCodeService discountCodes, LoyaltyService loyalty)
+    public OrderService(
+        IApplicationDbContext db, IOrdersHubService hub, IAuditLogService audit,
+        DiscountCodeService discountCodes, LoyaltyService loyalty, IikoOrderSyncService iikoSync)
     {
         _db = db;
         _hub = hub;
         _audit = audit;
         _discountCodes = discountCodes;
         _loyalty = loyalty;
+        _iikoSync = iikoSync;
     }
 
     public async Task<Result<OrderDto>> CreateOrderAsync(
@@ -316,6 +321,11 @@ public class OrderService
 
         await _hub.NotifyOrderUpdatedAsync(order, ct);
         await _audit.LogAsync("OrderAccepted", "Order", orderId.ToString(), $"ETA: {dto.EtaMinutes} min", ct);
+
+        // iiko order push is a reporting/kitchen-routing side-channel only — fails open,
+        // never blocks acceptance, and never affects the wallet loyalty flow above.
+        await _iikoSync.PushOrderAsync(order, ct);
+
         return Result<OrderDto>.Success(MapToDto(order));
     }
 
@@ -374,6 +384,7 @@ public class OrderService
         {
             await _loyalty.FinalizeSpendForOrderAsync(order, ct);
             await _loyalty.CreditForOrderAsync(order, ct);
+            await _iikoSync.CloseOrderAsync(order, ct);
         }
 
         return Result<OrderDto>.Success(MapToDto(order));
@@ -440,6 +451,7 @@ public class OrderService
             o.LoyaltyPointsSpent,
             o.LoyaltyPointsEarned,
             o.Rating,
-            o.RatingComment);
+            o.RatingComment,
+            o.IikoOrderSyncStatus);
     }
 }

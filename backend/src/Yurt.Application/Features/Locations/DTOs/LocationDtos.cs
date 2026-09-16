@@ -16,7 +16,8 @@ public record AdminLocationDto(
     string Address,
     string WorkingHours,
     string ContactPhone,
-    bool IsActive);
+    bool IsActive,
+    Guid? IikoTerminalGroupId = null);
 
 public record CreateLocationDto
 {
@@ -24,6 +25,7 @@ public record CreateLocationDto
     public string Address { get; init; } = string.Empty;
     public string WorkingHours { get; init; } = string.Empty;
     public string ContactPhone { get; init; } = string.Empty;
+    public Guid? IikoTerminalGroupId { get; init; }
 }
 
 public record UpdateLocationDto
@@ -33,4 +35,5 @@ public record UpdateLocationDto
     public string WorkingHours { get; init; } = string.Empty;
     public string ContactPhone { get; init; } = string.Empty;
     public bool IsActive { get; init; }
+    public Guid? IikoTerminalGroupId { get; init; }
 }

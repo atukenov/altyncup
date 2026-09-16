@@ -32,7 +32,7 @@ public class LocationService
             .OrderBy(l => l.Name)
             .Select(l => new AdminLocationDto(
                 l.Id, l.Name,
-                l.Address, l.WorkingHours, l.ContactPhone, l.IsActive))
+                l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.IikoTerminalGroupId))
             .ToListAsync(ct);
 
     public async Task<Result<AdminLocationDto>> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -49,7 +49,8 @@ public class LocationService
             Name = dto.Name,
             Address = dto.Address,
             WorkingHours = dto.WorkingHours,
-            ContactPhone = dto.ContactPhone
+            ContactPhone = dto.ContactPhone,
+            IikoTerminalGroupId = dto.IikoTerminalGroupId
         };
         _db.Locations.Add(loc);
         await _db.SaveChangesAsync(ct);
@@ -67,6 +68,7 @@ public class LocationService
         loc.WorkingHours = dto.WorkingHours;
         loc.ContactPhone = dto.ContactPhone;
         loc.IsActive = dto.IsActive;
+        loc.IikoTerminalGroupId = dto.IikoTerminalGroupId;
         loc.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
@@ -86,5 +88,5 @@ public class LocationService
     }
 
     private static AdminLocationDto MapToAdminDto(Location l)
-        => new(l.Id, l.Name, l.Address, l.WorkingHours, l.ContactPhone, l.IsActive);
+        => new(l.Id, l.Name, l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.IikoTerminalGroupId);
 }

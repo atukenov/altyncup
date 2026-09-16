@@ -65,3 +65,21 @@ public enum DiscountType
     Percentage = 0,
     FixedAmount = 1
 }
+
+/// <summary>Whether an order has been pushed to iiko as a real delivery order (reporting/kitchen-routing side-channel; never drives customer-facing OrderStatus).</summary>
+public enum IikoOrderSyncStatus
+{
+    NotPushed = 0,
+    Pushed = 1,
+    Closed = 2,
+    Failed = 3,
+    SkippedUnmapped = 4
+}
+
+/// <summary>Outstanding iiko order-sync operation, retried in the background when iiko was unavailable. Mirrors LoyaltyPendingAction's retry shape.</summary>
+public enum IikoOrderSyncPendingAction
+{
+    None = 0,
+    Push = 1,
+    Close = 2
+}
