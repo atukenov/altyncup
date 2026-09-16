@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { YurtApiService } from 'shared-api';
-import { Order, OrderStatus } from 'shared-models';
+import { LoyaltyTransaction, Order, OrderStatus } from 'shared-models';
 import {
   BadgeComponent,
   ToastService,
@@ -43,6 +43,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
   activeOrders = signal<Order[]>([]);
   historyOrders = signal<Order[]>([]);
   declinedOrders = signal<Order[]>([]);
+  offsiteTransactions = signal<LoyaltyTransaction[]>([]);
   activeTab = signal(0);
 
   readonly tabs = [
@@ -87,6 +88,15 @@ export class OrdersComponent implements OnInit, OnDestroy {
         this.loading.set(false);
         this.toast.error('Failed to load orders.');
       });
+
+    // Independent of order loading: iiko offsite (in-shop counter) bonus history is a
+    // nice-to-have on top of the History tab, not core order data — a failure here must
+    // never surface as an "orders failed to load" error.
+    this.api
+      .getLoyaltyTransactions()
+      .toPromise()
+      .then((history) => this.offsiteTransactions.set(history?.transactions ?? []))
+      .catch(() => this.offsiteTransactions.set([]));
   }
 
   ngOnDestroy(): void {

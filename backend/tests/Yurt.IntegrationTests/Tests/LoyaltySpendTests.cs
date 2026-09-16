@@ -383,5 +383,9 @@ public class LoyaltySpendTests(YurtWebAppFactory factory)
             => throw new IikoApiException("down");
         public Task RegisterWebhookAsync(string webhookUrl, string authToken, CancellationToken ct = default)
             => throw new IikoApiException("down");
+        public Task<List<IikoTransaction>> GetCustomerTransactionsAsync(
+            Guid iikoCustomerId, DateTime dateFromUtc, DateTime dateToUtc,
+            int pageSize = 200, CancellationToken ct = default)
+            => throw new IikoApiException("down");
     }
 }

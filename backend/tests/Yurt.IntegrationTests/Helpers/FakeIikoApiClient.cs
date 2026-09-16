@@ -131,4 +131,29 @@ public class FakeIikoApiClient : IIikoApiClient
 
     public Task RegisterWebhookAsync(string webhookUrl, string authToken, CancellationToken ct = default)
         => Task.CompletedTask;
+
+    // ── Transaction history (issue #13) ─────────────────────────────────────
+
+    public bool FailGetTransactions { get; set; }
+    private readonly List<IikoTransaction> _transactions = [];
+
+    /// <summary>Seeds the ledger returned by <see cref="GetCustomerTransactionsAsync"/>, e.g. offsite POS sales.</summary>
+    public void SetTransactions(IEnumerable<IikoTransaction> transactions)
+    {
+        _transactions.Clear();
+        _transactions.AddRange(transactions);
+    }
+
+    public Task<List<IikoTransaction>> GetCustomerTransactionsAsync(
+        Guid iikoCustomerId, DateTime dateFromUtc, DateTime dateToUtc,
+        int pageSize = 200, CancellationToken ct = default)
+    {
+        if (FailGetTransactions) throw new IikoApiException("customer/transactions/by_date failed (injected)");
+
+        return Task.FromResult(_transactions
+            .Where(t => t.WhenCreated >= dateFromUtc && t.WhenCreated <= dateToUtc)
+            .OrderByDescending(t => t.WhenCreated)
+            .Take(pageSize)
+            .ToList());
+    }
 }

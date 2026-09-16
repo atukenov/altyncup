@@ -23,6 +23,7 @@ import {
   IikoTerminalGroup,
   Location,
   LoyaltyBalance,
+  LoyaltyHistory,
   MenuCategory,
   MenuItem,
   MenuTopping,
@@ -368,6 +369,10 @@ export class YurtApiService {
 
   getLoyaltyBalance(): Observable<LoyaltyBalance> {
     return this.http.get<LoyaltyBalance>(`${this.api}/loyalty/me`);
+  }
+
+  getLoyaltyTransactions(): Observable<LoyaltyHistory> {
+    return this.http.get<LoyaltyHistory>(`${this.api}/loyalty/transactions`);
   }
 
   getAdminCustomerLoyalty(customerId: string): Observable<LoyaltyBalance> {

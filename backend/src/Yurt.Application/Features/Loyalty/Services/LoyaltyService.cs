@@ -9,6 +9,10 @@ namespace Yurt.Application.Features.Loyalty.Services;
 
 public class LoyaltyService
 {
+    /// <summary>Comment tag stamped on every wallet op this app makes itself (earn/hold/chargeoff) —
+    /// lets <see cref="GetTransactionHistoryAsync"/> tell those apart from genuine offsite POS activity.</summary>
+    private const string AppOrderCommentPrefix = "Altyncup order ";
+
     private readonly IApplicationDbContext _db;
     private readonly IIikoApiClient _iiko;
     private readonly IikoOptions _options;
@@ -82,6 +86,46 @@ public class LoyaltyService
     }
 
     /// <summary>
+    /// Offsite (in-shop counter) bonus history for the customer's profile — on-demand fetch
+    /// over the trailing <see cref="IikoOptions.TransactionHistoryDays"/> window, not backed
+    /// by a background sync. Excludes transactions this app itself created via
+    /// TopupAsync/HoldAsync/ChargeoffAsync (tagged with <see cref="AppOrderCommentPrefix"/>)
+    /// since those already appear in the customer's order history — only genuinely offsite
+    /// iiko-side activity (staff applying the card/phone at a POS checkout) is returned.
+    /// Never throws — degrades to Available=false like <see cref="GetBalanceAsync"/>.
+    /// </summary>
+    public async Task<LoyaltyHistoryDto> GetTransactionHistoryAsync(Guid customerId, CancellationToken ct = default)
+    {
+        if (!_options.Enabled)
+            return new LoyaltyHistoryDto(false, false, false, []);
+
+        var user = await _db.CustomerUsers.FirstOrDefaultAsync(u => u.Id == customerId, ct);
+        if (user?.IikoCustomerId == null)
+            return new LoyaltyHistoryDto(true, true, false, []);
+
+        try
+        {
+            var dateTo = DateTime.UtcNow;
+            var dateFrom = dateTo.AddDays(-_options.TransactionHistoryDays);
+            var transactions = await _iiko.GetCustomerTransactionsAsync(
+                user.IikoCustomerId.Value, dateFrom, dateTo, ct: ct);
+
+            var offsite = transactions
+                .Where(t => t.Comment == null
+                    || !t.Comment.StartsWith(AppOrderCommentPrefix, StringComparison.Ordinal))
+                .Select(t => new LoyaltyTransactionDto(t.WhenCreated, t.Sum, t.TypeName, t.OrderNumber, t.BalanceAfter))
+                .ToList();
+
+            return new LoyaltyHistoryDto(true, true, true, offsite);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "iiko transaction history unavailable for customer {CustomerId}", customerId);
+            return new LoyaltyHistoryDto(true, false, true, []);
+        }
+    }
+
+    /// <summary>
     /// Credit EarnPercent of the completed order total to the customer's iiko wallet.
     /// Idempotent per order; never throws — a loyalty failure must not fail order completion.
     /// </summary>
@@ -118,7 +162,7 @@ public class LoyaltyService
                 user.IikoCustomerId!.Value,
                 user.IikoWalletId!.Value,
                 points,
-                $"Altyncup order {order.Id}",
+                $"{AppOrderCommentPrefix}{order.Id}",
                 ct);
 
             order.LoyaltyPointsEarned = points;
@@ -179,7 +223,7 @@ public class LoyaltyService
 
             var holdId = await _iiko.HoldAsync(
                 user.IikoCustomerId!.Value, user.IikoWalletId!.Value, applied,
-                $"Altyncup order {order.Id}", ct);
+                $"{AppOrderCommentPrefix}{order.Id}", ct);
 
             order.LoyaltyPointsSpent = applied;
             order.LoyaltyHoldTransactionId = holdId;
@@ -236,7 +280,7 @@ public class LoyaltyService
         {
             await _iiko.ChargeoffAsync(
                 user.IikoCustomerId.Value, user.IikoWalletId.Value,
-                order.LoyaltyPointsSpent.Value, $"Altyncup order {order.Id}", ct);
+                order.LoyaltyPointsSpent.Value, $"{AppOrderCommentPrefix}{order.Id}", ct);
             order.LoyaltyPendingAction = LoyaltyPendingAction.None;
             await _db.SaveChangesAsync(ct);
             await _audit.LogAsync("LoyaltyPointsSpent", "Order", order.Id.ToString(),
