@@ -118,17 +118,27 @@
         <div class="flex gap-3 overflow-x-auto h-scroll pb-2 pl-4 pr-2">
           @for (item of newItems(); track item.id) {
             <div class="shrink-0 w-36 rounded-2xl overflow-hidden bg-white shadow-sm border border-stone-100 flex flex-col">
-              @if (item.imageUrl) {
-                <img [src]="item.imageUrl" alt="" class="w-full h-24 object-cover" />
-              } @else {
-                <div class="w-full h-24 flex items-center justify-center text-4xl"
-                     style="background:linear-gradient(135deg,#fffab8,#fff388)">☕</div>
-              }
-              <div class="p-2.5 flex flex-col flex-1 gap-1">
-                <p class="text-[13px] font-semibold text-stone-800 leading-tight line-clamp-2">{{ item.name }}</p>
-                <p class="text-amber-600 font-bold text-sm">{{ item.price | currency2 }}</p>
+              <a [routerLink]="['/menu/item', item.id]" class="flex flex-col flex-1">
+                @if (item.imageUrl) {
+                  <img [src]="item.imageUrl" alt="" class="w-full h-24 object-cover" />
+                } @else {
+                  <div class="w-full h-24 flex items-center justify-center text-4xl"
+                       style="background:linear-gradient(135deg,#fffab8,#fff388)">☕</div>
+                }
+                <div class="p-2.5 flex flex-col flex-1 gap-1">
+                  <p class="text-[13px] font-semibold text-stone-800 leading-tight line-clamp-2">{{ item.name }}</p>
+                  <p class="text-amber-600 font-bold text-sm">
+                    @if (item.variants && item.variants.length > 0) {
+                      from {{ displayPrice(item) | currency2 }}
+                    } @else {
+                      {{ displayPrice(item) | currency2 }}
+                    }
+                  </p>
+                </div>
+              </a>
+              <div class="px-2.5 pb-2.5">
                 <button (click)="addToCart(item)"
-                        class="mt-auto w-full bg-amber-500 active:bg-amber-600 text-stone-900 text-xs font-bold rounded-xl py-1.5 transition-colors active:scale-95">
+                        class="w-full bg-amber-500 active:bg-amber-600 text-stone-900 text-xs font-bold rounded-xl py-1.5 transition-colors active:scale-95">
                   {{ 'menu.add' | t }}
                 </button>
               </div>
@@ -147,17 +157,27 @@
         <div class="flex gap-3 overflow-x-auto h-scroll pb-2 pl-4 pr-2">
           @for (item of recommendedItems(); track item.id) {
             <div class="shrink-0 w-36 rounded-2xl overflow-hidden bg-white shadow-sm border border-stone-100 flex flex-col">
-              @if (item.imageUrl) {
-                <img [src]="item.imageUrl" alt="" class="w-full h-24 object-cover" />
-              } @else {
-                <div class="w-full h-24 flex items-center justify-center text-4xl"
-                     style="background:linear-gradient(135deg,#e0e7ff,#c7d2fe)">🍃</div>
-              }
-              <div class="p-2.5 flex flex-col flex-1 gap-1">
-                <p class="text-[13px] font-semibold text-stone-800 leading-tight line-clamp-2">{{ item.name }}</p>
-                <p class="text-amber-600 font-bold text-sm">{{ item.price | currency2 }}</p>
+              <a [routerLink]="['/menu/item', item.id]" class="flex flex-col flex-1">
+                @if (item.imageUrl) {
+                  <img [src]="item.imageUrl" alt="" class="w-full h-24 object-cover" />
+                } @else {
+                  <div class="w-full h-24 flex items-center justify-center text-4xl"
+                       style="background:linear-gradient(135deg,#e0e7ff,#c7d2fe)">🍃</div>
+                }
+                <div class="p-2.5 flex flex-col flex-1 gap-1">
+                  <p class="text-[13px] font-semibold text-stone-800 leading-tight line-clamp-2">{{ item.name }}</p>
+                  <p class="text-amber-600 font-bold text-sm">
+                    @if (item.variants && item.variants.length > 0) {
+                      from {{ displayPrice(item) | currency2 }}
+                    } @else {
+                      {{ displayPrice(item) | currency2 }}
+                    }
+                  </p>
+                </div>
+              </a>
+              <div class="px-2.5 pb-2.5">
                 <button (click)="addToCart(item)"
-                        class="mt-auto w-full bg-amber-500 active:bg-amber-600 text-stone-900 text-xs font-bold rounded-xl py-1.5 transition-colors active:scale-95">
+                        class="w-full bg-amber-500 active:bg-amber-600 text-stone-900 text-xs font-bold rounded-xl py-1.5 transition-colors active:scale-95">
                   {{ 'menu.add' | t }}
                 </button>
               </div>

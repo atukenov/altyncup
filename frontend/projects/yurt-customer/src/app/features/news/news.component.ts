@@ -8,7 +8,7 @@ import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
 import { PromoViewerService } from '../../core/promo-viewer.service';
 import { TranslatePipe } from '../../core/translate.pipe';
-import { Currency2Pipe, SkeletonNewsComponent } from 'shared-ui';
+import { Currency2Pipe, SkeletonNewsComponent, ToastService } from 'shared-ui';
 import { DatePipe } from '@angular/common';
 import { ACHIEVEMENTS, Achievement, buildAchievementFlags } from './achievements';
 
@@ -24,6 +24,7 @@ export class NewsComponent implements OnInit {
   private cart = inject(CartService);
   private router = inject(Router);
   private promoViewer = inject(PromoViewerService);
+  private toast = inject(ToastService);
   readonly lang = inject(LangService);
 
   readonly loading = signal(true);
@@ -150,7 +151,15 @@ export class NewsComponent implements OnInit {
     this.router.navigate(['/cart']);
   }
 
+  // Items with size variants or optional toppings don't have a single valid price/config
+  // to add directly — send those through the item-detail page's selector instead of
+  // silently adding a $0 line with no variant/topping chosen.
   addToCart(item: MenuItem): void {
+    const needsSelection = (item.variants?.length ?? 0) > 0 || (item.availableToppings?.length ?? 0) > 0;
+    if (needsSelection) {
+      this.router.navigate(['/menu/item', item.id]);
+      return;
+    }
     this.cart.addItem({
       menuItemId: item.id,
       name: item.name,
@@ -160,6 +169,13 @@ export class NewsComponent implements OnInit {
       quantity: 1,
       imageUrl: item.imageUrl,
     });
+    this.toast.success(`${item.name} added to cart`);
+  }
+
+  // Base MenuItem.price is a placeholder (often 0) for items sold in size variants —
+  // the real price lives on the variant. Mirrors menu-list.component's "from <price>" display.
+  displayPrice(item: MenuItem): number {
+    return item.variants && item.variants.length > 0 ? item.variants[0].price : item.price;
   }
 
   get totalAchievements(): number {
