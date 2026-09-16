@@ -18,6 +18,12 @@ public class LoyaltyTests(YurtWebAppFactory factory)
     private record LoyaltyBalanceResult(
         bool Enabled, bool Available, bool Linked, decimal? Balance, decimal EarnPercent);
 
+    private record LoyaltyTransactionResult(
+        DateTime WhenCreated, decimal Sum, string? TypeName, int? OrderNumber, decimal? BalanceAfter);
+
+    private record LoyaltyHistoryResult(
+        bool Enabled, bool Available, bool Linked, List<LoyaltyTransactionResult> Transactions);
+
     private record CompletedOrder(Guid Id, decimal Total, string CustomerToken);
 
     // ── Feature flag off (default config) ────────────────────────────────────
@@ -484,6 +490,111 @@ public class LoyaltyTests(YurtWebAppFactory factory)
         Assert.NotEqual(staleWalletId, healed.IikoWalletId);
     }
 
+    // ── Transaction history (issue #13) ──────────────────────────────────────
+
+    [Fact]
+    public async Task LoyaltyDisabled_TransactionsEndpoint_ReturnsDisabled()
+    {
+        var client = factory.CreateClient();
+        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77001000930");
+        ApiHelpers.Authorize(client, token);
+
+        var result = await client.GetFromJsonAsync<LoyaltyHistoryResult>(
+            "/api/v1/loyalty/transactions", ApiHelpers.JsonOpts);
+
+        Assert.NotNull(result);
+        Assert.False(result.Enabled);
+        Assert.Empty(result.Transactions);
+    }
+
+    [Fact]
+    public async Task LoyaltyEnabled_UnlinkedCustomer_TransactionsEndpoint_ReportsNotLinked()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client = enabledFactory.CreateClient();
+        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77001000931");
+        ApiHelpers.Authorize(client, token);
+
+        var result = await client.GetFromJsonAsync<LoyaltyHistoryResult>(
+            "/api/v1/loyalty/transactions", ApiHelpers.JsonOpts);
+
+        Assert.NotNull(result);
+        Assert.True(result.Enabled);
+        Assert.False(result.Linked);
+        Assert.Empty(result.Transactions);
+    }
+
+    [Fact]
+    public async Task LoyaltyEnabled_TransactionsEndpoint_ExcludesAppOrderTransactions_ReturnsOnlyOffsite()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client = enabledFactory.CreateClient();
+        var completed = await PlaceAndCompleteOrderAsync(enabledFactory, client, "+77001000932");
+
+        // iiko's own ledger also carries the app-driven earn (tagged with our order
+        // comment) — it must not be duplicated into the offsite history view, since it's
+        // already visible via the order itself.
+        var appOrderTx = new IikoTransaction(
+            Guid.NewGuid(), DateTime.UtcNow.AddHours(-1), 10m, null, null, null,
+            "Bonus accrual", false, 0m, 10m, $"Altyncup order {completed.Id}");
+        var offsiteTx = new IikoTransaction(
+            Guid.NewGuid(), DateTime.UtcNow.AddHours(-2), 25m, 300m, 7, Guid.NewGuid(),
+            "Bonus accrual", false, 10m, 35m, null);
+        fake.SetTransactions([appOrderTx, offsiteTx]);
+
+        ApiHelpers.Authorize(client, completed.CustomerToken);
+        var result = await client.GetFromJsonAsync<LoyaltyHistoryResult>(
+            "/api/v1/loyalty/transactions", ApiHelpers.JsonOpts);
+
+        Assert.NotNull(result);
+        Assert.True(result.Enabled);
+        Assert.True(result.Available);
+        Assert.True(result.Linked);
+        var tx = Assert.Single(result.Transactions);
+        Assert.Equal(25m, tx.Sum);
+        Assert.Equal(7, tx.OrderNumber);
+    }
+
+    [Fact]
+    public async Task LoyaltyEnabled_IikoUnavailable_TransactionsEndpoint_DegradesToUnavailable()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client = enabledFactory.CreateClient();
+        var completed = await PlaceAndCompleteOrderAsync(enabledFactory, client, "+77001000933");
+
+        fake.FailGetTransactions = true;
+        ApiHelpers.Authorize(client, completed.CustomerToken);
+        var result = await client.GetFromJsonAsync<LoyaltyHistoryResult>(
+            "/api/v1/loyalty/transactions", ApiHelpers.JsonOpts);
+
+        Assert.NotNull(result);
+        Assert.True(result.Enabled);
+        Assert.False(result.Available);
+        Assert.True(result.Linked);
+        Assert.Empty(result.Transactions);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static IikoOptions EnabledOptions() => new()
@@ -554,6 +665,10 @@ public class LoyaltyTests(YurtWebAppFactory factory)
         public Task CloseDeliveryOrderAsync(Guid iikoOrderId, CancellationToken ct = default)
             => throw new IikoApiException("iiko is down");
         public Task RegisterWebhookAsync(string webhookUrl, string authToken, CancellationToken ct = default)
+            => throw new IikoApiException("iiko is down");
+        public Task<List<IikoTransaction>> GetCustomerTransactionsAsync(
+            Guid iikoCustomerId, DateTime dateFromUtc, DateTime dateToUtc,
+            int pageSize = 200, CancellationToken ct = default)
             => throw new IikoApiException("iiko is down");
     }
 }

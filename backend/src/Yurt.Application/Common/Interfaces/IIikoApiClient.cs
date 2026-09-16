@@ -52,6 +52,19 @@ public interface IIikoApiClient
 
     /// <summary>Register (or update) the webhook endpoint iiko calls for delivery order update/error events.</summary>
     Task RegisterWebhookAsync(string webhookUrl, string authToken, CancellationToken ct = default);
+
+    // ── Transaction history (issue #13) ─────────────────────────────────────
+
+    /// <summary>
+    /// Bonus-wallet transaction ledger for a customer over a date range — covers both
+    /// app-driven wallet ops (topup/chargeoff/hold) and offsite (in-shop counter)
+    /// purchases where staff applied the customer's card/phone at checkout.
+    /// Wraps POST /api/1/loyalty/iiko/customer/transactions/by_date; returns the first
+    /// page only (<paramref name="pageSize"/> items), newest first.
+    /// </summary>
+    Task<List<IikoTransaction>> GetCustomerTransactionsAsync(
+        Guid iikoCustomerId, DateTime dateFromUtc, DateTime dateToUtc,
+        int pageSize = 200, CancellationToken ct = default);
 }
 
 public record IikoWalletBalance(Guid Id, string? Name, int Type, decimal Balance);
@@ -74,6 +87,19 @@ public record IikoCreateOrderRequest(
     string? CustomerName,
     List<IikoOrderItemRequest> Items,
     decimal PaymentSum,
+    string? Comment);
+
+public record IikoTransaction(
+    Guid Id,
+    DateTime WhenCreated,
+    decimal Sum,
+    decimal? OrderSum,
+    int? OrderNumber,
+    Guid? PosOrderId,
+    string? TypeName,
+    bool? IsDelivery,
+    decimal? BalanceBefore,
+    decimal? BalanceAfter,
     string? Comment);
 
 public class IikoApiException : Exception

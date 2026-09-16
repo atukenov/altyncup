@@ -48,4 +48,7 @@ public class IikoOptions
 
     /// <summary>Shared secret registered with iiko's webhooks/update_settings; checked on incoming webhook calls.</summary>
     public string WebhookAuthToken { get; set; } = string.Empty;
+
+    /// <summary>How far back the customer-facing bonus history view looks (on-demand fetch, no background sync).</summary>
+    public int TransactionHistoryDays { get; set; } = 90;
 }

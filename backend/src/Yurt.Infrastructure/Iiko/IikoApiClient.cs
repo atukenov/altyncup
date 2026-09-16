@@ -334,6 +334,39 @@ public class IikoApiClient : IIikoApiClient
         await EnsureSuccessAsync(resp, "deliveries/close", ct);
     }
 
+    // ── Transaction history (issue #13) ─────────────────────────────────────
+
+    private record TransactionsByPeriodRequest(
+        Guid CustomerId, string DateFrom, string DateTo, int PageNumber, int PageSize, Guid OrganizationId);
+    private record TransactionReportItemDto(
+        Guid Id, string WhenCreated, decimal Sum, decimal? OrderSum, int? OrderNumber, Guid? PosOrderId,
+        string? TypeName, bool? IsDelivery, decimal? BalanceBefore, decimal? BalanceAfter, string? Comment);
+    private record TransactionsByPeriodResponse(List<TransactionReportItemDto>? Transactions);
+
+    public async Task<List<IikoTransaction>> GetCustomerTransactionsAsync(
+        Guid iikoCustomerId, DateTime dateFromUtc, DateTime dateToUtc,
+        int pageSize = 200, CancellationToken ct = default)
+    {
+        var resp = await PostAsync<TransactionsByPeriodResponse>(
+            "api/1/loyalty/iiko/customer/transactions/by_date",
+            new TransactionsByPeriodRequest(
+                iikoCustomerId, FormatIikoDate(dateFromUtc), FormatIikoDate(dateToUtc),
+                PageNumber: 0, pageSize, _options.OrganizationId), ct);
+
+        return (resp.Transactions ?? [])
+            .Select(t => new IikoTransaction(
+                t.Id, ParseIikoDate(t.WhenCreated), t.Sum, t.OrderSum, t.OrderNumber, t.PosOrderId,
+                t.TypeName, t.IsDelivery, t.BalanceBefore, t.BalanceAfter, t.Comment))
+            .OrderByDescending(t => t.WhenCreated)
+            .ToList();
+    }
+
+    private static string FormatIikoDate(DateTime dt) => dt.ToString("yyyy-MM-dd HH:mm:ss.fff");
+
+    private static DateTime ParseIikoDate(string s) => DateTime.Parse(
+        s, System.Globalization.CultureInfo.InvariantCulture,
+        System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal);
+
     private record WebhookFilter(List<string> WebHooksEventType);
     private record RegisterWebhookRequest(Guid OrganizationId, string WebHooksUri, string AuthToken, WebhookFilter WebHooksFilter);
 

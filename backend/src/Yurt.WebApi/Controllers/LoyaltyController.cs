@@ -26,4 +26,12 @@ public class LoyaltyController : ApiControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> GetMyBalance(CancellationToken ct)
         => Ok(await _loyalty.GetBalanceAsync(_currentUser.UserId!.Value, linkIfMissing: true, ct));
+
+    /// <summary>
+    /// Offsite (in-shop counter) bonus history — app-order earn/spend already appears in
+    /// the order history endpoints. Degrades gracefully when iiko is unavailable.
+    /// </summary>
+    [HttpGet("transactions")]
+    public async Task<IActionResult> GetMyTransactions(CancellationToken ct)
+        => Ok(await _loyalty.GetTransactionHistoryAsync(_currentUser.UserId!.Value, ct));
 }
