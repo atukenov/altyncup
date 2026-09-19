@@ -136,8 +136,8 @@
     <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" role="dialog" aria-modal="true" aria-labelledby="worker-create-title" (click)="$event.stopPropagation()">
       <h2 id="worker-create-title" class="text-lg font-bold text-slate-800 mb-4">{{ 'workers.newAccount' | t }}</h2>
       <div class="space-y-3">
-        <input [(ngModel)]="createUsername" [placeholder]="'workers.username' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
-        <input [(ngModel)]="createPassword" type="password" [placeholder]="'workers.pwMinChars' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+        <input [(ngModel)]="createUsername" [placeholder]="'workers.username' | t" [attr.aria-label]="'workers.username' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+        <input [(ngModel)]="createPassword" type="password" [placeholder]="'workers.pwMinChars' | t" [attr.aria-label]="'workers.pwMinChars' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
       </div>
       <div class="flex gap-3 mt-5">
         <button (click)="showCreate.set(false)" class="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">{{ 'action.cancel' | t }}</button>
@@ -155,7 +155,7 @@
     <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" role="dialog" aria-modal="true" aria-labelledby="worker-edit-title" (click)="$event.stopPropagation()">
       <h2 id="worker-edit-title" class="text-lg font-bold text-slate-800 mb-4">{{ 'workers.editWorker' | t }}</h2>
       <div class="space-y-3">
-        <input [(ngModel)]="editUsername" [placeholder]="'workers.username' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+        <input [(ngModel)]="editUsername" [placeholder]="'workers.username' | t" [attr.aria-label]="'workers.username' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
         <label class="flex items-center gap-3 cursor-pointer">
           <input type="checkbox" [(ngModel)]="editActive" class="w-4 h-4 rounded text-amber-500" />
           <span class="text-sm text-slate-700">{{ 'workers.active' | t }}</span>
@@ -177,7 +177,7 @@
     <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" role="dialog" aria-modal="true" aria-labelledby="worker-reset-title" (click)="$event.stopPropagation()">
       <h2 id="worker-reset-title" class="text-lg font-bold text-slate-800 mb-1">{{ 'workers.resetTitle' | t }}</h2>
       <p class="text-sm text-slate-400 mb-4">{{ resetWorker()!.username }}</p>
-      <input [(ngModel)]="resetPassword" type="password" [placeholder]="'workers.newPw' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+      <input [(ngModel)]="resetPassword" type="password" [placeholder]="'workers.newPw' | t" [attr.aria-label]="'workers.newPw' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
       <div class="flex gap-3 mt-5">
         <button (click)="resetWorker.set(null)" class="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">{{ 'action.cancel' | t }}</button>
         <button (click)="submitReset()" [disabled]="resetLoading()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-stone-900 font-semibold rounded-xl py-2.5 text-sm disabled:opacity-60 transition-colors">

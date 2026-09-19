@@ -79,8 +79,9 @@
 
         <!-- Name -->
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'locations.name' | t }}</label>
+          <label for="location-name" class="block text-xs font-medium text-slate-600 mb-1">{{ 'locations.name' | t }}</label>
           <input
+            id="location-name"
             type="text"
             [ngModel]="form().name"
             (ngModelChange)="patch('name', $event)"
@@ -90,8 +91,9 @@
 
         <!-- Address -->
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'locations.address' | t }}</label>
+          <label for="location-address" class="block text-xs font-medium text-slate-600 mb-1">{{ 'locations.address' | t }}</label>
           <input
+            id="location-address"
             type="text"
             [ngModel]="form().address"
             (ngModelChange)="patch('address', $event)"
@@ -137,6 +139,7 @@
                     type="time"
                     [ngModel]="slot.from"
                     (ngModelChange)="updateSlotTime(i, 'from', $event)"
+                    [attr.aria-label]="DAY_NAMES[slot.day - 1] + ' opening time'"
                     class="flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-1 text-xs font-mono text-slate-700 focus:ring-2 focus:ring-amber-400 outline-none bg-white"
                   />
                   <span class="text-slate-400 text-xs shrink-0 font-medium">–</span>
@@ -144,6 +147,7 @@
                     type="time"
                     [ngModel]="slot.to"
                     (ngModelChange)="updateSlotTime(i, 'to', $event)"
+                    [attr.aria-label]="DAY_NAMES[slot.day - 1] + ' closing time'"
                     class="flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-1 text-xs font-mono text-slate-700 focus:ring-2 focus:ring-amber-400 outline-none bg-white"
                   />
                 } @else {
@@ -156,8 +160,9 @@
 
         <!-- Contact Phone -->
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">{{ 'locations.contactPhone' | t }}</label>
+          <label for="location-contact-phone" class="block text-xs font-medium text-slate-600 mb-1">{{ 'locations.contactPhone' | t }}</label>
           <input
+            id="location-contact-phone"
             type="text"
             [ngModel]="form().contactPhone"
             (ngModelChange)="patch('contactPhone', $event)"
@@ -179,9 +184,10 @@
 
         <!-- iiko terminal group (order-push routing, optional) -->
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">iiko terminal group (optional)</label>
+          <label for="location-iiko-terminal-group" class="block text-xs font-medium text-slate-600 mb-1">iiko terminal group (optional)</label>
           <p class="text-xs text-slate-400 mb-2">Which iiko POS/KDS receives orders pushed from this location. Leave unmapped to skip iiko order-push for this location.</p>
           <select
+            id="location-iiko-terminal-group"
             [ngModel]="form().iikoTerminalGroupId"
             (ngModelChange)="patch('iikoTerminalGroupId', $event)"
             class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
