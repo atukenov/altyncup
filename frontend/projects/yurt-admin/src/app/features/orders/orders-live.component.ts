@@ -169,10 +169,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
         this.actionLoading.set(false);
         this.toast.success('Order accepted');
       },
-      error: () => {
-        this.actionLoading.set(false);
-        this.toast.error('Failed to accept order');
-      },
+      error: () => this.actionLoading.set(false),
     });
   }
 
@@ -186,10 +183,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
         this.declineReason = '';
         this.toast.success('Order declined');
       },
-      error: () => {
-        this.actionLoading.set(false);
-        this.toast.error('Failed to decline order');
-      },
+      error: () => this.actionLoading.set(false),
     });
   }
 
@@ -201,10 +195,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
         this.actionLoading.set(false);
         this.toast.success(`Status: ${status}`);
       },
-      error: () => {
-        this.actionLoading.set(false);
-        this.toast.error('Failed to update status');
-      },
+      error: () => this.actionLoading.set(false),
     });
   }
 
@@ -220,10 +211,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
           this.paymentLoading.set(false);
           this.toast.success('Payment updated');
         },
-        error: () => {
-          this.paymentLoading.set(false);
-          this.toast.error('Failed to update payment');
-        },
+        error: () => this.paymentLoading.set(false),
       });
   }
 

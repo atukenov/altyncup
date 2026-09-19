@@ -42,10 +42,7 @@ export class CustomerDetailComponent implements OnInit {
     this.loyaltyLoading.set(true);
     this.api.getAdminCustomerLoyalty(this.id).subscribe({
       next: (l) => { this.loyalty.set(l); this.loyaltyLoading.set(false); },
-      error: () => {
-        this.loyaltyLoading.set(false);
-        this.toast.error('Failed to refresh bonus balance.');
-      },
+      error: () => this.loyaltyLoading.set(false),
     });
   }
 
@@ -59,10 +56,7 @@ export class CustomerDetailComponent implements OnInit {
         this.toggleLoading.set(false);
         this.toast.success(updated.isActive ? 'Customer activated.' : 'Customer deactivated.');
       },
-      error: () => {
-        this.toggleLoading.set(false);
-        this.toast.error('Failed to update customer status.');
-      },
+      error: () => this.toggleLoading.set(false),
     });
   }
 }

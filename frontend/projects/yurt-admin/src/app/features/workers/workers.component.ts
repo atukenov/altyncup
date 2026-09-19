@@ -61,10 +61,7 @@ export class WorkersComponent implements OnInit {
         this.createLoading.set(false);
         this.toast.success('Worker account created.');
       },
-      error: (err) => {
-        this.createLoading.set(false);
-        this.toast.error(err.error?.title ?? 'Failed to create worker.');
-      },
+      error: () => this.createLoading.set(false),
     });
   }
 
@@ -85,10 +82,7 @@ export class WorkersComponent implements OnInit {
         this.editLoading.set(false);
         this.toast.success('Worker updated.');
       },
-      error: (err) => {
-        this.editLoading.set(false);
-        this.toast.error(err.error?.title ?? 'Update failed.');
-      },
+      error: () => this.editLoading.set(false),
     });
   }
 
@@ -98,7 +92,7 @@ export class WorkersComponent implements OnInit {
         this.workers.update((list) => list.map((x) => (x.id === updated.id ? updated : x)));
         this.toast.success(updated.isActive ? 'Worker activated.' : 'Worker deactivated.');
       },
-      error: () => this.toast.error('Failed to update worker status.'),
+      error: () => {},
     });
   }
 
@@ -117,10 +111,7 @@ export class WorkersComponent implements OnInit {
         this.resetLoading.set(false);
         this.toast.success('Password reset.');
       },
-      error: (err) => {
-        this.resetLoading.set(false);
-        this.toast.error(err.error?.title ?? 'Reset failed.');
-      },
+      error: () => this.resetLoading.set(false),
     });
   }
 }

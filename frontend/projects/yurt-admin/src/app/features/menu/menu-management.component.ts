@@ -194,7 +194,7 @@ export class MenuManagementComponent implements OnInit {
   private reorderCategories(cats: MenuCategory[]): void {
     this.categories.set(cats);
     this.api.adminReorderCategories(cats.map((c) => c.id)).subscribe({
-      error: () => { this.toast.error('Failed to save new order'); this.loadAll(); },
+      error: () => this.loadAll(),
     });
   }
 
@@ -219,7 +219,7 @@ export class MenuManagementComponent implements OnInit {
     const queue = [...catItems];
     this.items.update((all) => all.map((i) => (i.categoryId === catId ? queue.shift()! : i)));
     this.api.adminReorderMenuItems(catId, catItems.map((i) => i.id)).subscribe({
-      error: () => { this.toast.error('Failed to save new order'); this.loadAll(); },
+      error: () => this.loadAll(),
     });
   }
 
@@ -364,7 +364,7 @@ export class MenuManagementComponent implements OnInit {
         this.showItemDialog.set(false);
         this.toast.success('Item saved');
       },
-      error: () => { this.saving.set(false); this.toast.error('Failed to save item'); },
+      error: () => this.saving.set(false),
     });
   }
 
@@ -375,7 +375,7 @@ export class MenuManagementComponent implements OnInit {
         this.items.update((list) => list.filter((i) => i.id !== item.id));
         this.toast.success('Item deleted');
       },
-      error: () => this.toast.error('Failed to delete item'),
+      error: () => {},
     });
   }
 
@@ -405,7 +405,7 @@ export class MenuManagementComponent implements OnInit {
         this.showCatDialog.set(false);
         this.toast.success(f.id ? 'Category updated' : 'Category created');
       },
-      error: () => { this.saving.set(false); this.toast.error('Failed to save category'); },
+      error: () => this.saving.set(false),
     });
   }
 
@@ -417,7 +417,7 @@ export class MenuManagementComponent implements OnInit {
         if (this.selectedCategoryId() === cat.id) this.selectedCategoryId.set('');
         this.toast.success('Category deleted');
       },
-      error: () => this.toast.error('Failed to delete category'),
+      error: () => {},
     });
   }
 
@@ -490,7 +490,7 @@ export class MenuManagementComponent implements OnInit {
         this.showToppingDialog.set(false);
         this.toast.success('Topping saved');
       },
-      error: () => { this.saving.set(false); this.toast.error('Failed to save topping'); },
+      error: () => this.saving.set(false),
     });
   }
 
@@ -501,7 +501,7 @@ export class MenuManagementComponent implements OnInit {
         this.toppings.update((list) => list.filter((t) => t.id !== topping.id));
         this.toast.success('Topping deleted');
       },
-      error: () => this.toast.error('Failed to delete topping'),
+      error: () => {},
     });
   }
 }

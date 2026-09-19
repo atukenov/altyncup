@@ -160,8 +160,6 @@ export class ProfileComponent implements OnInit {
         this.phoneLoading.set(false);
         if (err.status === 409) {
           this.phoneError.set(this.langService.t('profile.phoneInUse'));
-        } else {
-          this.toast.error(this.langService.t('profile.phoneChangeFailed'));
         }
       },
     });
@@ -175,10 +173,7 @@ export class ProfileComponent implements OnInit {
         this.toast.info('Account deleted.');
         this.router.navigate(['/auth/login']);
       },
-      error: () => {
-        this.deleteLoading.set(false);
-        this.toast.error('Failed to delete account.');
-      },
+      error: () => this.deleteLoading.set(false),
     });
   }
 
@@ -213,10 +208,7 @@ export class ProfileComponent implements OnInit {
           this.saving.set(false);
           this.toast.success('Profile updated.');
         },
-        error: () => {
-          this.saving.set(false);
-          this.toast.error('Failed to update profile.');
-        },
+        error: () => this.saving.set(false),
       });
   }
 
@@ -245,10 +237,7 @@ export class ProfileComponent implements OnInit {
         this.showReportModal.set(false);
         this.toast.success(this.langService.t('profile.reportSuccess'));
       },
-      error: () => {
-        this.reportLoading.set(false);
-        this.toast.error('Failed to send report. Please try again.');
-      },
+      error: () => this.reportLoading.set(false),
     });
   }
 }

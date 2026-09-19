@@ -29,7 +29,7 @@ export class ReportsComponent implements OnInit {
     const resolved = this.tab() === 'resolved';
     this.api.getAdminReports(resolved).subscribe({
       next: (r) => { this.reports.set(r); this.loading.set(false); },
-      error: () => { this.loading.set(false); this.toast.error('Failed to load reports.'); },
+      error: () => this.loading.set(false),
     });
   }
 
@@ -46,10 +46,7 @@ export class ReportsComponent implements OnInit {
         this.reports.update((list) => list.filter((r) => r.id !== report.id));
         this.toast.success('Report marked as resolved.');
       },
-      error: () => {
-        this.resolvingId.set(null);
-        this.toast.error('Failed to resolve report.');
-      },
+      error: () => this.resolvingId.set(null),
     });
   }
 }

@@ -39,10 +39,7 @@ export class FavoritesComponent {
         this.items.set(items);
         this.loading.set(false);
       },
-      error: () => {
-        this.loading.set(false);
-        this.toast.error('Failed to load favorites.');
-      },
+      error: () => this.loading.set(false),
     });
   }
 

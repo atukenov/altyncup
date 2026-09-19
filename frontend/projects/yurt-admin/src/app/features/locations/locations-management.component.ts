@@ -163,11 +163,7 @@ export class LocationsManagementComponent implements OnInit {
         this.showDialog.set(false);
         this.toast.success('Location saved');
       },
-      error: (err: { status?: number; error?: { message?: string } }) => {
-        this.saving.set(false);
-        const msg = err?.error?.message ?? `Error ${err?.status ?? 'unknown'}`;
-        this.toast.error(`Failed to save: ${msg}`);
-      },
+      error: () => this.saving.set(false),
     });
   }
 
@@ -178,7 +174,7 @@ export class LocationsManagementComponent implements OnInit {
         this.locations.update((list) => list.filter((l) => l.id !== loc.id));
         this.toast.success('Location deleted');
       },
-      error: () => this.toast.error('Failed to delete location'),
+      error: () => {},
     });
   }
 }

@@ -217,11 +217,8 @@ export class CartComponent implements OnInit {
         this.toast.success('Order placed! ☕');
         this.router.navigate(['/orders', order.id]);
       },
-      error: (err) => {
-        this.loading.set(false);
-        // Keep checkoutKey so a retry reuses it and won't create a duplicate order
-        this.toast.error(err.error?.title ?? 'Failed to place order.');
-      },
+      // Keep checkoutKey on error so a retry reuses it and won't create a duplicate order
+      error: () => this.loading.set(false),
     });
   }
 }

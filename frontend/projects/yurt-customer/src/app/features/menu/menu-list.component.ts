@@ -251,10 +251,7 @@ export class MenuListComponent implements OnInit {
           this.allItems.set(items);
           this.loading.set(false);
         },
-        error: () => {
-          this.loading.set(false);
-          this.toast.error('Failed to load menu.');
-        },
+        error: () => this.loading.set(false),
       });
   }
 
