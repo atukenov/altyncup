@@ -105,8 +105,9 @@
 
         <div class="px-6 py-5 space-y-4">
           <div>
-            <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.title_label' | t }} *</label>
+            <label for="promo-title" class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.title_label' | t }} *</label>
             <input
+              id="promo-title"
               type="text"
               [ngModel]="form().title"
               (ngModelChange)="patch('title', $event)"
@@ -115,8 +116,9 @@
             />
           </div>
           <div>
-            <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'label.description' | t }}</label>
+            <label for="promo-description" class="text-xs font-medium text-slate-600 mb-1 block">{{ 'label.description' | t }}</label>
             <textarea
+              id="promo-description"
               [ngModel]="form().description"
               (ngModelChange)="patch('description', $event)"
               rows="3"
@@ -125,8 +127,9 @@
             ></textarea>
           </div>
           <div>
-            <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.imageUrlOpt' | t }}</label>
+            <label for="promo-image-url" class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.imageUrlOpt' | t }}</label>
             <input
+              id="promo-image-url"
               type="text"
               [ngModel]="form().imageUrl"
               (ngModelChange)="patch('imageUrl', $event)"
@@ -136,8 +139,9 @@
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.buttonLabel' | t }}</label>
+              <label for="promo-button-label" class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.buttonLabel' | t }}</label>
               <input
+                id="promo-button-label"
                 type="text"
                 [ngModel]="form().buttonLabel"
                 (ngModelChange)="patch('buttonLabel', $event)"
@@ -146,8 +150,9 @@
               />
             </div>
             <div>
-              <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.buttonUrl' | t }}</label>
+              <label for="promo-button-url" class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.buttonUrl' | t }}</label>
               <input
+                id="promo-button-url"
                 type="text"
                 [ngModel]="form().buttonUrl"
                 (ngModelChange)="patch('buttonUrl', $event)"
@@ -158,8 +163,9 @@
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.expiresOpt' | t }}</label>
+              <label for="promo-expires-at" class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.expiresOpt' | t }}</label>
               <input
+                id="promo-expires-at"
                 type="datetime-local"
                 [ngModel]="form().expiresAt"
                 (ngModelChange)="patch('expiresAt', $event)"

@@ -99,8 +99,9 @@
       <div class="space-y-4">
         <!-- Code -->
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.code' | t }} *</label>
+          <label for="discount-code" class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.code' | t }} *</label>
           <input
+            id="discount-code"
             [(ngModel)]="formCode"
             [disabled]="isEditing()"
             placeholder="e.g. SUMMER20"
@@ -110,8 +111,9 @@
 
         <!-- Title -->
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.titleField' | t }} *</label>
+          <label for="discount-title" class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.titleField' | t }} *</label>
           <input
+            id="discount-title"
             [(ngModel)]="formTitle"
             placeholder="{{ 'discountCodes.titlePlaceholder' | t }}"
             class="w-full text-sm rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300"
@@ -121,8 +123,9 @@
         <!-- Type + Value -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.type' | t }}</label>
+            <label for="discount-type" class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.type' | t }}</label>
             <select
+              id="discount-type"
               [(ngModel)]="formType"
               class="w-full text-sm rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300"
             >
@@ -131,10 +134,11 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">
+            <label for="discount-value" class="block text-xs font-semibold text-slate-600 mb-1">
               {{ formType === 'Percentage' ? ('discountCodes.percent' | t) : ('discountCodes.amountTenge' | t) }} *
             </label>
             <input
+              id="discount-value"
               [(ngModel)]="formValue"
               type="number"
               min="1"
@@ -147,8 +151,9 @@
         <!-- Max uses + Min order -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.maxUses' | t }}</label>
+            <label for="discount-max-uses" class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.maxUses' | t }}</label>
             <input
+              id="discount-max-uses"
               [(ngModel)]="formMaxUses"
               type="number"
               min="1"
@@ -157,8 +162,9 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.minOrder' | t }}</label>
+            <label for="discount-min-order" class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.minOrder' | t }}</label>
             <input
+              id="discount-min-order"
               [(ngModel)]="formMinOrder"
               type="number"
               min="0"
@@ -171,16 +177,18 @@
         <!-- Starts at / Expires at -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.startsAt' | t }}</label>
+            <label for="discount-starts-at" class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.startsAt' | t }}</label>
             <input
+              id="discount-starts-at"
               [(ngModel)]="formStartsAt"
               type="datetime-local"
               class="w-full text-sm rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300"
             />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.expiresAt' | t }}</label>
+            <label for="discount-expires-at" class="block text-xs font-semibold text-slate-600 mb-1">{{ 'discountCodes.expiresAt' | t }}</label>
             <input
+              id="discount-expires-at"
               [(ngModel)]="formExpiresAt"
               type="datetime-local"
               class="w-full text-sm rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300"
