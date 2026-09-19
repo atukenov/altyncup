@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
+import { HttpContext } from '@angular/common/http';
 import { Component, inject, Input, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { SignalrService, YurtApiService } from 'shared-api';
+import { SignalrService, SKIP_ERROR_TOAST, YurtApiService } from 'shared-api';
 import {
   Order,
   OrderStatus,
@@ -74,7 +75,10 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   }
 
   loadOrder(): void {
-    this.api.getOrder(this.id).subscribe({
+    // Skips the generic HTTP error toast — this page shows a more specific
+    // "order not found" message instead of layering both on top of each other.
+    const context = new HttpContext().set(SKIP_ERROR_TOAST, true);
+    this.api.getOrder(this.id, context).subscribe({
       next: (o) => {
         this.order.set(o);
         this.loading.set(false);
@@ -172,10 +176,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
         this.submittingRating.set(false);
         this.toast.success('Thanks for your feedback!');
       },
-      error: () => {
-        this.submittingRating.set(false);
-        this.toast.error('Failed to submit rating.');
-      },
+      error: () => this.submittingRating.set(false),
     });
   }
 }

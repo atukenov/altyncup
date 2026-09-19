@@ -104,14 +104,14 @@ export class GroupOrderViewComponent implements OnInit, OnDestroy {
     };
     this.api.addGroupOrderItem(this.id, req).subscribe({
       next: (updated) => { this.cart.set(updated); this.showAddSheet.set(false); },
-      error: (err) => this.toast.error(err?.error?.title ?? 'Failed to add item.'),
+      error: () => {},
     });
   }
 
   removeItem(cartItem: GroupCartItem): void {
     this.api.removeGroupOrderItem(this.id, cartItem.id).subscribe({
       next: (updated) => this.cart.set(updated),
-      error: (err) => this.toast.error(err?.error?.title ?? 'Failed to remove item.'),
+      error: () => {},
     });
   }
 
@@ -122,10 +122,7 @@ export class GroupOrderViewComponent implements OnInit, OnDestroy {
         this.toast.success('Order placed! ☕');
         this.router.navigate(['/orders', order.id]);
       },
-      error: (err) => {
-        this.toast.error(err?.error?.title ?? 'Failed to place order.');
-        this.checkoutLoading.set(false);
-      },
+      error: () => this.checkoutLoading.set(false),
     });
   }
 

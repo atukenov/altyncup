@@ -103,10 +103,7 @@ export class PromotionsManagementComponent implements OnInit {
         this.showDialog.set(false);
         this.toast.success('Promotion saved');
       },
-      error: () => {
-        this.saving.set(false);
-        this.toast.error('Failed to save promotion');
-      },
+      error: () => this.saving.set(false),
     });
   }
 
@@ -117,7 +114,7 @@ export class PromotionsManagementComponent implements OnInit {
         this.promotions.update((list) => list.filter((p) => p.id !== promo.id));
         this.toast.success('Promotion deleted');
       },
-      error: () => this.toast.error('Failed to delete promotion'),
+      error: () => {},
     });
   }
 

@@ -6,7 +6,6 @@ import { YurtApiService } from 'shared-api';
 import { LoyaltyTransaction, Order, OrderStatus } from 'shared-models';
 import {
   BadgeComponent,
-  ToastService,
   OrderStatusLabelPipe,
   OrderStatusColorPipe,
   Currency2Pipe,
@@ -35,7 +34,6 @@ import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 })
 export class OrdersComponent implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
-  private toast = inject(ToastService);
   private appResume = inject(AppResumeService);
   private resumeSub?: Subscription;
 
@@ -84,10 +82,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
         this.declinedOrders.set(declined ?? []);
         this.loading.set(false);
       })
-      .catch(() => {
-        this.loading.set(false);
-        this.toast.error('Failed to load orders.');
-      });
+      .catch(() => this.loading.set(false));
 
     // Independent of order loading: iiko offsite (in-shop counter) bonus history is a
     // nice-to-have on top of the History tab, not core order data — a failure here must

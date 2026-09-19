@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { YurtApiService } from 'shared-api';
 import { Location } from 'shared-models';
-import { SkeletonCardComponent, ToastService } from 'shared-ui';
+import { SkeletonCardComponent } from 'shared-ui';
 import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { LocationService } from '../../core/location.service';
@@ -111,7 +111,6 @@ export class LocationsComponent {
   private api = inject(YurtApiService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private toast = inject(ToastService);
   private langService = inject(LangService);
   private locationSvc = inject(LocationService);
 
@@ -125,7 +124,7 @@ export class LocationsComponent {
       this.loading.set(true);
       this.api.getLocations(lang).subscribe({
         next: (locs) => { this.locations.set(locs); this.loading.set(false); },
-        error: () => { this.loading.set(false); this.toast.error('Failed to load locations.'); },
+        error: () => this.loading.set(false),
       });
     });
   }

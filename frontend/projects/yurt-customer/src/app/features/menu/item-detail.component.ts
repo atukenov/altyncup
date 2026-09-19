@@ -222,7 +222,7 @@ export class ItemDetailComponent implements OnInit {
         this.selectedVariant.set(def);
         this.loading.set(false);
       },
-      error: () => { this.loading.set(false); this.toast.error('Failed to load item.'); },
+      error: () => this.loading.set(false),
     });
   }
 

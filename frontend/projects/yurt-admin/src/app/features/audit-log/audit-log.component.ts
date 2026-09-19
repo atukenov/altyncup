@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
 import { AuditLogEntry } from 'shared-models';
-import { ToastService } from 'shared-ui';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
 
 const PAGE_SIZE = 50;
@@ -17,7 +16,6 @@ const ENTITY_TYPES = ['', 'Order', 'MenuItem', 'MenuCategory', 'MenuTopping', 'A
 })
 export class AuditLogComponent implements OnInit {
   private api = inject(YurtApiService);
-  private toast = inject(ToastService);
 
   entries = signal<AuditLogEntry[]>([]);
   loading = signal(true);
@@ -47,10 +45,7 @@ export class AuditLogComponent implements OnInit {
         this.entries.update(prev => append ? [...prev, ...res.items] : res.items);
         this.loading.set(false);
       },
-      error: () => {
-        this.loading.set(false);
-        this.toast.error('Failed to load audit log.');
-      },
+      error: () => this.loading.set(false),
     });
   }
 

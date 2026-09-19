@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
@@ -280,8 +280,8 @@ export class YurtApiService {
     return this.http.get<Order[]>(`${this.api}/orders/declined`);
   }
 
-  getOrder(id: string): Observable<Order> {
-    return this.http.get<Order>(`${this.api}/orders/${id}`);
+  getOrder(id: string, context?: HttpContext): Observable<Order> {
+    return this.http.get<Order>(`${this.api}/orders/${id}`, context && { context });
   }
 
   rateOrder(id: string, rating: number, comment?: string): Observable<Order> {

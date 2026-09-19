@@ -45,7 +45,7 @@ export class DiscountCodesComponent implements OnInit {
     this.loading.set(true);
     this.api.getAdminDiscountCodes().subscribe({
       next: (codes) => { this.codes.set(codes); this.loading.set(false); },
-      error: () => { this.loading.set(false); this.toast.error('Failed to load discount codes.'); },
+      error: () => this.loading.set(false),
     });
   }
 
@@ -99,10 +99,7 @@ export class DiscountCodesComponent implements OnInit {
         this.toast.success(edit ? 'Discount code updated.' : 'Discount code created.');
         this.load();
       },
-      error: (err) => {
-        this.saving.set(false);
-        this.toast.error(err.error?.title ?? 'Failed to save discount code.');
-      },
+      error: () => this.saving.set(false),
     });
   }
 
@@ -110,7 +107,7 @@ export class DiscountCodesComponent implements OnInit {
     if (!await this.confirmSvc.confirm('Delete Code', `Delete code "${code.code}"?`)) return;
     this.api.deleteDiscountCode(code.id).subscribe({
       next: () => { this.toast.success('Deleted.'); this.load(); },
-      error: () => this.toast.error('Failed to delete.'),
+      error: () => {},
     });
   }
 
