@@ -86,11 +86,23 @@ public class LoyaltyService
     }
 
     /// <summary>
+    /// "CloseOrder" is iiko's own receipt-style marker that a POS order was closed for a
+    /// given total — it never represents a wallet balance change (no BalanceAfter) and is
+    /// emitted for every order pushed to iiko, app-placed or not. Never worth showing as a
+    /// bonus line.
+    /// </summary>
+    private const string CloseOrderTypeName = "CloseOrder";
+
+    /// <summary>
     /// Offsite (in-shop counter) bonus history for the customer's profile — on-demand fetch
     /// over the trailing <see cref="IikoOptions.TransactionHistoryDays"/> window, not backed
     /// by a background sync. Excludes transactions this app itself created via
-    /// TopupAsync/HoldAsync/ChargeoffAsync (tagged with <see cref="AppOrderCommentPrefix"/>)
-    /// since those already appear in the customer's order history — only genuinely offsite
+    /// TopupAsync/HoldAsync/ChargeoffAsync (tagged with <see cref="AppOrderCommentPrefix"/>),
+    /// and — since iiko's transaction-history endpoint doesn't reliably echo that comment back
+    /// for the wallet side-effects iiko generates itself when an app-pushed order closes
+    /// (RefillWalletFromOrder/PayFromWallet/CloseOrder) — also excludes anything whose
+    /// PosOrderId matches an order this app already pushed to iiko (<see cref="Order.IikoDeliveryOrderId"/>).
+    /// Those already appear in the customer's own order history; only genuinely offsite
     /// iiko-side activity (staff applying the card/phone at a POS checkout) is returned.
     /// Never throws — degrades to Available=false like <see cref="GetBalanceAsync"/>.
     /// </summary>
@@ -110,7 +122,15 @@ public class LoyaltyService
             var transactions = await _iiko.GetCustomerTransactionsAsync(
                 user.IikoCustomerId.Value, dateFrom, dateTo, ct: ct);
 
+            var pushedOrderIds = (await _db.Orders
+                .Where(o => o.CustomerUserId == customerId && o.IikoDeliveryOrderId != null)
+                .Select(o => o.IikoDeliveryOrderId!.Value)
+                .ToListAsync(ct))
+                .ToHashSet();
+
             var offsite = transactions
+                .Where(t => !string.Equals(t.TypeName, CloseOrderTypeName, StringComparison.Ordinal))
+                .Where(t => t.PosOrderId == null || !pushedOrderIds.Contains(t.PosOrderId.Value))
                 .Where(t => t.Comment == null
                     || !t.Comment.StartsWith(AppOrderCommentPrefix, StringComparison.Ordinal))
                 .Select(t => new LoyaltyTransactionDto(t.WhenCreated, t.Sum, t.TypeName, t.OrderNumber, t.BalanceAfter))
