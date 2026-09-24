@@ -1,7 +1,7 @@
 # Deploy Android App to Google Play Market
 
 **App:** Altyncup (`com.yurt.app`)  
-**Min SDK:** 23 (Android 6.0) · **Target SDK:** 35 (Android 15)
+**Min SDK:** 24 (Android 7.0) · **Target SDK:** 36 (Android 16)
 
 ---
 
@@ -39,6 +39,8 @@ This copies the built web assets into the Android project and updates any native
 
 > **Keep the keystore file and passwords safe — you can never change it once the app is published. Losing it means you cannot update the app.**
 
+Run this in your own terminal (not somewhere that logs your shell history/output) so the passwords never end up in a chat transcript or CI log:
+
 ```bash
 keytool -genkey -v \
   -keystore altyncup-release.keystore \
@@ -49,7 +51,7 @@ keytool -genkey -v \
 ```
 
 You will be prompted for:
-- Keystore password (store this securely)
+- Keystore password (store this securely, e.g. in a password manager)
 - Key alias password
 - Name, organisation, country details
 
@@ -59,22 +61,42 @@ Store `altyncup-release.keystore` somewhere **outside** the git repository.
 
 ## Step 4 — Configure Signing in the Android Project
 
-Open `frontend/android/app/build.gradle` and add inside the `android {}` block:
+`frontend/android/app/build.gradle` already reads signing credentials from a git-ignored
+`frontend/android/key.properties` file — nothing in `build.gradle` itself needs editing.
+
+Create `frontend/android/key.properties` (this file is in `.gitignore` — it will never be committed):
+
+```properties
+storeFile=/absolute/path/to/altyncup-release.keystore
+storePassword=YOUR_STORE_PASSWORD
+keyAlias=altyncup
+keyPassword=YOUR_KEY_PASSWORD
+```
+
+`build.gradle`'s `release` signing config picks this up automatically:
 
 ```groovy
+def keystorePropertiesFile = rootProject.file("key.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     ...
     signingConfigs {
         release {
-            storeFile file("/path/to/altyncup-release.keystore")
-            storePassword "YOUR_STORE_PASSWORD"
-            keyAlias "yurt"
-            keyPassword "YOUR_KEY_PASSWORD"
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
         }
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : null
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -82,7 +104,9 @@ android {
 }
 ```
 
-> Alternatively, use environment variables or `local.properties` to avoid committing passwords to git.
+Without `key.properties` present, a `release` build is simply unsigned — this keeps CI/dev
+machines that don't have the keystore from breaking, while making a missing signature obvious
+at upload time rather than leaking a real password into source control.
 
 ---
 
@@ -202,7 +226,7 @@ done
 | `versionCode` already used | Increment `versionCode` in `build.gradle` |
 | APK uploaded instead of AAB | Use `bundleRelease` not `assembleRelease` |
 | Signing key mismatch | You must always use the same keystore |
-| `minSdkVersion` too high | Current setting is 23 (Android 6), which covers 99%+ devices |
+| `minSdkVersion` too high | Current setting is 24 (Android 7) — Play's automatic app protection (Play Integrity / device tamper checks) requires 24+, and this still covers ~98% of active devices |
 | Policy violation | Review [Play policies](https://play.google.com/about/developer-content-policy/) before submitting |
 
 ---
