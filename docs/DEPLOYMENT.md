@@ -388,13 +388,15 @@ npx cap run android   # build + deploy to connected device in one step
 
 ### 4.8 Backend CORS for mobile
 
-Add the Capacitor origin to `AllowedOrigins` in the backend config:
+Add both Capacitor origins to `AllowedOrigins` in the backend config — iOS and Android use
+different default WebView origins (`capacitor://localhost` vs `https://localhost`), so both
+must be listed or one platform will get CORS errors while the other works fine:
 
 ```json
 "AllowedOrigins": [
   "https://admin.your-domain.com",
   "capacitor://localhost",
-  "http://localhost"
+  "https://localhost"
 ]
 ```
 
@@ -420,7 +422,7 @@ Add the Capacitor origin to `AllowedOrigins` in the backend config:
 - [ ] Production DB connection string is set and migrations applied
 - [ ] `apiUrl` updated in both Angular environment files before building
 - [ ] Deployed frontend origins added to backend `AllowedOrigins`
-- [ ] `capacitor://localhost` added to `AllowedOrigins`
+- [ ] `capacitor://localhost` (iOS) and `https://localhost` (Android) both added to `AllowedOrigins`
 - [ ] Backend published in Release mode and running
 - [ ] Admin frontend built and deployed to static host
 - [ ] Customer app built with correct `apiUrl` then `npx cap sync`
