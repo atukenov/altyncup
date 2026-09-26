@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { YurtApiService } from 'shared-api';
-import { CustomerStats, EMPTY_CUSTOMER_STATS, MenuItem, Order, Promotion } from 'shared-models';
+import { CustomerStats, EMPTY_CUSTOMER_STATS, LoyaltyBalance, MenuItem, Order, Promotion } from 'shared-models';
 import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
 import { PromoViewerService } from '../../core/promo-viewer.service';
@@ -29,6 +29,7 @@ export class NewsComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly stats = signal<CustomerStats>(EMPTY_CUSTOMER_STATS);
+  readonly loyaltyBalance = signal<number | null>(null);
   readonly promotions = signal<Promotion[]>([]);
   readonly menuItems = signal<MenuItem[]>([]);
   readonly orderHistory = signal<Order[]>([]);
@@ -73,9 +74,7 @@ export class NewsComponent implements OnInit {
 
   readonly unlockedAchievements = computed(() => {
     const s = this.stats();
-    // No loyalty-balance fetch on this summary — bean_collector reads as locked here
-    // even when earned; the Achievements page is the source of truth for it.
-    const flags = buildAchievementFlags();
+    const flags = buildAchievementFlags(this.loyaltyBalance());
     return ACHIEVEMENTS.filter((a) => a.condition(s, flags));
   });
 
@@ -90,14 +89,18 @@ export class NewsComponent implements OnInit {
       promotions: this.api.getActivePromotions().pipe(catchError(() => of<Promotion[]>([]))),
       items: this.api.getMenuItems(undefined, undefined, this.lang.lang()).pipe(catchError(() => of<MenuItem[]>([]))),
       orders: this.api.getOrderHistory().pipe(catchError(() => of<Order[]>([]))),
-    }).subscribe(({ stats, promotions, items, orders }) => {
+      loyalty: this.api.getLoyaltyBalance().pipe(
+        catchError(() => of<LoyaltyBalance>({ enabled: false, available: false, linked: false, balance: null, earnPercent: 0 }))
+      ),
+    }).subscribe(({ stats, promotions, items, orders, loyalty }) => {
       this.stats.set(stats);
+      this.loyaltyBalance.set(loyalty.balance);
       this.promotions.set(promotions);
       this.menuItems.set(items);
       this.orderHistory.set(orders);
       this.loading.set(false);
 
-      const unlocked = ACHIEVEMENTS.filter((a) => a.condition(stats, buildAchievementFlags())).length;
+      const unlocked = ACHIEVEMENTS.filter((a) => a.condition(stats, buildAchievementFlags(loyalty.balance))).length;
 
       setTimeout(() => this.animateCount(0, stats.totalOrders, 800, this.animatedOrders.set.bind(this.animatedOrders)), 100);
       setTimeout(() => this.animateCount(0, 0, 800, this.animatedBonuses.set.bind(this.animatedBonuses)), 200);

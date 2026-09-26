@@ -230,6 +230,14 @@
           </p>
         </div>
       </a>
+      <!-- New badge (top-right) -->
+      @if (isNew(item)) {
+        <span
+          class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wide shadow-sm"
+        >
+          {{ 'menu.new' | t }}
+        </span>
+      }
       <!-- Heart (top-left) -->
       <button
         (click)="toggleFav(item, $event)"

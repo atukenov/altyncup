@@ -1,15 +1,15 @@
-import { Component, inject, signal, viewChildren, ElementRef, OnDestroy } from '@angular/core';
+import { Component, inject, signal, viewChild, viewChildren, ElementRef, OnDestroy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { YurtApiService, AuthStateService } from 'shared-api';
-import { ButtonComponent, ToastService } from 'shared-ui';
+import { ButtonComponent, OtpBoxesComponent, ToastService } from 'shared-ui';
 import { TranslatePipe } from '../../../core/translate.pipe';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, OtpBoxesComponent, TranslatePipe],
   templateUrl: './register.component.html',
   styleUrl: './register.component.css',
 })
@@ -21,7 +21,7 @@ export class RegisterComponent implements OnDestroy {
 
   readonly pinInputs = viewChildren<ElementRef>('pinInput');
   readonly confirmInputs = viewChildren<ElementRef>('confirmInput');
-  readonly otpInputs = viewChildren<ElementRef>('otpInput');
+  readonly otpBoxes = viewChild<OtpBoxesComponent>('otpBoxes');
 
   step = signal<'form' | 'otp'>('form');
 
@@ -30,7 +30,7 @@ export class RegisterComponent implements OnDestroy {
   lastName = '';
   pins: string[] = ['', '', '', ''];
   confirmPins: string[] = ['', '', '', ''];
-  otp: string[] = ['', '', '', ''];
+  otp = '';
   loading = signal(false);
   error = signal('');
   resendIn = signal(0);
@@ -73,9 +73,6 @@ export class RegisterComponent implements OnDestroy {
   get confirmPin4(): string {
     return this.confirmPins.join('');
   }
-  get otpCode(): string {
-    return this.otp.join('');
-  }
 
   onPinInput(index: number, event: Event): void {
     const val = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(-1);
@@ -92,17 +89,6 @@ export class RegisterComponent implements OnDestroy {
     const val = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(-1);
     this.confirmPins[index] = val;
     if (val && index < 3) this.confirmInputs()[index + 1]?.nativeElement.focus();
-  }
-
-  onOtpInput(index: number, event: Event): void {
-    const val = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(-1);
-    this.otp[index] = val;
-    if (val && index < 3) this.otpInputs()[index + 1]?.nativeElement.focus();
-  }
-
-  onOtpKeydown(index: number, event: KeyboardEvent): void {
-    if (event.key === 'Backspace' && !this.otp[index] && index > 0)
-      this.otpInputs()[index - 1]?.nativeElement.focus();
   }
 
   onRegister(): void {
@@ -136,7 +122,7 @@ export class RegisterComponent implements OnDestroy {
         next: (res) => {
           this.loading.set(false);
           this.pendingPhone = res.mobileNumber || phone;
-          this.otp = ['', '', '', ''];
+          this.otp = '';
           this.step.set('otp');
           this.startResendCountdown();
           if (res.devCode) {
@@ -152,13 +138,13 @@ export class RegisterComponent implements OnDestroy {
 
   onVerify(): void {
     this.error.set('');
-    if (this.otpCode.length !== 4) {
+    if (this.otp.length !== 4) {
       this.error.set('Enter the 4-digit code.');
       return;
     }
 
     this.loading.set(true);
-    this.api.registerVerify(this.pendingPhone, this.otpCode).subscribe({
+    this.api.registerVerify(this.pendingPhone, this.otp).subscribe({
       next: (res) => {
         this.auth.setUser({
           accessToken: res.accessToken,
@@ -186,6 +172,7 @@ export class RegisterComponent implements OnDestroy {
       .subscribe({
         next: (res) => {
           this.loading.set(false);
+          this.otpBoxes()?.clear();
           this.startResendCountdown();
           if (res.devCode) this.toast.success('Dev code: ' + res.devCode);
           else this.toast.success('Code sent.');

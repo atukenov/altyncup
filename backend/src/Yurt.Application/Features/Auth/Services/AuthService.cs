@@ -4,6 +4,7 @@ using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Common.Models;
 using Yurt.Application.Features.Auth.DTOs;
 using Yurt.Domain.Entities;
+using Yurt.Domain.Enums;
 
 namespace Yurt.Application.Features.Auth.Services;
 
@@ -52,7 +53,8 @@ public class AuthService
 
         var now = DateTime.UtcNow;
         var pending = await _db.PhoneVerifications
-            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile, ct);
+            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile
+                && v.Purpose == VerificationPurpose.Registration, ct);
 
         if (pending != null &&
             pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) > now)
@@ -68,7 +70,11 @@ public class AuthService
 
         if (pending == null)
         {
-            pending = new PhoneVerification { MobileNumber = normalizedMobile };
+            pending = new PhoneVerification
+            {
+                MobileNumber = normalizedMobile,
+                Purpose = VerificationPurpose.Registration,
+            };
             _db.PhoneVerifications.Add(pending);
         }
 
@@ -115,7 +121,8 @@ public class AuthService
         var normalizedMobile = NormalizeMobile(dto.MobileNumber);
 
         var pending = await _db.PhoneVerifications
-            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile, ct);
+            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile
+                && v.Purpose == VerificationPurpose.Registration, ct);
 
         if (pending == null)
             return Result<AuthResponseDto>.Failure("No pending verification. Start registration again.", 400);
@@ -347,22 +354,139 @@ public class AuthService
             new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth));
     }
 
-    public async Task<Result<CustomerProfileDto>> ChangeMobileNumberAsync(
+    /// <summary>
+    /// Step 1 of changing an existing customer's mobile number: proves the customer
+    /// actually controls the new number before it's applied, the same way registration
+    /// proves it for a brand-new signup. Mirrors <see cref="StartRegistrationAsync"/>,
+    /// but keyed by <see cref="VerificationPurpose.PhoneChange"/> and tied to this
+    /// customer's id so it can't collide with someone else's in-flight registration or
+    /// phone-change to the same destination number.
+    /// </summary>
+    public async Task<Result<RegistrationStartResponseDto>> StartPhoneChangeAsync(
         Guid userId, ChangeMobileNumberDto dto, CancellationToken ct = default)
     {
         var user = await _db.CustomerUsers.FindAsync([userId], ct);
         if (user == null)
-            return Result<CustomerProfileDto>.NotFound("User not found.");
+            return Result<RegistrationStartResponseDto>.NotFound("User not found.");
 
         var normalizedMobile = NormalizeMobile(dto.MobileNumber);
 
-        var exists = await _db.CustomerUsers
+        var alreadyTaken = await _db.CustomerUsers
             .AnyAsync(u => u.MobileNumber == normalizedMobile && u.Id != userId, ct);
-        if (exists)
+        if (alreadyTaken)
+            return Result<RegistrationStartResponseDto>.Failure("Mobile number already in use.", 409);
+
+        var now = DateTime.UtcNow;
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile
+                && v.Purpose == VerificationPurpose.PhoneChange, ct);
+
+        if (pending != null &&
+            pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) > now)
+        {
+            var wait = (int)Math.Ceiling(
+                (pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) - now).TotalSeconds);
+            return Result<RegistrationStartResponseDto>.Failure(
+                $"Please wait {wait}s before requesting another code.", 429);
+        }
+
+        var code = Random.Shared.Next(0, 10000).ToString("D4");
+        var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+
+        if (pending == null)
+        {
+            pending = new PhoneVerification
+            {
+                MobileNumber = normalizedMobile,
+                Purpose = VerificationPurpose.PhoneChange,
+            };
+            _db.PhoneVerifications.Add(pending);
+        }
+
+        pending.CodeHash = _passwordHasher.Hash(code);
+        pending.ExpiresAt = expiresAt;
+        pending.LastSentAt = now;
+        pending.Attempts = 0;
+        pending.CustomerUserId = userId;
+
+        await _db.SaveChangesAsync(ct);
+
+        if (_otpOptions.Enabled)
+        {
+            try
+            {
+                await _otpSender.SendAsync(normalizedMobile, code, ct);
+            }
+            catch (OtpSendException ex)
+            {
+                _logger.LogError(ex, "Failed to send phone-change OTP to {Mobile}", normalizedMobile);
+                return Result<RegistrationStartResponseDto>.Failure(
+                    "Could not send the verification code. Please try again.", 502);
+            }
+        }
+        else
+        {
+            _logger.LogWarning(
+                "OTP delivery disabled — phone-change verification code for {Mobile} is {Code}",
+                normalizedMobile, code);
+        }
+
+        return Result<RegistrationStartResponseDto>.Success(
+            new RegistrationStartResponseDto(
+                normalizedMobile, expiresAt, _otpOptions.Enabled ? null : code));
+    }
+
+    /// <summary>Step 2: confirm the code and apply the new mobile number.</summary>
+    public async Task<Result<CustomerProfileDto>> VerifyPhoneChangeAsync(
+        Guid userId, RegisterVerifyDto dto, CancellationToken ct = default)
+    {
+        var normalizedMobile = NormalizeMobile(dto.MobileNumber);
+
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile
+                && v.Purpose == VerificationPurpose.PhoneChange, ct);
+
+        if (pending == null || pending.CustomerUserId != userId)
+            return Result<CustomerProfileDto>.Failure("No pending verification. Start again.", 400);
+
+        if (pending.ExpiresAt <= DateTime.UtcNow)
+        {
+            _db.PhoneVerifications.Remove(pending);
+            await _db.SaveChangesAsync(ct);
+            return Result<CustomerProfileDto>.Failure("The code has expired. Request a new one.", 400);
+        }
+
+        if (pending.Attempts >= _otpOptions.MaxAttempts)
+            return Result<CustomerProfileDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
+
+        if (!_passwordHasher.Verify(dto.Code, pending.CodeHash))
+        {
+            pending.Attempts++;
+            await _db.SaveChangesAsync(ct);
+            return Result<CustomerProfileDto>.Failure("Incorrect code.", 400);
+        }
+
+        var user = await _db.CustomerUsers.FindAsync([userId], ct);
+        if (user == null)
+        {
+            _db.PhoneVerifications.Remove(pending);
+            await _db.SaveChangesAsync(ct);
+            return Result<CustomerProfileDto>.NotFound("User not found.");
+        }
+
+        // Race guard — someone else could have claimed the number between start and verify.
+        var stillFree = !await _db.CustomerUsers
+            .AnyAsync(u => u.MobileNumber == normalizedMobile && u.Id != userId, ct);
+        if (!stillFree)
+        {
+            _db.PhoneVerifications.Remove(pending);
+            await _db.SaveChangesAsync(ct);
             return Result<CustomerProfileDto>.Failure("Mobile number already in use.", 409);
+        }
 
         user.MobileNumber = normalizedMobile;
         user.UpdatedAt = DateTime.UtcNow;
+        _db.PhoneVerifications.Remove(pending);
         await _db.SaveChangesAsync(ct);
 
         return Result<CustomerProfileDto>.Success(

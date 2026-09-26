@@ -96,8 +96,12 @@ export class YurtApiService {
     return this.http.put<CustomerProfile>(`${this.api}/auth/me`, data);
   }
 
-  changeMobileNumber(mobileNumber: string): Observable<CustomerProfile> {
-    return this.http.put<CustomerProfile>(`${this.api}/auth/me/phone`, { mobileNumber });
+  changeMobileNumberStart(mobileNumber: string): Observable<RegistrationStartResponse> {
+    return this.http.post<RegistrationStartResponse>(`${this.api}/auth/me/phone/start`, { mobileNumber });
+  }
+
+  changeMobileNumberVerify(mobileNumber: string, code: string): Observable<CustomerProfile> {
+    return this.http.post<CustomerProfile>(`${this.api}/auth/me/phone/verify`, { mobileNumber, code });
   }
 
   refreshToken(refreshToken: string): Observable<AuthResponse> {

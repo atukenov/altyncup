@@ -130,21 +130,7 @@
 
     <div class="mb-7">
       <label class="block text-sm font-semibold text-stone-600 mb-2">{{ 'auth.enterCode' | t }}</label>
-      <div class="flex gap-3 justify-center">
-        @for (i of [0, 1, 2, 3]; track i) {
-          <input
-            #otpInput
-            type="text"
-            inputmode="numeric"
-            maxlength="1"
-            [(ngModel)]="otp[i]"
-            (input)="onOtpInput(i, $event)"
-            (keydown)="onOtpKeydown(i, $event)"
-            class="pin-box"
-            [attr.aria-label]="'Code digit ' + (i + 1)"
-          />
-        }
-      </div>
+      <yurt-otp-boxes #otpBoxes (codeChange)="otp = $event"></yurt-otp-boxes>
     </div>
 
     @if (error()) {

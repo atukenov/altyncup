@@ -183,7 +183,110 @@ public class AuthTests(YurtWebAppFactory factory)
         Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
     }
 
+    // ── Phone-change OTP verification ────────────────────────────────────────
+
+    [Fact]
+    public async Task PhoneChange_HappyPath_AppliesNewNumberOnlyAfterVerify()
+    {
+        var client = factory.CreateClient();
+        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77006000030");
+        ApiHelpers.Authorize(client, token);
+        const string newNumber = "+77006000031";
+
+        var startResp = await client.PostAsJsonAsync(
+            "/api/v1/auth/me/phone/start", new { mobileNumber = newNumber });
+        startResp.EnsureSuccessStatusCode();
+        var start = await startResp.Content.ReadFromJsonAsync<ApiHelpers.RegisterStartResult>(ApiHelpers.JsonOpts);
+        Assert.NotNull(start!.DevCode);
+
+        // Not applied yet — still the old number until verify succeeds.
+        var meBeforeResp = await client.GetAsync("/api/v1/auth/me");
+        var meBefore = await meBeforeResp.Content.ReadFromJsonAsync<MeResult>(ApiHelpers.JsonOpts);
+        Assert.Equal("+77006000030", meBefore!.MobileNumber);
+
+        var verifyResp = await client.PostAsJsonAsync(
+            "/api/v1/auth/me/phone/verify", new { mobileNumber = newNumber, code = start.DevCode });
+        verifyResp.EnsureSuccessStatusCode();
+
+        var meAfterResp = await client.GetAsync("/api/v1/auth/me");
+        var meAfter = await meAfterResp.Content.ReadFromJsonAsync<MeResult>(ApiHelpers.JsonOpts);
+        Assert.Equal(newNumber, meAfter!.MobileNumber);
+    }
+
+    [Fact]
+    public async Task PhoneChange_WrongCode_DoesNotApplyNumber()
+    {
+        var client = factory.CreateClient();
+        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77006000032");
+        ApiHelpers.Authorize(client, token);
+        const string newNumber = "+77006000033";
+
+        (await client.PostAsJsonAsync(
+            "/api/v1/auth/me/phone/start", new { mobileNumber = newNumber }))
+            .EnsureSuccessStatusCode();
+
+        var wrongResp = await client.PostAsJsonAsync(
+            "/api/v1/auth/me/phone/verify", new { mobileNumber = newNumber, code = "0000" });
+        Assert.Equal(HttpStatusCode.BadRequest, wrongResp.StatusCode);
+
+        var me = await (await client.GetAsync("/api/v1/auth/me")).Content
+            .ReadFromJsonAsync<MeResult>(ApiHelpers.JsonOpts);
+        Assert.Equal("+77006000032", me!.MobileNumber);
+    }
+
+    [Fact]
+    public async Task PhoneChange_NumberAlreadyTaken_StartReturnsConflict()
+    {
+        var client = factory.CreateClient();
+        await ApiHelpers.CreateCustomerAsync(client, "+77006000034");
+        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77006000035");
+        ApiHelpers.Authorize(client, token);
+
+        var resp = await client.PostAsJsonAsync(
+            "/api/v1/auth/me/phone/start", new { mobileNumber = "+77006000034" });
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task PhoneChange_DoesNotCollideWithInFlightRegistrationToSameNumber()
+    {
+        var client = factory.CreateClient();
+        const string contestedNumber = "+77006000036";
+
+        // Customer B starts changing their number to the same number customer A is
+        // mid-registration with — the two pending codes must not overwrite each other.
+        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77006000037");
+
+        var registerClient = factory.CreateClient();
+        var registerStartResp = await registerClient.PostAsJsonAsync("/api/v1/auth/register/start",
+            new { mobileNumber = contestedNumber, pin4 = "1234", firstName = "A", lastName = "A" });
+        registerStartResp.EnsureSuccessStatusCode();
+        var registerStart = await registerStartResp.Content
+            .ReadFromJsonAsync<ApiHelpers.RegisterStartResult>(ApiHelpers.JsonOpts);
+
+        ApiHelpers.Authorize(client, token);
+        var phoneStartResp = await client.PostAsJsonAsync(
+            "/api/v1/auth/me/phone/start", new { mobileNumber = contestedNumber });
+        phoneStartResp.EnsureSuccessStatusCode();
+        var phoneStart = await phoneStartResp.Content
+            .ReadFromJsonAsync<ApiHelpers.RegisterStartResult>(ApiHelpers.JsonOpts);
+
+        // Customer A's registration code must still verify correctly, unaffected by B's
+        // later phone-change request to the same destination number.
+        var registerVerifyResp = await registerClient.PostAsJsonAsync("/api/v1/auth/register/verify",
+            new { mobileNumber = contestedNumber, code = registerStart!.DevCode });
+        Assert.Equal(HttpStatusCode.Created, registerVerifyResp.StatusCode);
+
+        // B's code (issued after A's, but for a different Purpose) must be unaffected too.
+        var phoneVerifyResp = await client.PostAsJsonAsync(
+            "/api/v1/auth/me/phone/verify", new { mobileNumber = contestedNumber, code = phoneStart!.DevCode });
+        // Now conflicts (A just registered that number) — the important thing is B's own
+        // code was never invalidated by A's unrelated registration request.
+        Assert.Equal(HttpStatusCode.Conflict, phoneVerifyResp.StatusCode);
+    }
+
     // ── Local shape ──────────────────────────────────────────────────────────
 
     private record ProblemBody(int Status, string Title, int MinutesRemaining);
+    private record MeResult(Guid Id, string MobileNumber, string FirstName, string LastName);
 }

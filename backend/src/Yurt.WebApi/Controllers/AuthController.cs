@@ -120,10 +120,13 @@ public class AuthController : ApiControllerBase
         return ToResult(result);
     }
 
-    /// <summary>Change current customer's mobile number.</summary>
-    [HttpPut("me/phone")]
+    /// <summary>
+    /// Step 1 of changing current customer's mobile number: sends a 4-digit verification
+    /// code to the new number. Call <c>me/phone/verify</c> with the code to finish.
+    /// </summary>
+    [HttpPost("me/phone/start")]
     [Authorize(Policy = "CustomerOnly")]
-    public async Task<IActionResult> ChangeMobileNumber(
+    public async Task<IActionResult> StartPhoneChange(
         [FromBody] ChangeMobileNumberDto dto, CancellationToken ct)
     {
         var validator = new ChangeMobileNumberValidator();
@@ -132,7 +135,23 @@ public class AuthController : ApiControllerBase
             return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
 
         var userId = _currentUser.UserId!.Value;
-        var result = await _authService.ChangeMobileNumberAsync(userId, dto, ct);
+        var result = await _authService.StartPhoneChangeAsync(userId, dto, ct);
+        return ToResult(result);
+    }
+
+    /// <summary>Confirm the verification code and apply the new mobile number.</summary>
+    [HttpPost("me/phone/verify")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> VerifyPhoneChange(
+        [FromBody] RegisterVerifyDto dto, CancellationToken ct)
+    {
+        var validator = new RegisterVerifyValidator();
+        var validation = await validator.ValidateAsync(dto, ct);
+        if (!validation.IsValid)
+            return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+
+        var userId = _currentUser.UserId!.Value;
+        var result = await _authService.VerifyPhoneChangeAsync(userId, dto, ct);
         return ToResult(result);
     }
 

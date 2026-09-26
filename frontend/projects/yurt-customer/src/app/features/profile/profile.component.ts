@@ -1,10 +1,10 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService, AuthStateService, NotificationService } from 'shared-api';
 import { CustomerProfile, CustomerStats, LoyaltyBalance } from 'shared-models';
-import { Currency2Pipe, ToastService } from 'shared-ui';
+import { Currency2Pipe, OtpBoxesComponent, ToastService } from 'shared-ui';
 import { LangService, Lang } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
@@ -12,11 +12,19 @@ import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, Currency2Pipe, TranslatePipe, PullToRefreshDirective],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    Currency2Pipe,
+    OtpBoxesComponent,
+    TranslatePipe,
+    PullToRefreshDirective,
+  ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
   private auth = inject(AuthStateService);
   private router = inject(Router);
@@ -45,11 +53,17 @@ export class ProfileComponent implements OnInit {
   newPin = '';
   pinLoading = signal(false);
 
-  // Change phone number
+  // Change phone number (two-step: request code, then verify it)
   showPhoneForm = signal(false);
+  phoneStep = signal<'form' | 'otp'>('form');
   phoneFormatted = '';
+  phoneOtp = '';
   phoneLoading = signal(false);
   phoneError = signal('');
+  phoneResendIn = signal(0);
+  readonly phoneOtpBoxes = viewChild<OtpBoxesComponent>('phoneOtpBoxes');
+  private pendingPhoneNumber = '';
+  private phoneResendTimer: ReturnType<typeof setInterval> | null = null;
 
   // Delete account
   showDeleteConfirm = signal(false);
@@ -71,6 +85,10 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProfile();
+  }
+
+  ngOnDestroy(): void {
+    this.clearPhoneResendTimer();
   }
 
   chooseAvatar(avatar: string): void {
@@ -141,28 +159,106 @@ export class ProfileComponent implements OnInit {
     this.phoneError.set('');
   }
 
+  toggleShowPhoneForm(): void {
+    this.showPhoneForm.set(!this.showPhoneForm());
+    this.phoneError.set('');
+    this.phoneStep.set('form');
+    this.clearPhoneResendTimer();
+    this.phoneResendIn.set(0);
+  }
+
   submitPhoneChange(): void {
     this.phoneError.set('');
     if (!/^\d{10}$/.test(this.phoneDigits)) {
       this.phoneError.set(this.langService.t('profile.invalidPhone'));
       return;
     }
+    const newNumber = '+7' + this.phoneDigits;
     this.phoneLoading.set(true);
-    this.api.changeMobileNumber('+7' + this.phoneDigits).subscribe({
+    this.api.changeMobileNumberStart(newNumber).subscribe({
+      next: (res) => {
+        this.phoneLoading.set(false);
+        this.pendingPhoneNumber = res.mobileNumber || newNumber;
+        this.phoneOtp = '';
+        this.phoneStep.set('otp');
+        this.startPhoneResendCountdown();
+        if (res.devCode) this.toast.success('Dev code: ' + res.devCode);
+      },
+      error: (err) => {
+        this.phoneLoading.set(false);
+        this.phoneError.set(
+          err.status === 409 ? this.langService.t('profile.phoneInUse') : 'Could not send the verification code.',
+        );
+      },
+    });
+  }
+
+  verifyPhoneChange(): void {
+    this.phoneError.set('');
+    if (this.phoneOtp.length !== 4) {
+      this.phoneError.set('Enter the 4-digit code.');
+      return;
+    }
+    this.phoneLoading.set(true);
+    this.api.changeMobileNumberVerify(this.pendingPhoneNumber, this.phoneOtp).subscribe({
       next: (p) => {
         this.profile.set(p);
+        this.clearPhoneResendTimer();
         this.showPhoneForm.set(false);
+        this.phoneStep.set('form');
         this.phoneFormatted = '';
         this.phoneLoading.set(false);
         this.toast.success(this.langService.t('profile.phoneChanged'));
       },
       error: (err) => {
         this.phoneLoading.set(false);
-        if (err.status === 409) {
-          this.phoneError.set(this.langService.t('profile.phoneInUse'));
-        }
+        this.phoneError.set(
+          err.status === 409 ? this.langService.t('profile.phoneInUse') : (err.error?.title ?? 'Incorrect code.'),
+        );
       },
     });
+  }
+
+  resendPhoneChangeCode(): void {
+    if (this.phoneResendIn() > 0) return;
+    this.phoneError.set('');
+    this.phoneLoading.set(true);
+    this.api.changeMobileNumberStart(this.pendingPhoneNumber).subscribe({
+      next: (res) => {
+        this.phoneLoading.set(false);
+        this.phoneOtpBoxes()?.clear();
+        this.startPhoneResendCountdown();
+        this.toast.success(res.devCode ? 'Dev code: ' + res.devCode : 'Code sent.');
+      },
+      error: (err) => {
+        this.phoneLoading.set(false);
+        this.phoneError.set(err.error?.title ?? 'Could not resend the code.');
+      },
+    });
+  }
+
+  backToPhoneForm(): void {
+    this.phoneError.set('');
+    this.clearPhoneResendTimer();
+    this.phoneResendIn.set(0);
+    this.phoneStep.set('form');
+  }
+
+  private startPhoneResendCountdown(): void {
+    this.clearPhoneResendTimer();
+    this.phoneResendIn.set(60);
+    this.phoneResendTimer = setInterval(() => {
+      const next = this.phoneResendIn() - 1;
+      this.phoneResendIn.set(next);
+      if (next <= 0) this.clearPhoneResendTimer();
+    }, 1000);
+  }
+
+  private clearPhoneResendTimer(): void {
+    if (this.phoneResendTimer) {
+      clearInterval(this.phoneResendTimer);
+      this.phoneResendTimer = null;
+    }
   }
 
   confirmDelete(): void {

@@ -19,7 +19,8 @@ public class LoyaltyTests(YurtWebAppFactory factory)
         bool Enabled, bool Available, bool Linked, decimal? Balance, decimal EarnPercent);
 
     private record LoyaltyTransactionResult(
-        DateTime WhenCreated, decimal Sum, string? TypeName, int? OrderNumber, decimal? BalanceAfter);
+        DateTime WhenCreated, int? OrderNumber, decimal? OrderTotal, decimal? KztPaid,
+        decimal BonusSpent, decimal BonusEarned, decimal? BalanceAfter);
 
     private record LoyaltyHistoryResult(
         bool Enabled, bool Available, bool Linked, List<LoyaltyTransactionResult> Transactions);
@@ -565,8 +566,81 @@ public class LoyaltyTests(YurtWebAppFactory factory)
         Assert.True(result.Available);
         Assert.True(result.Linked);
         var tx = Assert.Single(result.Transactions);
-        Assert.Equal(25m, tx.Sum);
         Assert.Equal(7, tx.OrderNumber);
+        Assert.Equal(300m, tx.OrderTotal);
+        Assert.Equal(300m, tx.KztPaid);
+        Assert.Equal(0m, tx.BonusSpent);
+        Assert.Equal(25m, tx.BonusEarned);
+    }
+
+    [Fact]
+    public async Task LoyaltyEnabled_TransactionsEndpoint_GroupsMixedCashAndBonusPurchaseIntoOneEntry()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client = enabledFactory.CreateClient();
+        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77001000934");
+
+        // One POS checkout, split cash+bonus: iiko reports it as two ledger rows sharing
+        // the same PosOrderId/OrderSum — a spend leg (bonus redeemed) and an earn leg
+        // (bonus credited on the remaining cash-paid amount).
+        var posOrderId = Guid.NewGuid();
+        var spendLeg = new IikoTransaction(
+            Guid.NewGuid(), DateTime.UtcNow.AddMinutes(-30), -200m, 1000m, 42, posOrderId,
+            "PayFromWallet", false, 250m, 50m, null);
+        var earnLeg = new IikoTransaction(
+            Guid.NewGuid(), DateTime.UtcNow.AddMinutes(-29), 40m, 1000m, 42, posOrderId,
+            "RefillWalletFromOrder", false, 50m, 90m, null);
+        fake.SetTransactions([spendLeg, earnLeg]);
+
+        ApiHelpers.Authorize(client, token);
+        var result = await client.GetFromJsonAsync<LoyaltyHistoryResult>(
+            "/api/v1/loyalty/transactions", ApiHelpers.JsonOpts);
+
+        Assert.NotNull(result);
+        var tx = Assert.Single(result.Transactions);
+        Assert.Equal(42, tx.OrderNumber);
+        Assert.Equal(1000m, tx.OrderTotal);
+        Assert.Equal(200m, tx.BonusSpent);
+        Assert.Equal(40m, tx.BonusEarned);
+        Assert.Equal(800m, tx.KztPaid);
+    }
+
+    [Fact]
+    public async Task LoyaltyEnabled_TransactionsEndpoint_FullBonusRedemption_KztPaidIsZero()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var client = enabledFactory.CreateClient();
+        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77001000935");
+
+        var redeemOnly = new IikoTransaction(
+            Guid.NewGuid(), DateTime.UtcNow.AddMinutes(-10), -500m, 500m, 43, Guid.NewGuid(),
+            "PayFromWallet", false, 500m, 0m, null);
+        fake.SetTransactions([redeemOnly]);
+
+        ApiHelpers.Authorize(client, token);
+        var result = await client.GetFromJsonAsync<LoyaltyHistoryResult>(
+            "/api/v1/loyalty/transactions", ApiHelpers.JsonOpts);
+
+        Assert.NotNull(result);
+        var tx = Assert.Single(result.Transactions);
+        Assert.Equal(500m, tx.OrderTotal);
+        Assert.Equal(500m, tx.BonusSpent);
+        Assert.Equal(0m, tx.BonusEarned);
+        Assert.Equal(0m, tx.KztPaid);
     }
 
     [Fact]

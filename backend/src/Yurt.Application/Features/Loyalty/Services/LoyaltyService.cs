@@ -133,7 +133,30 @@ public class LoyaltyService
                 .Where(t => t.PosOrderId == null || !pushedOrderIds.Contains(t.PosOrderId.Value))
                 .Where(t => t.Comment == null
                     || !t.Comment.StartsWith(AppOrderCommentPrefix, StringComparison.Ordinal))
-                .Select(t => new LoyaltyTransactionDto(t.WhenCreated, t.Sum, t.TypeName, t.OrderNumber, t.BalanceAfter))
+                // A single POS checkout can emit two ledger rows sharing one order (an earn
+                // row and/or a spend row) — group them back into one purchase so the customer
+                // sees "you paid X in cash and Y in bonus points" instead of two bare +/- lines.
+                .GroupBy(t => t.PosOrderId?.ToString()
+                    ?? (t.OrderNumber.HasValue ? $"order-{t.OrderNumber}" : $"tx-{t.Id}"))
+                .Select(g =>
+                {
+                    var orderTotal = g.Select(t => t.OrderSum).FirstOrDefault(s => s != null);
+                    var bonusSpent = g.Where(t => t.Sum < 0).Sum(t => -t.Sum);
+                    var bonusEarned = g.Where(t => t.Sum > 0).Sum(t => t.Sum);
+                    var kztPaid = orderTotal.HasValue ? Math.Max(orderTotal.Value - bonusSpent, 0) : (decimal?)null;
+                    var balanceAfter = g.OrderByDescending(t => t.WhenCreated)
+                        .Select(t => t.BalanceAfter).FirstOrDefault(b => b != null);
+
+                    return new OffsitePurchaseDto(
+                        g.Min(t => t.WhenCreated),
+                        g.Select(t => t.OrderNumber).FirstOrDefault(n => n != null),
+                        orderTotal,
+                        kztPaid,
+                        bonusSpent,
+                        bonusEarned,
+                        balanceAfter);
+                })
+                .OrderByDescending(p => p.WhenCreated)
                 .ToList();
 
             return new LoyaltyHistoryDto(true, true, true, offsite);

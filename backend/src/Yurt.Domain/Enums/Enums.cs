@@ -66,6 +66,15 @@ public enum DiscountType
     FixedAmount = 1
 }
 
+/// <summary>What a <see cref="Entities.PhoneVerification"/> row is for — disambiguates rows for
+/// the same destination phone number requested by two different flows (a new signup vs. an
+/// existing customer changing their number).</summary>
+public enum VerificationPurpose
+{
+    Registration = 0,
+    PhoneChange = 1
+}
+
 /// <summary>Whether an order has been pushed to iiko as a real delivery order (reporting/kitchen-routing side-channel; never drives customer-facing OrderStatus).</summary>
 public enum IikoOrderSyncStatus
 {

@@ -516,12 +516,14 @@ export interface LoyaltyBalance {
   earnPercent: number;
 }
 
-/** Offsite (in-shop counter) bonus transaction — app-order earn/spend appears in order history instead. */
-export interface LoyaltyTransaction {
+/** Offsite (in-shop counter) purchase — app-order earn/spend appears in order history instead. */
+export interface OffsitePurchase {
   whenCreated: string;
-  sum: number;
-  typeName: string | null;
   orderNumber: number | null;
+  orderTotal: number | null;
+  kztPaid: number | null;
+  bonusSpent: number;
+  bonusEarned: number;
   balanceAfter: number | null;
 }
 
@@ -529,7 +531,7 @@ export interface LoyaltyHistory {
   enabled: boolean;
   available: boolean;
   linked: boolean;
-  transactions: LoyaltyTransaction[];
+  transactions: OffsitePurchase[];
 }
 
 // ── App update gate ─────────────────────────────────────────────────────────

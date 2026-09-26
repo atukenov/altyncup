@@ -74,24 +74,41 @@
             {{ 'orders.offsiteSectionTitle' | t }}
           </p>
           <div class="space-y-2">
-            @for (tx of offsiteTransactions(); track tx.whenCreated + '-' + tx.sum) {
-              <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm flex items-center justify-between">
-                <div>
+            @for (tx of offsiteTransactions(); track tx.whenCreated + '-' + (tx.orderNumber ?? '')) {
+              <div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+                <div class="flex items-center justify-between mb-1">
                   <p class="font-bold text-stone-800 text-sm">{{ 'orders.offsitePurchase' | t }}</p>
-                  <p class="text-xs text-stone-400 mt-0.5">{{ tx.whenCreated | date: 'MMM d · h:mm a' }}</p>
-                  @if (tx.typeName) {
-                    <p class="text-xs text-stone-500 mt-0.5">{{ tx.typeName }}</p>
+                  <p class="text-xs text-stone-400">{{ tx.whenCreated | date: 'MMM d · h:mm a' }}</p>
+                </div>
+                @if (tx.orderNumber) {
+                  <p class="text-xs text-stone-500 mb-2">{{ 'orders.offsiteOrderNumber' | t }} #{{ tx.orderNumber }}</p>
+                }
+                <div class="space-y-1 text-sm">
+                  @if (tx.orderTotal !== null) {
+                    <div class="flex items-center justify-between">
+                      <span class="text-stone-500">{{ 'orders.offsiteTotal' | t }}</span>
+                      <span class="font-semibold text-stone-800">{{ tx.orderTotal | currency2 }}</span>
+                    </div>
                   }
-                  @if (tx.orderNumber) {
-                    <p class="text-xs text-stone-500 mt-0.5">{{ 'orders.offsiteOrderNumber' | t }} #{{ tx.orderNumber }}</p>
+                  @if (tx.kztPaid !== null && tx.bonusSpent > 0) {
+                    <div class="flex items-center justify-between">
+                      <span class="text-stone-500">{{ 'orders.offsitePaidKzt' | t }}</span>
+                      <span class="font-semibold text-stone-800">{{ tx.kztPaid | currency2 }}</span>
+                    </div>
+                  }
+                  @if (tx.bonusSpent > 0) {
+                    <div class="flex items-center justify-between">
+                      <span class="text-stone-500">{{ 'orders.offsiteBonusSpent' | t }}</span>
+                      <span class="font-semibold text-red-500">−{{ tx.bonusSpent }}</span>
+                    </div>
+                  }
+                  @if (tx.bonusEarned > 0) {
+                    <div class="flex items-center justify-between">
+                      <span class="text-stone-500">{{ 'orders.offsiteBonusEarned' | t }}</span>
+                      <span class="font-semibold text-emerald-600">+{{ tx.bonusEarned }}</span>
+                    </div>
                   }
                 </div>
-                <span
-                  class="font-bold text-base"
-                  [class]="tx.sum >= 0 ? 'text-emerald-600' : 'text-red-500'"
-                >
-                  {{ tx.sum >= 0 ? '+' : '' }}{{ tx.sum }}
-                </span>
               </div>
             }
           </div>

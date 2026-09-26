@@ -20,7 +20,7 @@ public class PhoneVerificationConfiguration : IEntityTypeConfiguration<PhoneVeri
     public void Configure(EntityTypeBuilder<PhoneVerification> builder)
     {
         builder.HasKey(e => e.Id);
-        builder.HasIndex(e => e.MobileNumber).IsUnique();
+        builder.HasIndex(e => new { e.MobileNumber, e.Purpose }).IsUnique();
         builder.Property(e => e.MobileNumber).HasMaxLength(20).IsRequired();
         builder.Property(e => e.CodeHash).HasMaxLength(200).IsRequired();
         builder.Property(e => e.PinHash).HasMaxLength(200).IsRequired();

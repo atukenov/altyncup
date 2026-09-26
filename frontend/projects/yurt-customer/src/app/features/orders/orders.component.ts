@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { YurtApiService } from 'shared-api';
-import { LoyaltyTransaction, Order, OrderStatus } from 'shared-models';
+import { OffsitePurchase, Order, OrderStatus } from 'shared-models';
 import {
   BadgeComponent,
   OrderStatusLabelPipe,
@@ -41,7 +41,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
   activeOrders = signal<Order[]>([]);
   historyOrders = signal<Order[]>([]);
   declinedOrders = signal<Order[]>([]);
-  offsiteTransactions = signal<LoyaltyTransaction[]>([]);
+  offsiteTransactions = signal<OffsitePurchase[]>([]);
   activeTab = signal(0);
 
   readonly tabs = [
