@@ -119,7 +119,7 @@ export class CupViewerComponent implements OnInit, OnChanges, OnDestroy {
       if (node instanceof THREE.Mesh && node.material) {
         const mats = Array.isArray(node.material) ? node.material : [node.material];
         for (const m of mats) {
-          if (/coffee/i.test((m as THREE.Material).name ?? '')) {
+          if (/coffee|tea/i.test((m as THREE.Material).name ?? '')) {
             this.coffeeMat = m as THREE.MeshStandardMaterial;
             break;
           }

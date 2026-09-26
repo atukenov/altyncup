@@ -91,14 +91,25 @@ export class ItemDetailComponent implements OnInit {
   // Category names come back localized (en/ru/kk) from the API, so match on the
   // shared "coffee"/"tea" word roots rather than a hardcoded category id/name —
   // works across all three languages without needing a structured category tag.
-  private static readonly DRINK_KEYWORDS = ['coffee', 'кофе', 'tea', 'чай', 'шай'];
+  private static readonly HOT_DRINK_KEYWORDS = ['coffee', 'кофе', 'tea', 'чай', 'шай'];
+  private static readonly COLD_DRINK_KEYWORDS = ['cold', 'iced', 'холодн', 'суық'];
 
-  private readonly isDrinkItem = computed(() => {
+  private readonly isHotDrinkItem = computed(() => {
     const category = this.item()?.categoryName?.toLowerCase() ?? '';
-    return ItemDetailComponent.DRINK_KEYWORDS.some((k) => category.includes(k));
+    return ItemDetailComponent.HOT_DRINK_KEYWORDS.some((k) => category.includes(k));
   });
 
-  readonly modelSrc = computed(() => (this.isDrinkItem() ? 'cup.glb' : 'dish.glb'));
+  private readonly isColdDrinkItem = computed(() => {
+    const category = this.item()?.categoryName?.toLowerCase() ?? '';
+    return ItemDetailComponent.COLD_DRINK_KEYWORDS.some((k) => category.includes(k));
+  });
+
+  private readonly isDrinkItem = computed(() => this.isHotDrinkItem() || this.isColdDrinkItem());
+
+  readonly modelSrc = computed(() => {
+    if (this.isColdDrinkItem()) return 'iced-cup.glb';
+    return this.isHotDrinkItem() ? 'cup.glb' : 'dish.glb';
+  });
 
   readonly cupScale = computed(() => {
     // Dishes have no size variants, so they always fell through to the cup's
