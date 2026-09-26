@@ -62,12 +62,8 @@ export class MenuListComponent implements OnInit {
     this.failedImageIds.update((s) => new Set([...s, id]));
   }
 
-  private static readonly NEW_ITEM_WINDOW_DAYS = 14;
-
   isNew(item: MenuItem): boolean {
-    if (!item.createdAt) return false;
-    const ageMs = Date.now() - new Date(item.createdAt).getTime();
-    return ageMs >= 0 && ageMs <= MenuListComponent.NEW_ITEM_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    return item.isNew;
   }
 
   private static readonly CATEGORY_EMOJIS: Record<string, string> = {

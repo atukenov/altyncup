@@ -265,6 +265,7 @@ public class MenuService
             DescriptionKk = dto.DescriptionKk,
             Price = dto.Price,
             IsAvailable = dto.IsAvailable,
+            IsNew = dto.IsNew,
             ImageUrl = dto.ImageUrl,
             SortOrder = nextSortOrder,
             IikoProductId = dto.IikoProductId,
@@ -318,6 +319,7 @@ public class MenuService
         item.DescriptionKk = dto.DescriptionKk;
         item.Price = dto.Price;
         item.IsAvailable = dto.IsAvailable;
+        item.IsNew = dto.IsNew;
         item.ImageUrl = dto.ImageUrl;
         item.IikoProductId = dto.IikoProductId;
         item.IikoProductSizeId = dto.IikoProductSizeId;
@@ -504,7 +506,7 @@ public class MenuService
         return new(i.Id, i.CategoryId, i.Category?.Name ?? "",
                LocalizationHelper.Localize(i.Name, i.NameRu, i.NameKk, lang),
                LocalizationHelper.Localize(i.Description, i.DescriptionRu, i.DescriptionKk, lang),
-               i.Price, i.IsAvailable, i.ImageUrl, i.CreatedAt, locationIds, toppings, variants);
+               i.Price, i.IsAvailable, i.IsNew, i.ImageUrl, i.CreatedAt, locationIds, toppings, variants);
     }
 
     private static AdminMenuItemDto MapAdminItemToDto(MenuItem i, List<MenuToppingDto>? toppings = null)
@@ -517,7 +519,7 @@ public class MenuService
         return new(i.Id, i.CategoryId, i.Category?.Name ?? "",
                i.Name, i.NameRu, i.NameKk,
                i.Description, i.DescriptionRu, i.DescriptionKk,
-               i.Price, i.IsAvailable, i.ImageUrl, i.SortOrder, locationIds, toppings, variants,
+               i.Price, i.IsAvailable, i.IsNew, i.ImageUrl, i.SortOrder, locationIds, toppings, variants,
                i.IikoProductId, i.IikoProductSizeId);
     }
 }

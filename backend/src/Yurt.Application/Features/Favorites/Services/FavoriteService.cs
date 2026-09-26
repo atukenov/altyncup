@@ -28,6 +28,7 @@ public class FavoriteService
             LocalizationHelper.Localize(f.MenuItem.Description, f.MenuItem.DescriptionRu, f.MenuItem.DescriptionKk, lang),
             f.MenuItem.Price,
             f.MenuItem.IsAvailable,
+            f.MenuItem.IsNew,
             f.MenuItem.ImageUrl)).ToList();
     }
 

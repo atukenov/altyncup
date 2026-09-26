@@ -13,6 +13,7 @@ public class MenuItem : BaseEntity
     public string? DescriptionKk { get; set; }
     public decimal Price { get; set; }
     public bool IsAvailable { get; set; } = true;
+    public bool IsNew { get; set; }
     public string? ImageUrl { get; set; }
     public int SortOrder { get; set; }
 

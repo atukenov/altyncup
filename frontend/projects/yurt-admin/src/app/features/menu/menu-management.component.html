@@ -555,6 +555,16 @@
           />
           <label for="isAvailable" class="text-sm text-slate-700">{{ 'label.available' | t }}</label>
         </div>
+        <div class="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="isNew"
+            [ngModel]="itemForm().isNew"
+            (ngModelChange)="patchItemForm('isNew', $event)"
+            class="rounded border-slate-300 text-amber-500 focus:ring-amber-400"
+          />
+          <label for="isNew" class="text-sm text-slate-700">{{ 'label.new' | t }}</label>
+        </div>
       </div>
       <div class="flex gap-3 mt-5">
         <yurt-button variant="ghost" size="md" [fullWidth]="true" (clicked)="showItemDialog.set(false)">

@@ -31,6 +31,7 @@ interface MenuItemForm {
   categoryId: string;
   imageUrl: string;
   isAvailable: boolean;
+  isNew: boolean;
   locationIds: string[];
   variants: VariantRow[];
   iikoProductId: string;
@@ -86,7 +87,7 @@ export class MenuManagementComponent implements OnInit {
   itemForm = signal<MenuItemForm>({
     name: '', nameRu: '', nameKk: '',
     description: '', descriptionRu: '', descriptionKk: '',
-    price: 0, categoryId: '', imageUrl: '', isAvailable: true, locationIds: [], variants: [],
+    price: 0, categoryId: '', imageUrl: '', isAvailable: true, isNew: false, locationIds: [], variants: [],
     iikoProductId: '', iikoProductSizeId: '',
   });
 
@@ -240,6 +241,7 @@ export class MenuManagementComponent implements OnInit {
       categoryId: item?.categoryId ?? (this.selectedCategoryId() || this.categories()[0]?.id) ?? '',
       imageUrl: item?.imageUrl ?? '',
       isAvailable: item?.isAvailable ?? true,
+      isNew: item?.isNew ?? false,
       locationIds: item?.locationIds ? [...item.locationIds] : [],
       variants: item?.variants
         ? item.variants.map((v: MenuItemVariant) => ({
@@ -341,6 +343,7 @@ export class MenuManagementComponent implements OnInit {
       categoryId: f.categoryId,
       imageUrl: f.imageUrl || undefined,
       isAvailable: f.isAvailable,
+      isNew: f.isNew,
       locationIds: f.locationIds,
       variants: f.variants.length > 0
         ? f.variants.map((v, i) => ({

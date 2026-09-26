@@ -22,7 +22,7 @@ const T: Record<AdminLang, Record<string, string>> = {
 
     // Common labels
     'label.name': 'Name', 'label.description': 'Description', 'label.price': 'Price',
-    'label.category': 'Category', 'label.available': 'Available', 'label.active': 'Active',
+    'label.category': 'Category', 'label.available': 'Available', 'label.active': 'Active', 'label.new': 'New',
     'label.imageUrl': 'Image URL', 'label.yes': 'Yes', 'label.no': 'No', 'label.free': 'Free',
     'label.loading': 'Loading…', 'label.group': 'Group', 'label.categories': 'Categories',
     'label.phone': 'Phone', 'label.address': 'Address', 'label.workingHours': 'Working Hours',
@@ -186,7 +186,7 @@ const T: Record<AdminLang, Record<string, string>> = {
 
     // Common labels
     'label.name': 'Название', 'label.description': 'Описание', 'label.price': 'Цена',
-    'label.category': 'Категория', 'label.available': 'Доступно', 'label.active': 'Активно',
+    'label.category': 'Категория', 'label.available': 'Доступно', 'label.active': 'Активно', 'label.new': 'Новинка',
     'label.imageUrl': 'URL изображения', 'label.yes': 'Да', 'label.no': 'Нет',
     'label.free': 'Бесплатно', 'label.loading': 'Загрузка…', 'label.group': 'Группа',
     'label.categories': 'Категории', 'label.phone': 'Телефон', 'label.address': 'Адрес',
@@ -350,7 +350,7 @@ const T: Record<AdminLang, Record<string, string>> = {
 
     // Common labels
     'label.name': 'Атауы', 'label.description': 'Сипаттама', 'label.price': 'Баға',
-    'label.category': 'Санат', 'label.available': 'Қолжетімді', 'label.active': 'Белсенді',
+    'label.category': 'Санат', 'label.available': 'Қолжетімді', 'label.active': 'Белсенді', 'label.new': 'Жаңа',
     'label.imageUrl': 'Сурет URL', 'label.yes': 'Иә', 'label.no': 'Жоқ',
     'label.free': 'Тегін', 'label.loading': 'Жүктелуде…', 'label.group': 'Топ',
     'label.categories': 'Санаттар', 'label.phone': 'Телефон', 'label.address': 'Мекенжай',

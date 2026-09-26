@@ -14,6 +14,7 @@ public record MenuItemDto(
     string Description,
     decimal Price,
     bool IsAvailable,
+    bool IsNew,
     string? ImageUrl,
     DateTime CreatedAt = default,
     List<Guid>? LocationIds = null,
@@ -41,6 +42,7 @@ public record AdminMenuItemDto(
     string? DescriptionKk,
     decimal Price,
     bool IsAvailable,
+    bool IsNew,
     string? ImageUrl,
     int SortOrder = 0,
     List<Guid>? LocationIds = null,
@@ -80,7 +82,8 @@ public record CreateMenuItemDto(
     List<Guid>? LocationIds = null,
     List<CreateMenuItemVariantDto>? Variants = null,
     Guid? IikoProductId = null,
-    Guid? IikoProductSizeId = null);
+    Guid? IikoProductSizeId = null,
+    bool IsNew = false);
 
 public record UpdateMenuItemDto(
     Guid CategoryId,
@@ -96,7 +99,8 @@ public record UpdateMenuItemDto(
     List<Guid>? LocationIds = null,
     List<CreateMenuItemVariantDto>? Variants = null,
     Guid? IikoProductId = null,
-    Guid? IikoProductSizeId = null);
+    Guid? IikoProductSizeId = null,
+    bool IsNew = false);
 
 public record CreateToppingDto
 {

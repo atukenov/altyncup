@@ -135,6 +135,7 @@ export interface MenuItem {
   descriptionKk?: string;
   price: number;
   isAvailable: boolean;
+  isNew: boolean;
   imageUrl?: string;
   sortOrder?: number;
   createdAt?: string;
