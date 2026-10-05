@@ -44,13 +44,34 @@ public class AnalyticsService
             .ToList();
         var avgPrepTime = prepTimes.Count > 0 ? prepTimes.Average() : 0;
 
-        var uniqueCustomers = allOrders
-            .Select(o => o.CustomerUserId).Distinct().Count();
+        var customerIds = allOrders.Select(o => o.CustomerUserId).Distinct().ToList();
+        var uniqueCustomers = customerIds.Count;
+
+        // A customer is "returning" if they have any order from before this period started.
+        var returningCustomerCount = customerIds.Count > 0
+            ? await _db.Orders
+                .Where(o => customerIds.Contains(o.CustomerUserId) && o.CreatedAt < fromDate)
+                .Select(o => o.CustomerUserId)
+                .Distinct()
+                .CountAsync(ct)
+            : 0;
+        var newCustomerCount = uniqueCustomers - returningCustomerCount;
+
+        var declinedRevenue = allOrders
+            .Where(o => o.Status == OrderStatus.Declined).Sum(o => o.Total);
+        var declineRatePercent = totalOrders > 0
+            ? Math.Round((double)declinedCount / totalOrders * 100, 1) : 0;
 
         var kpis = new KpiSummary(
             totalRevenue, totalOrders, avgOrderValue,
             completedCount, declinedCount,
-            Math.Round(avgPrepTime, 1), uniqueCustomers);
+            Math.Round(avgPrepTime, 1), uniqueCustomers,
+            newCustomerCount, returningCustomerCount,
+            declineRatePercent, declinedRevenue);
+
+        // ── Trends vs. the preceding period of equal length ────────────────────
+        var trends = await GetTrendsAsync(
+            period, fromDate, locationId, totalRevenue, totalOrders, avgOrderValue, avgPrepTime, ct);
 
         // ── Revenue over time ────────────────────────────────────────────────
         var revenueOverTime = GetRevenueOverTime(completedOrders, period, fromDate);
@@ -101,12 +122,13 @@ public class AnalyticsService
             .OrderByDescending(p => p.Count)
             .ToList();
 
-        // Add unpaid/unknown
+        // A completed order only has a null PaymentMethod when bonus/loyalty points covered
+        // the full total (see OrderService.CreateOrderAsync) — never an unknown payment state.
         var unpaidCount = completedOrders.Count(o => !o.PaymentMethod.HasValue);
         if (unpaidCount > 0)
         {
             paymentBreakdown.Add(new PaymentBreakdownDto(
-                "Unknown",
+                "Loyalty Points",
                 unpaidCount,
                 completedOrders.Where(o => !o.PaymentMethod.HasValue).Sum(o => o.Total)));
         }
@@ -119,8 +141,66 @@ public class AnalyticsService
             .ToList();
 
         return new AnalyticsResponse(
-            kpis, revenueOverTime, topItems, locationPerf,
+            kpis, trends, revenueOverTime, topItems, locationPerf,
             allHours, paymentBreakdown, statusBreakdown);
+    }
+
+    private async Task<KpiTrends> GetTrendsAsync(
+        string period, DateTime fromDate, Guid? locationId,
+        decimal totalRevenue, int totalOrders, decimal avgOrderValue, double avgPrepTime,
+        CancellationToken ct)
+    {
+        // "all" has no preceding period to compare against.
+        if (period.ToLowerInvariant() == "all")
+            return new KpiTrends(null, null, null, null);
+
+        DateTime prevFrom, prevTo;
+        if (period.ToLowerInvariant() == "today")
+        {
+            // fromDate is a fixed midnight boundary, not "now - 1 day", so comparing against
+            // the same elapsed-hours window yesterday (not an equal-length slice ending at
+            // midnight) is what "today vs. yesterday" actually means.
+            var elapsedToday = DateTime.UtcNow - fromDate;
+            prevFrom = fromDate.AddDays(-1);
+            prevTo = prevFrom.Add(elapsedToday);
+        }
+        else
+        {
+            var length = DateTime.UtcNow - fromDate;
+            prevFrom = fromDate - length;
+            prevTo = fromDate;
+        }
+
+        var prevOrdersQuery = _db.Orders.Where(o => o.CreatedAt >= prevFrom && o.CreatedAt < prevTo);
+        if (locationId.HasValue)
+            prevOrdersQuery = prevOrdersQuery.Where(o => o.LocationId == locationId.Value);
+
+        var prevOrders = await prevOrdersQuery
+            .Select(o => new { o.Status, o.Total, o.AcceptedAt, o.CompletedAt })
+            .ToListAsync(ct);
+
+        var prevCompleted = prevOrders.Where(o => o.Status == OrderStatus.Completed).ToList();
+        var prevRevenue = prevCompleted.Sum(o => o.Total);
+        var prevAvgOrderValue = prevCompleted.Count > 0 ? prevCompleted.Average(o => o.Total) : 0;
+        var prevPrepTime = prevCompleted
+            .Where(o => o.AcceptedAt.HasValue && o.CompletedAt.HasValue)
+            .Select(o => (o.CompletedAt!.Value - o.AcceptedAt!.Value).TotalMinutes)
+            .DefaultIfEmpty(0)
+            .Average();
+
+        return new KpiTrends(
+            PercentChange((double)prevRevenue, (double)totalRevenue),
+            PercentChange(prevOrders.Count, totalOrders),
+            PercentChange((double)prevAvgOrderValue, (double)avgOrderValue),
+            PercentChange(prevPrepTime, avgPrepTime));
+    }
+
+    // Null when there's no usable baseline (previous period had no activity but this one does) —
+    // a percentage against a zero base is undefined, not "infinite growth".
+    private static double? PercentChange(double previous, double current)
+    {
+        if (previous == 0) return current == 0 ? 0 : null;
+        return Math.Round((current - previous) / previous * 100.0, 1);
     }
 
     private static DateTime GetFromDate(string period) => period.ToLowerInvariant() switch
@@ -139,6 +219,17 @@ public class AnalyticsService
     {
         return period.ToLowerInvariant() switch
         {
+            // Day/week/month buckets would collapse "today" into a single monthly bar
+            // (every order shares the same year+month) — break it down by hour instead.
+            "today" => completedOrders
+                .GroupBy(o => o.CreatedAt.Hour)
+                .OrderBy(g => g.Key)
+                .Select(g => new RevenueDataPoint(
+                    FormatHourLabel(g.Key),
+                    g.Sum(o => o.Total),
+                    g.Count()))
+                .ToList(),
+
             "week" or "month" => completedOrders
                 .GroupBy(o => o.CreatedAt.Date)
                 .Select(g => new RevenueDataPoint(
@@ -207,4 +298,12 @@ public class AnalyticsService
         var diff = (7 + (date.DayOfWeek - DayOfWeek.Monday)) % 7;
         return date.AddDays(-diff).Date;
     }
+
+    private static string FormatHourLabel(int hour) => hour switch
+    {
+        0 => "12 AM",
+        < 12 => $"{hour} AM",
+        12 => "12 PM",
+        _ => $"{hour - 12} PM"
+    };
 }

@@ -89,6 +89,13 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.noData': 'No data for this period',
     'analytics.period': 'Period', 'analytics.today': 'Today',
     'analytics.week': 'Week', 'analytics.month': 'Month',
+    'analytics.declineRate': 'Decline Rate', 'analytics.declinedOrdersLabel': 'declined',
+    'analytics.lostRevenue': 'lost', 'analytics.customerMix': 'Customer Mix',
+    'analytics.newCustomers': 'new', 'analytics.returningCustomers': 'returning',
+    'analytics.ordersLabel': 'orders',
+    'analytics.trendToday': 'Change vs. yesterday', 'analytics.trendWeek': 'Change vs. last week',
+    'analytics.trendMonth': 'Change vs. last month', 'analytics.trend6Months': 'Change vs. previous 6 months',
+    'analytics.trendYear': 'Change vs. last year',
 
     // Discount codes
     'nav.discountCodes': 'Discount Codes', 'nav.reports': 'Reports',
@@ -253,6 +260,13 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.noData': 'Нет данных за период',
     'analytics.period': 'Период', 'analytics.today': 'Сегодня',
     'analytics.week': 'Эта неделя', 'analytics.month': 'Этот месяц',
+    'analytics.declineRate': 'Доля отказов', 'analytics.declinedOrdersLabel': 'отклонено',
+    'analytics.lostRevenue': 'упущено', 'analytics.customerMix': 'Клиенты',
+    'analytics.newCustomers': 'новые', 'analytics.returningCustomers': 'постоянные',
+    'analytics.ordersLabel': 'заказов',
+    'analytics.trendToday': 'Изменение по сравнению со вчера', 'analytics.trendWeek': 'Изменение по сравнению с прошлой неделей',
+    'analytics.trendMonth': 'Изменение по сравнению с прошлым месяцем', 'analytics.trend6Months': 'Изменение по сравнению с прошлыми 6 месяцами',
+    'analytics.trendYear': 'Изменение по сравнению с прошлым годом',
 
     // Discount codes
     'nav.discountCodes': 'Промокоды', 'nav.reports': 'Отчёты',
@@ -417,6 +431,13 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.noData': 'Кезең деректері жоқ',
     'analytics.period': 'Кезең', 'analytics.today': 'Бүгін',
     'analytics.week': 'Осы апта', 'analytics.month': 'Осы ай',
+    'analytics.declineRate': 'Қабылданбау үлесі', 'analytics.declinedOrdersLabel': 'қабылданбады',
+    'analytics.lostRevenue': 'жоғалды', 'analytics.customerMix': 'Клиенттер',
+    'analytics.newCustomers': 'жаңа', 'analytics.returningCustomers': 'тұрақты',
+    'analytics.ordersLabel': 'тапсырыс',
+    'analytics.trendToday': 'Кешеге қарағандағы өзгеріс', 'analytics.trendWeek': 'Өткен аптамен салыстырғандағы өзгеріс',
+    'analytics.trendMonth': 'Өткен аймен салыстырғандағы өзгеріс', 'analytics.trend6Months': 'Алдыңғы 6 аймен салыстырғандағы өзгеріс',
+    'analytics.trendYear': 'Өткен жылмен салыстырғандағы өзгеріс',
 
     // Discount codes
     'nav.discountCodes': 'Промокодтар', 'nav.reports': 'Есептер',

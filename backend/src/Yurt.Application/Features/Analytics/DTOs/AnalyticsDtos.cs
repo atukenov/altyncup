@@ -2,6 +2,7 @@ namespace Yurt.Application.Features.Analytics.DTOs;
 
 public record AnalyticsResponse(
     KpiSummary Kpis,
+    KpiTrends Trends,
     List<RevenueDataPoint> RevenueOverTime,
     List<TopItemDto> TopItems,
     List<LocationPerformanceDto> LocationPerformance,
@@ -16,7 +17,19 @@ public record KpiSummary(
     int CompletedOrders,
     int DeclinedOrders,
     double AvgPrepTimeMinutes,
-    int UniqueCustomers);
+    int UniqueCustomers,
+    int NewCustomers,
+    int ReturningCustomers,
+    double DeclineRatePercent,
+    decimal DeclinedRevenue);
+
+// Percent change vs. the immediately preceding period of equal length. Null when there's
+// no meaningful baseline to compare against (e.g. the "all" period, or a previous value of 0).
+public record KpiTrends(
+    double? RevenueChangePercent,
+    double? OrdersChangePercent,
+    double? AvgOrderValueChangePercent,
+    double? AvgPrepTimeChangePercent);
 
 public record RevenueDataPoint(string Label, decimal Revenue, int Orders);
 

@@ -22,6 +22,18 @@ export class AnalyticsComponent implements OnInit {
   locations = signal<Location[]>([]);
   selectedLocationId = signal<string | null>(null);
 
+  // Tap-to-reveal state for chart tooltips (hover alone doesn't work on touch devices).
+  activeRevenuePoint = signal<number | null>(null);
+  activeHour = signal<number | null>(null);
+
+  private readonly trendCaptionKeys: Record<string, string> = {
+    today: 'analytics.trendToday',
+    week: 'analytics.trendWeek',
+    month: 'analytics.trendMonth',
+    '6months': 'analytics.trend6Months',
+    year: 'analytics.trendYear',
+  };
+
   readonly periods = [
     { label: 'Today', value: 'today' },
     { label: 'Week', value: 'week' },
@@ -69,6 +81,8 @@ export class AnalyticsComponent implements OnInit {
     return d.statusBreakdown.reduce((sum, s) => sum + s.count, 0) || 1;
   });
 
+  trendCaptionKey = computed(() => this.trendCaptionKeys[this.activePeriod()] ?? '');
+
   ngOnInit(): void {
     this.api.configure(environment.apiUrl);
     this.api.getAdminLocations().subscribe({ next: (locs) => this.locations.set(locs), error: () => {} });
@@ -87,6 +101,8 @@ export class AnalyticsComponent implements OnInit {
 
   private loadData(): void {
     this.loading.set(true);
+    this.activeRevenuePoint.set(null);
+    this.activeHour.set(null);
     this.api.getAnalytics(this.activePeriod(), this.selectedLocationId() ?? undefined).subscribe({
       next: (res) => {
         this.data.set(res);
@@ -94,6 +110,30 @@ export class AnalyticsComponent implements OnInit {
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  toggleRevenuePoint(index: number): void {
+    this.activeRevenuePoint.set(this.activeRevenuePoint() === index ? null : index);
+  }
+
+  toggleHour(hour: number): void {
+    this.activeHour.set(this.activeHour() === hour ? null : hour);
+  }
+
+  // Positive/negative framing differs per metric: rising prep time is bad, rising revenue is good.
+  trendInfo(
+    percent: number | null,
+    lowerIsBetter = false,
+  ): { text: string; colorClass: string; arrow: string } | null {
+    if (percent === null) return null;
+    const isFlat = Math.abs(percent) < 0.05;
+    const isGood = isFlat ? null : lowerIsBetter ? percent < 0 : percent > 0;
+    const sign = percent > 0 ? '+' : '';
+    return {
+      text: `${sign}${percent}%`,
+      colorClass: isFlat ? 'text-slate-400' : isGood ? 'text-emerald-600' : 'text-red-500',
+      arrow: isFlat ? '·' : percent > 0 ? '▲' : '▼',
+    };
   }
 
   exportCsv(): void {

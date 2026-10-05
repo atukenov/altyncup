@@ -324,6 +324,7 @@ export interface UpdatePaymentRequest {
 
 export interface AnalyticsResponse {
   kpis: KpiSummary;
+  trends: KpiTrends;
   revenueOverTime: RevenueDataPoint[];
   topItems: TopItemDto[];
   locationPerformance: LocationPerformanceDto[];
@@ -340,6 +341,19 @@ export interface KpiSummary {
   declinedOrders: number;
   avgPrepTimeMinutes: number;
   uniqueCustomers: number;
+  newCustomers: number;
+  returningCustomers: number;
+  declineRatePercent: number;
+  declinedRevenue: number;
+}
+
+// Percent change vs. the preceding period of equal length. Null = no comparable baseline
+// (the "all" period, or the previous period had zero activity).
+export interface KpiTrends {
+  revenueChangePercent: number | null;
+  ordersChangePercent: number | null;
+  avgOrderValueChangePercent: number | null;
+  avgPrepTimeChangePercent: number | null;
 }
 
 export interface RevenueDataPoint {

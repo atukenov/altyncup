@@ -68,6 +68,9 @@
 
     @if (!loading() && data()) {
       <!-- ── KPI Cards ───────────────────────────────────────────────────── -->
+      @if (trendCaptionKey()) {
+        <p class="text-xs text-slate-400 mb-2">{{ trendCaptionKey() | t }}</p>
+      }
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <!-- Total Revenue -->
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
@@ -78,6 +81,9 @@
               </svg>
             </div>
             <span class="text-sm font-medium text-slate-500">{{ 'analytics.totalRevenue' | t }}</span>
+            @if (trendInfo(data()!.trends.revenueChangePercent); as trend) {
+              <span [class]="'ml-auto text-xs font-semibold ' + trend.colorClass">{{ trend.arrow }} {{ trend.text }}</span>
+            }
           </div>
           <p class="text-2xl font-bold text-stone-800">{{ formatTenge(data()!.kpis.totalRevenue) }}</p>
           <p class="text-xs text-slate-400 mt-1">{{ data()!.kpis.completedOrders }} {{ 'analytics.completedOrders' | t }}</p>
@@ -92,6 +98,9 @@
               </svg>
             </div>
             <span class="text-sm font-medium text-slate-500">{{ 'analytics.totalOrders' | t }}</span>
+            @if (trendInfo(data()!.trends.ordersChangePercent); as trend) {
+              <span [class]="'ml-auto text-xs font-semibold ' + trend.colorClass">{{ trend.arrow }} {{ trend.text }}</span>
+            }
           </div>
           <p class="text-2xl font-bold text-stone-800">{{ data()!.kpis.totalOrders }}</p>
           <p class="text-xs text-slate-400 mt-1">{{ data()!.kpis.uniqueCustomers }} {{ 'analytics.uniqueCustomers' | t }}</p>
@@ -106,6 +115,9 @@
               </svg>
             </div>
             <span class="text-sm font-medium text-slate-500">{{ 'analytics.avgOrderValue' | t }}</span>
+            @if (trendInfo(data()!.trends.avgOrderValueChangePercent); as trend) {
+              <span [class]="'ml-auto text-xs font-semibold ' + trend.colorClass">{{ trend.arrow }} {{ trend.text }}</span>
+            }
           </div>
           <p class="text-2xl font-bold text-stone-800">{{ formatTenge(data()!.kpis.avgOrderValue) }}</p>
           <p class="text-xs text-slate-400 mt-1">{{ 'analytics.perCompleted' | t }}</p>
@@ -120,9 +132,51 @@
               </svg>
             </div>
             <span class="text-sm font-medium text-slate-500">{{ 'analytics.avgPrepTime' | t }}</span>
+            @if (trendInfo(data()!.trends.avgPrepTimeChangePercent, true); as trend) {
+              <span [class]="'ml-auto text-xs font-semibold ' + trend.colorClass">{{ trend.arrow }} {{ trend.text }}</span>
+            }
           </div>
           <p class="text-2xl font-bold text-stone-800">{{ data()!.kpis.avgPrepTimeMinutes }} min</p>
           <p class="text-xs text-slate-400 mt-1">{{ 'analytics.fromAccept' | t }}</p>
+        </div>
+
+        <!-- Decline Rate -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center">
+              <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.18A1 1 0 003 19.5h18a1 1 0 00.89-1.46L13.71 3.86a1 1 0 00-1.72 0z" />
+              </svg>
+            </div>
+            <span class="text-sm font-medium text-slate-500">{{ 'analytics.declineRate' | t }}</span>
+          </div>
+          <p class="text-2xl font-bold text-stone-800">{{ data()!.kpis.declineRatePercent }}%</p>
+          <p class="text-xs text-slate-400 mt-1">
+            {{ data()!.kpis.declinedOrders }} {{ 'analytics.declinedOrdersLabel' | t }} · {{ formatTenge(data()!.kpis.declinedRevenue) }} {{ 'analytics.lostRevenue' | t }}
+          </p>
+        </div>
+
+        <!-- New vs Returning Customers -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
+              <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m5-5a4 4 0 100-8 4 4 0 000 8zm6 3a4 4 0 10-8 0" />
+              </svg>
+            </div>
+            <span class="text-sm font-medium text-slate-500">{{ 'analytics.customerMix' | t }}</span>
+          </div>
+          <div class="flex items-end gap-4">
+            <div>
+              <p class="text-2xl font-bold text-stone-800">{{ data()!.kpis.newCustomers }}</p>
+              <p class="text-xs text-slate-400">{{ 'analytics.newCustomers' | t }}</p>
+            </div>
+            <div class="h-8 w-px bg-slate-100"></div>
+            <div>
+              <p class="text-2xl font-bold text-stone-800">{{ data()!.kpis.returningCustomers }}</p>
+              <p class="text-xs text-slate-400">{{ 'analytics.returningCustomers' | t }}</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -134,8 +188,12 @@
         @if (data()!.revenueOverTime.length > 0) {
           <div class="revenue-chart-container">
             <div class="revenue-chart">
-              @for (point of data()!.revenueOverTime; track point.label) {
-                <div class="revenue-bar-group">
+              @for (point of data()!.revenueOverTime; track point.label; let i = $index) {
+                <div
+                  class="revenue-bar-group"
+                  [class.active]="activeRevenuePoint() === i"
+                  (click)="toggleRevenuePoint(i)"
+                >
                   <div class="revenue-tooltip">
                     {{ formatTenge(point.revenue) }} · {{ point.orders }} orders
                   </div>
@@ -218,7 +276,12 @@
 
           <div class="hourly-chart">
             @for (h of data()!.hourlyDistribution; track h.hour) {
-              <div class="hourly-bar-group">
+              <div
+                class="hourly-bar-group"
+                [class.active]="activeHour() === h.hour"
+                (click)="toggleHour(h.hour)"
+              >
+                <div class="hourly-tooltip">{{ h.orders }} {{ 'analytics.ordersLabel' | t }}</div>
                 <div class="hourly-bar-track">
                   <div
                     class="hourly-bar"

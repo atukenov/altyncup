@@ -21,9 +21,11 @@
   min-width: 32px;
   max-width: 60px;
   position: relative;
+  cursor: pointer;
 }
 
-.revenue-bar-group:hover .revenue-tooltip {
+.revenue-bar-group:hover .revenue-tooltip,
+.revenue-bar-group.active .revenue-tooltip {
   opacity: 1;
   transform: translateX(-50%) translateY(-4px);
 }
@@ -62,7 +64,8 @@
   min-height: 2px;
 }
 
-.revenue-bar-group:hover .revenue-bar {
+.revenue-bar-group:hover .revenue-bar,
+.revenue-bar-group.active .revenue-bar {
   background: linear-gradient(to top, #d9af00, #ffd119);
 }
 
@@ -88,6 +91,32 @@
   align-items: center;
   flex: 1;
   min-width: 0;
+  position: relative;
+  cursor: pointer;
+}
+
+.hourly-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  background: #1e293b;
+  color: white;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.15s ease;
+  z-index: 10;
+  margin-bottom: 4px;
+}
+
+.hourly-bar-group:hover .hourly-tooltip,
+.hourly-bar-group.active .hourly-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
 }
 
 .hourly-bar-track {
