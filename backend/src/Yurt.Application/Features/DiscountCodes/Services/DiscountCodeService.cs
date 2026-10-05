@@ -98,7 +98,7 @@ public class DiscountCodeService
     }
 
     public async Task<ValidateDiscountCodeResponseDto> ValidateAsync(
-        string codeStr, decimal subtotal, CancellationToken ct = default)
+        string codeStr, decimal subtotal, Guid customerId, CancellationToken ct = default)
     {
         var normalizedCode = codeStr.Trim().ToUpperInvariant();
         var code = await _db.DiscountCodes
@@ -119,6 +119,12 @@ public class DiscountCodeService
 
         if (code.MinOrderAmount.HasValue && subtotal < code.MinOrderAmount.Value)
             return new(false, $"Minimum order amount is {code.MinOrderAmount.Value:N0} ₸.", 0, "");
+
+        // Each customer may redeem a given code at most once, regardless of the code's global usage limit.
+        var alreadyUsedByCustomer = await _db.Orders
+            .AnyAsync(o => o.CustomerUserId == customerId && o.DiscountCodeId == code.Id, ct);
+        if (alreadyUsedByCustomer)
+            return new(false, "You have already used this discount code.", 0, "");
 
         var discountAmount = CalculateDiscount(code, subtotal);
         var description = code.DiscountType == DiscountType.Percentage

@@ -12,13 +12,20 @@ namespace Yurt.UnitTests;
 /// </summary>
 public class DiscountValidationTests
 {
+    private static readonly Guid Customer = Guid.NewGuid();
+
     private static DiscountCodeService Build(params DiscountCode[] codes)
+        => Build(codes, []);
+
+    private static DiscountCodeService Build(DiscountCode[] codes, Order[] orders)
     {
         var db    = Substitute.For<IApplicationDbContext>();
         var audit = Substitute.For<IAuditLogService>();
 
         var mockSet = codes.ToList().BuildMockDbSet();
+        var ordersMockSet = orders.ToList().BuildMockDbSet();
         db.DiscountCodes.Returns(mockSet);
+        db.Orders.Returns(ordersMockSet);
 
         return new DiscountCodeService(db, audit);
     }
@@ -49,7 +56,7 @@ public class DiscountValidationTests
     public async Task ValidateAsync_CodeNotFound_ReturnsInvalid()
     {
         var svc    = Build(); // empty DB
-        var result = await svc.ValidateAsync("NOCODE", 50m);
+        var result = await svc.ValidateAsync("NOCODE", 50m, Customer);
 
         Assert.False(result.IsValid);
         Assert.Contains("not found", result.Message, StringComparison.OrdinalIgnoreCase);
@@ -61,7 +68,7 @@ public class DiscountValidationTests
     {
         var code = Active("EXPIRED", DiscountType.Percentage, 10, expiresAt: DateTime.UtcNow.AddDays(-1));
         var svc  = Build(code);
-        var result = await svc.ValidateAsync("EXPIRED", 50m);
+        var result = await svc.ValidateAsync("EXPIRED", 50m, Customer);
 
         Assert.False(result.IsValid);
         Assert.Contains("expired", result.Message, StringComparison.OrdinalIgnoreCase);
@@ -73,7 +80,7 @@ public class DiscountValidationTests
         var code = Active("FUTURE", DiscountType.Percentage, 10,
             startsAt: DateTime.UtcNow.AddDays(1), expiresAt: DateTime.UtcNow.AddYears(1));
         var svc  = Build(code);
-        var result = await svc.ValidateAsync("FUTURE", 50m);
+        var result = await svc.ValidateAsync("FUTURE", 50m, Customer);
 
         Assert.False(result.IsValid);
         Assert.Contains("not yet active", result.Message, StringComparison.OrdinalIgnoreCase);
@@ -86,7 +93,7 @@ public class DiscountValidationTests
             maxUses: 5, usedCount: 5,
             expiresAt: DateTime.UtcNow.AddYears(1));
         var svc  = Build(code);
-        var result = await svc.ValidateAsync("MAXED", 50m);
+        var result = await svc.ValidateAsync("MAXED", 50m, Customer);
 
         Assert.False(result.IsValid);
         Assert.Contains("usage limit", result.Message, StringComparison.OrdinalIgnoreCase);
@@ -98,7 +105,7 @@ public class DiscountValidationTests
         var code = Active("MINAMT", DiscountType.Percentage, 10,
             minAmount: 100m, expiresAt: DateTime.UtcNow.AddYears(1));
         var svc  = Build(code);
-        var result = await svc.ValidateAsync("MINAMT", 50m); // below $100 minimum
+        var result = await svc.ValidateAsync("MINAMT", 50m, Customer); // below $100 minimum
 
         Assert.False(result.IsValid);
         Assert.Contains("minimum", result.Message, StringComparison.OrdinalIgnoreCase);
@@ -110,7 +117,7 @@ public class DiscountValidationTests
         var code = Active("PCT20", DiscountType.Percentage, 20,
             expiresAt: DateTime.UtcNow.AddYears(1));
         var svc  = Build(code);
-        var result = await svc.ValidateAsync("PCT20", 50m); // 20% of 50 = 10
+        var result = await svc.ValidateAsync("PCT20", 50m, Customer); // 20% of 50 = 10
 
         Assert.True(result.IsValid);
         Assert.Equal(10m, result.DiscountAmount);
@@ -122,7 +129,7 @@ public class DiscountValidationTests
         var code = Active("FIXED5", DiscountType.FixedAmount, 5m,
             expiresAt: DateTime.UtcNow.AddYears(1));
         var svc  = Build(code);
-        var result = await svc.ValidateAsync("FIXED5", 30m);
+        var result = await svc.ValidateAsync("FIXED5", 30m, Customer);
 
         Assert.True(result.IsValid);
         Assert.Equal(5m, result.DiscountAmount);
@@ -136,7 +143,36 @@ public class DiscountValidationTests
         var svc  = Build(code);
 
         // Call with mixed case — service normalises to upper before querying
-        var result = await svc.ValidateAsync("summer20", 100m);
+        var result = await svc.ValidateAsync("summer20", 100m, Customer);
         Assert.True(result.IsValid);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_AlreadyUsedByThisCustomer_ReturnsInvalid()
+    {
+        var code = Active("ONCE10", DiscountType.Percentage, 10,
+            expiresAt: DateTime.UtcNow.AddYears(1));
+        var priorOrder = new Order { CustomerUserId = Customer, DiscountCodeId = code.Id };
+        var svc  = Build([code], [priorOrder]);
+
+        var result = await svc.ValidateAsync("ONCE10", 50m, Customer);
+
+        Assert.False(result.IsValid);
+        Assert.Contains("already used", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0m, result.DiscountAmount);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_UsedByAnotherCustomer_StillValidForThisCustomer()
+    {
+        var code = Active("ONCE10", DiscountType.Percentage, 10,
+            expiresAt: DateTime.UtcNow.AddYears(1));
+        var otherCustomersOrder = new Order { CustomerUserId = Guid.NewGuid(), DiscountCodeId = code.Id };
+        var svc  = Build([code], [otherCustomersOrder]);
+
+        var result = await svc.ValidateAsync("ONCE10", 50m, Customer);
+
+        Assert.True(result.IsValid);
+        Assert.Equal(5m, result.DiscountAmount);
     }
 }

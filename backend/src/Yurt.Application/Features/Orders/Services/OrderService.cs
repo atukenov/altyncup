@@ -135,7 +135,7 @@ public class OrderService
 
             if (codeEntity != null)
             {
-                var validation = await _discountCodes.ValidateAsync(dto.DiscountCode, order.Subtotal, ct);
+                var validation = await _discountCodes.ValidateAsync(dto.DiscountCode, order.Subtotal, customerId, ct);
                 if (validation.IsValid)
                 {
                     order.DiscountAmount = validation.DiscountAmount;

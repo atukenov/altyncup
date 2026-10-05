@@ -140,6 +140,59 @@ public class DiscountCodeIntegrationTests(YurtWebAppFactory factory)
     }
 
     [Fact]
+    public async Task SameCustomerReusesCode_SecondOrderSucceedsWithNoDiscount()
+    {
+        await ApiHelpers.SeedDiscountCodeAsync(factory.Services, "ONEUSE10",
+            DiscountType.Percentage, 10m, expiresAt: DateTime.UtcNow.AddYears(1));
+
+        var client = factory.CreateClient();
+        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77002000009");
+        ApiHelpers.Authorize(client, token);
+        var (itemId, price, _) = await ApiHelpers.GetMenuItemAsync(factory.Services, "Espresso");
+
+        // First order — discount applies
+        var (s1, o1) = await PlaceOrderAsync(client, itemId, "ONEUSE10");
+        Assert.Equal(HttpStatusCode.Created, s1);
+        Assert.True(o1!.DiscountAmount > 0);
+
+        // Second order, same customer, same code — code already redeemed, no discount
+        var (s2, o2) = await PlaceOrderAsync(client, itemId, "ONEUSE10");
+        Assert.Equal(HttpStatusCode.Created, s2);
+        Assert.Equal(0m, o2!.DiscountAmount);
+        Assert.Equal(price, o2.Total);
+    }
+
+    [Fact]
+    public async Task ValidateEndpoint_AlreadyUsedByCustomer_ReturnsInvalid()
+    {
+        await ApiHelpers.SeedDiscountCodeAsync(factory.Services, "PREVONCE",
+            DiscountType.FixedAmount, 2m, expiresAt: DateTime.UtcNow.AddYears(1));
+
+        var client = factory.CreateClient();
+        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77002000010");
+        ApiHelpers.Authorize(client, token);
+        var (itemId, _, _) = await ApiHelpers.GetMenuItemAsync(factory.Services, "Espresso");
+
+        // Consume the code via an order
+        var (status, order) = await PlaceOrderAsync(client, itemId, "PREVONCE");
+        Assert.Equal(HttpStatusCode.Created, status);
+        Assert.True(order!.DiscountAmount > 0);
+
+        // Previewing the same code again for this customer should now report invalid
+        var resp = await client.PostAsJsonAsync("/api/v1/discount-codes/validate", new
+        {
+            code     = "PREVONCE",
+            subtotal = 5m
+        });
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var result = await resp.Content.ReadFromJsonAsync<ApiHelpers.DiscountValidResult>(ApiHelpers.JsonOpts);
+        Assert.NotNull(result);
+        Assert.False(result.IsValid);
+        Assert.Contains("already used", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task MinOrderAmountNotMet_ValidateEndpointRejectsCode()
     {
         // The /validate endpoint lets customers preview whether a code applies
