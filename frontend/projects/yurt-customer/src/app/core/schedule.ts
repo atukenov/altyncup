@@ -14,12 +14,39 @@ export interface ScheduleInfo {
 
 const DAY_ABBR = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+const DAY_INDEX: Record<string, number> = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7 };
+
+/** Legacy plain-text hours, e.g. "Daily 08:00–21:00" or "Mon–Fri 07:00–22:00 | Sat–Sun 08:00–23:00". */
+function parseLegacy(wh: string): WorkingSlot[] | null {
+  const slots: WorkingSlot[] = Array.from({ length: 7 }, (_, i) => ({
+    day: i + 1, enabled: false, from: '00:00', to: '00:00',
+  }));
+  let matched = false;
+  for (const part of wh.split(/[|;,\n]/)) {
+    const m = part.trim().match(/^([A-Za-z]+)(?:\s*[–—-]\s*([A-Za-z]+))?\s+(\d{1,2}:\d{2})\s*[–—-]\s*(\d{1,2}:\d{2})$/);
+    if (!m) continue;
+    const a = m[1].toLowerCase().slice(0, 3);
+    const b = m[2]?.toLowerCase().slice(0, 3);
+    let first: number, last: number;
+    if (a === 'dai' || a === 'eve') { first = 1; last = 7; }
+    else if (DAY_INDEX[a]) { first = DAY_INDEX[a]; last = b ? DAY_INDEX[b] : first; }
+    else continue;
+    if (!last) continue;
+    for (let d = first; ; d = (d % 7) + 1) {
+      slots[d - 1] = { day: d, enabled: true, from: m[3].padStart(5, '0'), to: m[4].padStart(5, '0') };
+      if (d === last) break;
+    }
+    matched = true;
+  }
+  return matched ? slots : null;
+}
+
 function parseSlots(wh: string): WorkingSlot[] | null {
   try {
     const p = JSON.parse(wh);
     if (Array.isArray(p) && p.length === 7) return p as WorkingSlot[];
-  } catch { /* legacy plain-text, ignore */ }
-  return null;
+  } catch { /* legacy plain-text */ }
+  return parseLegacy(wh ?? '');
 }
 
 function toMin(hhmm: string): number {

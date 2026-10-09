@@ -77,6 +77,7 @@ export class CartService {
       this.removeItem(item);
       return;
     }
+    if (qty > item.quantity && !this.storeStatus.guardOpen()) return;
     const key = this.itemKey(item);
     this.items.update((cart) =>
       cart.map((i) => (this.itemKey(i) === key ? { ...i, quantity: qty } : i)),
