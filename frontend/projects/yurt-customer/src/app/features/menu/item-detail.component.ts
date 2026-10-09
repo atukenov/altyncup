@@ -7,6 +7,7 @@ import { ToastService, Currency2Pipe } from 'shared-ui';
 import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
+import { StoreStatusService } from '../../core/store-status.service';
 import { LocationService } from '../../core/location.service';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 import { CupViewerComponent } from './cup-viewer.component';
@@ -28,6 +29,7 @@ export class ItemDetailComponent implements OnInit {
   private toast = inject(ToastService);
   private langService = inject(LangService);
   private locationSvc = inject(LocationService);
+  private storeStatus = inject(StoreStatusService);
 
   // ── Existing state (unchanged) ──────────────────────────────────────────────
   item = signal<MenuItem | null>(null);
@@ -315,6 +317,7 @@ export class ItemDetailComponent implements OnInit {
       this.router.navigate(['/auth/login']);
       return;
     }
+    if (!this.storeStatus.guardOpen()) return;
     const item = this.item();
     if (!item) return;
     const variant = this.selectedVariant();

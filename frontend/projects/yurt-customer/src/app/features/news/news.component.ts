@@ -4,6 +4,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { YurtApiService } from 'shared-api';
 import { CustomerStats, EMPTY_CUSTOMER_STATS, LoyaltyBalance, MenuItem, Order, Promotion } from 'shared-models';
+import { StoreStatusService } from '../../core/store-status.service';
 import { CartService } from '../cart/cart.service';
 import { LangService } from '../../core/lang.service';
 import { PromoViewerService } from '../../core/promo-viewer.service';
@@ -22,6 +23,7 @@ import { ACHIEVEMENTS, Achievement, buildAchievementFlags } from './achievements
 export class NewsComponent implements OnInit {
   private api = inject(YurtApiService);
   private cart = inject(CartService);
+  private storeStatus = inject(StoreStatusService);
   private router = inject(Router);
   private promoViewer = inject(PromoViewerService);
   private toast = inject(ToastService);
@@ -136,6 +138,7 @@ export class NewsComponent implements OnInit {
   }
 
   reorder(order: Order): void {
+    if (!this.storeStatus.guardOpen()) return;
     order.items.forEach((item) => {
       this.cart.addItem({
         menuItemId: item.menuItemId,
@@ -163,7 +166,7 @@ export class NewsComponent implements OnInit {
       this.router.navigate(['/menu/item', item.id]);
       return;
     }
-    this.cart.addItem({
+    const added = this.cart.addItem({
       menuItemId: item.id,
       name: item.name,
       nameRu: item.nameRu,
@@ -172,7 +175,7 @@ export class NewsComponent implements OnInit {
       quantity: 1,
       imageUrl: item.imageUrl,
     });
-    this.toast.success(`${item.name} added to cart`);
+    if (added) this.toast.success(`${item.name} added to cart`);
   }
 
   // Base MenuItem.price is a placeholder (often 0) for items sold in size variants —

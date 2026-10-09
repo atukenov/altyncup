@@ -44,14 +44,14 @@ export class FavoritesComponent {
   }
 
   addToCart(item: MenuItem): void {
-    this.cart.addItem({
+    const added = this.cart.addItem({
       menuItemId: item.id,
       name: item.name,
       price: item.price,
       quantity: 1,
       imageUrl: item.imageUrl,
     });
-    this.toast.success(`${item.name} added to cart`);
+    if (added) this.toast.success(`${item.name} added to cart`);
   }
 
   removeFavorite(item: MenuItem): void {
