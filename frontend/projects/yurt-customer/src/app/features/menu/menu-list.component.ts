@@ -13,6 +13,7 @@ import {
 } from 'shared-models';
 import { Currency2Pipe, SkeletonCardComponent, ToastService } from 'shared-ui';
 import { LangService } from '../../core/lang.service';
+import { StoreStatusService } from '../../core/store-status.service';
 import { LocationService } from '../../core/location.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
@@ -42,6 +43,7 @@ export class MenuListComponent implements OnInit {
   readonly auth = inject(AuthStateService);
   readonly langService = inject(LangService);
   private locationSvc = inject(LocationService);
+  private storeStatus = inject(StoreStatusService);
   private promoViewer = inject(PromoViewerService);
   readonly locationName = this.locationSvc.locationName;
 
@@ -331,6 +333,7 @@ export class MenuListComponent implements OnInit {
       this.router.navigate(['/auth/login']);
       return;
     }
+    if (!this.storeStatus.guardOpen()) return;
     const needsModal =
       (item.variants?.length ?? 0) > 0 || (item.availableToppings?.length ?? 0) > 0;
     if (needsModal) {
@@ -438,7 +441,7 @@ export class MenuListComponent implements OnInit {
     toppings: OrderItemToppingInput[],
     variant?: MenuItemVariant | null,
   ): void {
-    this.cart.addItem({
+    const added = this.cart.addItem({
       menuItemId: item.id,
       name: item.name,
       nameRu: item.nameRu,
@@ -450,7 +453,7 @@ export class MenuListComponent implements OnInit {
       variantId: variant?.id,
       variantLabel: variant?.label,
     });
-    this.toast.success(`${item.name} added to cart`);
+    if (added) this.toast.success(`${item.name} added to cart`);
   }
 
   catChipClass(active: boolean): string {

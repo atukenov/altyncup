@@ -1,4 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { inject } from '@angular/core';
+import { StoreStatusService } from '../../core/store-status.service';
 import { CartItem, ValidateDiscountCodeResponse } from 'shared-models';
 
 export interface AppliedDiscount {
@@ -9,6 +11,7 @@ export interface AppliedDiscount {
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
+  private storeStatus = inject(StoreStatusService);
   private readonly CART_KEY = 'yurt_cart';
   readonly items = signal<CartItem[]>(this.loadCart());
   readonly appliedDiscount = signal<AppliedDiscount | null>(null);
@@ -46,7 +49,9 @@ export class CartService {
     this.appliedDiscount.set(null);
   }
 
-  addItem(item: CartItem): void {
+  /** Returns false (and shows the closed popup) when the cafe is closed. */
+  addItem(item: CartItem): boolean {
+    if (!this.storeStatus.guardOpen()) return false;
     this.items.update((cart) => {
       const key = this.itemKey(item);
       const existing = cart.find((c) => this.itemKey(c) === key);
@@ -58,6 +63,7 @@ export class CartService {
       return [...cart, item];
     });
     this.save();
+    return true;
   }
 
   removeItem(item: CartItem): void {

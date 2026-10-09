@@ -11,17 +11,25 @@ export class LocationService {
   // Seeded from cache so the name shows instantly on startup; refreshed from API below
   readonly locationName = signal(localStorage.getItem('yurt_location_name') ?? '');
 
+  // Raw working-hours string of the selected location (JSON slots); '' = unknown
+  readonly workingHours = signal(localStorage.getItem('yurt_location_hours') ?? '');
+
   constructor() {
     effect(() => {
       const id = this.locationId();
       const lang = this.langService.lang();
       if (!id) {
         this.locationName.set('');
+        this.workingHours.set('');
         return;
       }
       this.api.getLocations(lang).subscribe({
         next: (locs) => {
           const loc = locs.find((l) => l.id === id);
+          if (loc) {
+            this.workingHours.set(loc.workingHours ?? '');
+            localStorage.setItem('yurt_location_hours', loc.workingHours ?? '');
+          }
           if (loc && loc.name) {
             this.locationName.set(loc.name);
             localStorage.setItem('yurt_location_name', loc.name);
