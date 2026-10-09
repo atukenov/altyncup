@@ -13,6 +13,7 @@ import {
 } from 'shared-models';
 import { Currency2Pipe, OrderStatusLabelPipe, ToastService } from 'shared-ui';
 import { environment } from '../../../environments/environment';
+import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 
@@ -37,6 +38,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
   private signalr = inject(SignalrService);
   private toast = inject(ToastService);
+  private lang = inject(LangService);
   readonly OrderStatus = OrderStatus;
   readonly PaymentStatus = PaymentStatus;
   readonly PaymentMethod = PaymentMethod;
@@ -51,6 +53,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   selectedRating = signal(0);
   ratingComment = signal('');
   submittingRating = signal(false);
+  cancelling = signal(false);
 
   readonly timelineSteps = [
     { status: OrderStatus.Created, labelKey: 'timeline.Created' },
@@ -100,6 +103,24 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
           if (o.id === this.id) this.order.set(o);
         }),
       );
+    });
+  }
+
+  cancelOrder(): void {
+    if (this.cancelling()) return;
+    if (!confirm(this.lang.t('order.cancelConfirm'))) return;
+    this.cancelling.set(true);
+    this.api.cancelOrder(this.id).subscribe({
+      next: (o) => {
+        this.order.set(o);
+        this.cancelling.set(false);
+        this.toast.success(this.lang.t('order.cancelled'));
+      },
+      error: () => {
+        // e.g. the order was accepted in the meantime — refresh to show its real state
+        this.cancelling.set(false);
+        this.loadOrder();
+      },
     });
   }
 

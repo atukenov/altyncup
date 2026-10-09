@@ -225,6 +225,17 @@
       }
     </div>
 
+    <!-- ── Cancel — only before the order is accepted ───────────────────────── -->
+    @if (o.status === OrderStatus.Created) {
+      <div style="margin:10px 16px 0">
+        <button type="button" (click)="cancelOrder()" [disabled]="cancelling()"
+          style="width:100%;padding:14px;border:1.5px solid #fecaca;background:#fff;color:#dc2626;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer"
+          [style.opacity]="cancelling() ? '.6' : '1'">
+          {{ 'order.cancel' | t }}
+        </button>
+      </div>
+    }
+
     <!-- ── Rating card — only when Completed ────────────────────────────────── -->
     @if (o.status === OrderStatus.Completed) {
       <div class="order-card" style="margin:10px 16px 0;text-align:center">
