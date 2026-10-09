@@ -12,9 +12,21 @@ export class StoreStatusService {
   /** True while the "we're closed" popup is on screen. */
   readonly noticeVisible = signal(false);
 
-  readonly schedule = computed(() => buildScheduleInfo(this.location.workingHours(), this.now()));
-  readonly isOpen = computed(() => this.schedule().isOpen);
-  readonly nextOpenAt = computed(() => this.schedule().nextOpenAt);
+  // With a location picked, use its hours. Without one, ordering is only blocked when
+  // every active location is closed (the earliest reopening time is shown).
+  private readonly schedules = computed(() => {
+    const now = this.now();
+    if (this.location.locationId()) return [buildScheduleInfo(this.location.workingHours(), now)];
+    return this.location.allWorkingHours().map((wh) => buildScheduleInfo(wh, now));
+  });
+  readonly isOpen = computed(() => {
+    const list = this.schedules();
+    return list.length === 0 || list.some((s) => s.isOpen);
+  });
+  readonly nextOpenAt = computed(() => {
+    const times = this.schedules().map((s) => s.nextOpenAt).filter((t): t is string => !!t);
+    return times.length ? times.sort()[0] : null;
+  });
 
   constructor() {
     setInterval(() => this.now.set(new Date()), 30_000);

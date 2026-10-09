@@ -14,6 +14,9 @@ export class LocationService {
   // Raw working-hours string of the selected location (JSON slots); '' = unknown
   readonly workingHours = signal(localStorage.getItem('yurt_location_hours') ?? '');
 
+  // Working hours of every active location — used when the customer hasn't picked one yet
+  readonly allWorkingHours = signal<string[]>([]);
+
   constructor() {
     effect(() => {
       const id = this.locationId();
@@ -21,10 +24,11 @@ export class LocationService {
       if (!id) {
         this.locationName.set('');
         this.workingHours.set('');
-        return;
       }
       this.api.getLocations(lang).subscribe({
         next: (locs) => {
+          this.allWorkingHours.set(locs.filter((l) => l.isActive).map((l) => l.workingHours ?? ''));
+          if (!id) return;
           const loc = locs.find((l) => l.id === id);
           if (loc) {
             this.workingHours.set(loc.workingHours ?? '');
