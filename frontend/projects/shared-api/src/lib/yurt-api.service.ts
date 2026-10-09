@@ -288,6 +288,10 @@ export class YurtApiService {
     return this.http.get<Order>(`${this.api}/orders/${id}`, context && { context });
   }
 
+  cancelOrder(id: string): Observable<Order> {
+    return this.http.post<Order>(`${this.api}/orders/${id}/cancel`, {});
+  }
+
   rateOrder(id: string, rating: number, comment?: string): Observable<Order> {
     return this.http.post<Order>(`${this.api}/orders/${id}/rating`, { rating, comment });
   }

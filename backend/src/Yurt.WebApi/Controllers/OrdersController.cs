@@ -57,6 +57,11 @@ public class OrdersController : ApiControllerBase
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
         => ToResult(await _orderService.GetOrderAsync(id, _currentUser.UserId!.Value, ct));
 
+    /// <summary>Cancel an order that has not been accepted yet.</summary>
+    [HttpPost("{id:guid}/cancel")]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
+        => ToResult(await _orderService.CancelOrderAsync(id, _currentUser.UserId!.Value, ct));
+
     /// <summary>Rate a completed order (1-5 stars, optional comment). Once only.</summary>
     [HttpPost("{id:guid}/rating")]
     public async Task<IActionResult> Rate(Guid id, [FromBody] RateOrderDto dto, CancellationToken ct)

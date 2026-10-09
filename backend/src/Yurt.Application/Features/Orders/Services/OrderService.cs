@@ -31,6 +31,8 @@ public class OrderService
         _iikoSync = iikoSync;
     }
 
+    public const string CustomerCancelReason = "Cancelled by customer";
+
     public async Task<Result<OrderDto>> CreateOrderAsync(
         Guid customerId, CreateOrderDto dto, CancellationToken ct = default)
     {
@@ -326,6 +328,33 @@ public class OrderService
         // never blocks acceptance, and never affects the wallet loyalty flow above.
         await _iikoSync.PushOrderAsync(order, ct);
 
+        return Result<OrderDto>.Success(MapToDto(order));
+    }
+
+    /// <summary>Customer-initiated cancellation. Only allowed while the order is still
+    /// Created, i.e. before an admin/worker has accepted it.</summary>
+    public async Task<Result<OrderDto>> CancelOrderAsync(
+        Guid orderId, Guid customerId, CancellationToken ct = default)
+    {
+        var order = await LoadOrderAsync(orderId, ct);
+        if (order == null) return Result<OrderDto>.NotFound();
+        if (order.CustomerUserId != customerId) return Result<OrderDto>.Forbidden();
+
+        if (order.Status != OrderStatus.Created)
+            return Result<OrderDto>.Failure("Order can no longer be cancelled because it has already been accepted.", 422);
+
+        order.Status = OrderStatus.Declined;
+        order.DeclineReason = CustomerCancelReason;
+        order.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        // Give reserved points back to the customer (retried in background on failure)
+        await _loyalty.ReleaseHoldForOrderAsync(order, ct);
+
+        // Plain "updated" event: refreshes the admin live list and the customer's view
+        // without firing the "your order was declined" push meant for admin declines.
+        await _hub.NotifyOrderUpdatedAsync(order, ct);
+        await _audit.LogAsync("OrderCancelledByCustomer", "Order", orderId.ToString(), null, ct);
         return Result<OrderDto>.Success(MapToDto(order));
     }
 
