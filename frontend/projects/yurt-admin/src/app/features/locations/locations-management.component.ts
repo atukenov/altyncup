@@ -22,6 +22,7 @@ interface LocationForm {
   contactPhone: string;
   isActive: boolean;
   iikoTerminalGroupId: string;
+  twoGisUrl: string;
 }
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -66,6 +67,7 @@ export class LocationsManagementComponent implements OnInit {
     contactPhone: '',
     isActive: true,
     iikoTerminalGroupId: '',
+    twoGisUrl: '',
   });
 
   // iiko terminal groups for the routing picker (Phase 3 order-push feature).
@@ -91,6 +93,7 @@ export class LocationsManagementComponent implements OnInit {
       contactPhone: loc?.contactPhone ?? '',
       isActive: loc?.isActive ?? true,
       iikoTerminalGroupId: loc?.iikoTerminalGroupId ?? '',
+      twoGisUrl: loc?.twoGisUrl ?? '',
     });
     this.showDialog.set(true);
   }
@@ -147,6 +150,7 @@ export class LocationsManagementComponent implements OnInit {
       contactPhone: f.contactPhone,
       isActive: f.isActive,
       iikoTerminalGroupId: f.iikoTerminalGroupId || null,
+      twoGisUrl: f.twoGisUrl.trim() || null,
     };
     const obs = f.id
       ? this.api.updateLocation(f.id, payload)
