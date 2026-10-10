@@ -556,6 +556,20 @@ export interface AppUpdateInfo {
   minVersionAndroid: string;
   storeUrlIos: string;
   storeUrlAndroid: string;
+  latestVersion?: string;
+  latestNotesEn?: string;
+  latestNotesRu?: string;
+  latestNotesKk?: string;
+}
+
+export interface AppRelease {
+  id: string;
+  version: string;
+  notesEn: string;
+  notesRu: string;
+  notesKk: string;
+  isMandatory: boolean;
+  createdAt: string;
 }
 
 // ── Discount Codes ────────────────────────────────────────────────────────────

@@ -29,6 +29,7 @@ public interface IApplicationDbContext
     DbSet<MenuItemLocation> MenuItemLocations { get; }
     DbSet<MenuItemVariant> MenuItemVariants { get; }
     DbSet<UserReport> UserReports { get; }
+    DbSet<AppRelease> AppReleases { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

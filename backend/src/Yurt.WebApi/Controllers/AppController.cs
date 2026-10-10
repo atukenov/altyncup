@@ -10,21 +10,15 @@ namespace Yurt.WebApi.Controllers;
 [Route("api/v{version:apiVersion}/app")]
 public class AppController : ApiControllerBase
 {
-    private readonly AppUpdateOptions _options;
+    private readonly AppReleaseService _releases;
 
-    public AppController(AppUpdateOptions options) => _options = options;
+    public AppController(AppReleaseService releases) => _releases = releases;
 
     /// <summary>
-    /// Minimum required app version per platform, and where to send the user to update.
+    /// Minimum required app version per platform, where to send the user to update, and the newest release's notes.
     /// Public — the client must be able to check this before any login screen renders.
     /// </summary>
     [HttpGet("update-info")]
-    public IActionResult GetUpdateInfo()
-        => Ok(new AppUpdateInfoDto
-        {
-            MinVersionIos = _options.MinVersionIos,
-            MinVersionAndroid = _options.MinVersionAndroid,
-            StoreUrlIos = _options.StoreUrlIos,
-            StoreUrlAndroid = _options.StoreUrlAndroid,
-        });
+    public async Task<IActionResult> GetUpdateInfo(CancellationToken ct)
+        => Ok(await _releases.GetUpdateInfoAsync(ct));
 }

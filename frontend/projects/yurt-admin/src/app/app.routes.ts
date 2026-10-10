@@ -72,6 +72,11 @@ export const routes: Routes = [
           import('./features/audit-log/audit-log.component').then((m) => m.AuditLogComponent),
       },
       {
+        path: 'app-releases',
+        loadComponent: () =>
+          import('./features/app-releases/app-releases.component').then((m) => m.AppReleasesComponent),
+      },
+      {
         path: 'discount-codes',
         loadComponent: () =>
           import('./features/discount-codes/discount-codes.component').then((m) => m.DiscountCodesComponent),

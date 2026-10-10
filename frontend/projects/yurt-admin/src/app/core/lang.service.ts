@@ -98,7 +98,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.trendYear': 'Change vs. last year',
 
     // Discount codes
-    'nav.discountCodes': 'Discount Codes', 'nav.reports': 'Reports',
+    'nav.appReleases': 'App releases', 'rel.title': 'App releases', 'rel.subtitle': 'Publish a version with “what’s new” notes. Customers on older app versions see an update popup.', 'rel.new': '+ New release', 'rel.empty': 'No releases yet', 'rel.version': 'Version', 'rel.notes': 'What’s new', 'rel.notesHint': 'One bullet per line. Russian/Kazakh fall back to English when empty.', 'rel.mandatory': 'Mandatory (blocks older versions until they update)', 'rel.mandatoryShort': 'Mandatory', 'rel.optional': 'Optional', 'rel.published': 'Published', 'rel.edit': 'Edit release', 'rel.add': 'New release', 'rel.deleteConfirm': 'Delete this release?', 'nav.discountCodes': 'Discount Codes', 'nav.reports': 'Reports',
     'discountCodes.title': 'Discount Codes', 'discountCodes.subtitle': 'Promo codes customers enter at checkout',
     'discountCodes.new': '+ New Code', 'discountCodes.addTitle': 'New Discount Code', 'discountCodes.editTitle': 'Edit Discount Code',
     'discountCodes.noCodes': 'No discount codes yet', 'discountCodes.noCodesHint': 'Create a code to give customers a discount at checkout.',
@@ -269,7 +269,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.trendYear': 'Изменение по сравнению с прошлым годом',
 
     // Discount codes
-    'nav.discountCodes': 'Промокоды', 'nav.reports': 'Отчёты',
+    'nav.appReleases': 'Версии приложения', 'rel.title': 'Версии приложения', 'rel.subtitle': 'Опубликуйте версию с описанием «Что нового». Клиенты со старой версией увидят окно обновления.', 'rel.new': '+ Новая версия', 'rel.empty': 'Версий пока нет', 'rel.version': 'Версия', 'rel.notes': 'Что нового', 'rel.notesHint': 'Один пункт на строку. Пустые RU/KK берутся из английского.', 'rel.mandatory': 'Обязательная (блокирует старые версии до обновления)', 'rel.mandatoryShort': 'Обязательная', 'rel.optional': 'Необязательная', 'rel.published': 'Опубликована', 'rel.edit': 'Редактировать версию', 'rel.add': 'Новая версия', 'rel.deleteConfirm': 'Удалить эту версию?', 'nav.discountCodes': 'Промокоды', 'nav.reports': 'Отчёты',
     'discountCodes.title': 'Промокоды', 'discountCodes.subtitle': 'Коды скидок для покупателей',
     'discountCodes.new': '+ Новый код', 'discountCodes.addTitle': 'Новый промокод', 'discountCodes.editTitle': 'Изменить промокод',
     'discountCodes.noCodes': 'Промокодов нет', 'discountCodes.noCodesHint': 'Создайте код для предоставления скидок.',
@@ -440,7 +440,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.trendYear': 'Өткен жылмен салыстырғандағы өзгеріс',
 
     // Discount codes
-    'nav.discountCodes': 'Промокодтар', 'nav.reports': 'Есептер',
+    'nav.appReleases': 'Қосымша нұсқалары', 'rel.title': 'Қосымша нұсқалары', 'rel.subtitle': '«Не жаңа» сипаттамасымен нұсқаны жариялаңыз. Ескі нұсқадағы клиенттер жаңарту терезесін көреді.', 'rel.new': '+ Жаңа нұсқа', 'rel.empty': 'Нұсқалар әлі жоқ', 'rel.version': 'Нұсқа', 'rel.notes': 'Не жаңа', 'rel.notesHint': 'Әр жолға бір тармақ. RU/KK бос болса, ағылшын мәтіні алынады.', 'rel.mandatory': 'Міндетті (жаңартқанша ескі нұсқаларды бұғаттайды)', 'rel.mandatoryShort': 'Міндетті', 'rel.optional': 'Міндетті емес', 'rel.published': 'Жарияланды', 'rel.edit': 'Нұсқаны өңдеу', 'rel.add': 'Жаңа нұсқа', 'rel.deleteConfirm': 'Бұл нұсқаны жою керек пе?', 'nav.discountCodes': 'Промокодтар', 'nav.reports': 'Есептер',
     'discountCodes.title': 'Промокодтар', 'discountCodes.subtitle': 'Тапсырыс берушілерге арналған жеңілдік кодтары',
     'discountCodes.new': '+ Жаңа код', 'discountCodes.addTitle': 'Жаңа промокод', 'discountCodes.editTitle': 'Промокодты өзгерту',
     'discountCodes.noCodes': 'Промокод жоқ', 'discountCodes.noCodesHint': 'Жеңілдік беру үшін код жасаңыз.',
