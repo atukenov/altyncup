@@ -33,6 +33,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<MenuItemLocation> MenuItemLocations => Set<MenuItemLocation>();
     public DbSet<MenuItemVariant> MenuItemVariants => Set<MenuItemVariant>();
     public DbSet<UserReport> UserReports => Set<UserReport>();
+    public DbSet<AppRelease> AppReleases => Set<AppRelease>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

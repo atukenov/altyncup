@@ -99,6 +99,7 @@ public static class DependencyInjection
         services.AddScoped<AnalyticsService>();
         services.AddScoped<AuthService>();
         services.AddScoped<LocationService>();
+        services.AddScoped<AppReleaseService>();
         services.AddScoped<MenuService>();
         services.AddScoped<OrderService>();
         services.AddScoped<PaymentService>();

@@ -5,6 +5,7 @@ import {
   AcceptOrderRequest,
   AddGroupOrderItemRequest,
   AnalyticsResponse,
+  AppRelease,
   AppUpdateInfo,
   AuditLogEntry,
   AuthResponse,
@@ -56,6 +57,20 @@ export class YurtApiService {
   // ── App ────────────────────────────────────────────────────────────────────
   getAppUpdateInfo(): Observable<AppUpdateInfo> {
     return this.http.get<AppUpdateInfo>(`${this.api}/app/update-info`);
+  }
+
+  // Admin app releases (what's-new popup / forced update)
+  getAdminAppReleases(): Observable<AppRelease[]> {
+    return this.http.get<AppRelease[]>(`${this.api}/admin/app-releases`);
+  }
+  createAppRelease(req: Partial<AppRelease>): Observable<AppRelease> {
+    return this.http.post<AppRelease>(`${this.api}/admin/app-releases`, req);
+  }
+  updateAppRelease(id: string, req: Partial<AppRelease>): Observable<AppRelease> {
+    return this.http.put<AppRelease>(`${this.api}/admin/app-releases/${id}`, req);
+  }
+  deleteAppRelease(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.api}/admin/app-releases/${id}`);
   }
 
   // ── Auth ───────────────────────────────────────────────────────────────────

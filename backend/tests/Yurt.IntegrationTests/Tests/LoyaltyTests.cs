@@ -600,6 +600,7 @@ public class LoyaltyTests(YurtWebAppFactory factory)
         fake.SetTransactions([spendLeg, earnLeg]);
 
         ApiHelpers.Authorize(client, token);
+        await LinkToIikoAsync(client);
         var result = await client.GetFromJsonAsync<LoyaltyHistoryResult>(
             "/api/v1/loyalty/transactions", ApiHelpers.JsonOpts);
 
@@ -632,6 +633,7 @@ public class LoyaltyTests(YurtWebAppFactory factory)
         fake.SetTransactions([redeemOnly]);
 
         ApiHelpers.Authorize(client, token);
+        await LinkToIikoAsync(client);
         var result = await client.GetFromJsonAsync<LoyaltyHistoryResult>(
             "/api/v1/loyalty/transactions", ApiHelpers.JsonOpts);
 
@@ -670,6 +672,14 @@ public class LoyaltyTests(YurtWebAppFactory factory)
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    // A freshly registered customer isn't linked to iiko yet (that happens lazily on the first
+    // balance fetch or order), and the history endpoint returns nothing for an unlinked customer.
+    private static async Task LinkToIikoAsync(HttpClient client)
+    {
+        var resp = await client.GetAsync("/api/v1/loyalty/me");
+        resp.EnsureSuccessStatusCode();
+    }
 
     private static IikoOptions EnabledOptions() => new()
     {

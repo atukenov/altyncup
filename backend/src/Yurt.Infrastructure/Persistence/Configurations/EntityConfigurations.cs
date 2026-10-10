@@ -296,3 +296,16 @@ public class UserReportConfiguration : IEntityTypeConfiguration<UserReport>
                .OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+public class AppReleaseConfiguration : IEntityTypeConfiguration<AppRelease>
+{
+    public void Configure(EntityTypeBuilder<AppRelease> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Version).HasMaxLength(20).IsRequired();
+        builder.HasIndex(e => e.Version).IsUnique();
+        builder.Property(e => e.NotesEn).HasColumnType("text").IsRequired();
+        builder.Property(e => e.NotesRu).HasColumnType("text").IsRequired();
+        builder.Property(e => e.NotesKk).HasColumnType("text").IsRequired();
+    }
+}
