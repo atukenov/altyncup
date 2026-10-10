@@ -89,6 +89,7 @@ export interface Location {
   contactPhone: string;
   isActive: boolean;
   iikoTerminalGroupId?: string | null;
+  twoGisUrl?: string | null;
 }
 
 // ── Menu ──────────────────────────────────────────────────────────────────────
@@ -254,6 +255,7 @@ export interface Order {
   customerPhone?: string;
   locationId: string;
   locationName: string;
+  locationTwoGisUrl?: string | null;
   status: OrderStatus;
   declineReason?: string;
   etaMinutes?: number;

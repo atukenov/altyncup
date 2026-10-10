@@ -481,6 +481,7 @@ public class OrderService
             o.LoyaltyPointsEarned,
             o.Rating,
             o.RatingComment,
-            o.IikoOrderSyncStatus);
+            o.IikoOrderSyncStatus,
+            o.Location?.TwoGisUrl);
     }
 }

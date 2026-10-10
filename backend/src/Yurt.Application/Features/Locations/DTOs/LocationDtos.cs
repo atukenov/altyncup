@@ -7,7 +7,8 @@ public record LocationDto(
     string Address,
     string WorkingHours,
     string ContactPhone,
-    bool IsActive);
+    bool IsActive,
+    string? TwoGisUrl = null);
 
 // Admin-facing
 public record AdminLocationDto(
@@ -17,7 +18,8 @@ public record AdminLocationDto(
     string WorkingHours,
     string ContactPhone,
     bool IsActive,
-    Guid? IikoTerminalGroupId = null);
+    Guid? IikoTerminalGroupId = null,
+    string? TwoGisUrl = null);
 
 public record CreateLocationDto
 {
@@ -26,6 +28,7 @@ public record CreateLocationDto
     public string WorkingHours { get; init; } = string.Empty;
     public string ContactPhone { get; init; } = string.Empty;
     public Guid? IikoTerminalGroupId { get; init; }
+    public string? TwoGisUrl { get; init; }
 }
 
 public record UpdateLocationDto
@@ -36,4 +39,5 @@ public record UpdateLocationDto
     public string ContactPhone { get; init; } = string.Empty;
     public bool IsActive { get; init; }
     public Guid? IikoTerminalGroupId { get; init; }
+    public string? TwoGisUrl { get; init; }
 }

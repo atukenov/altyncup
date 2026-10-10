@@ -24,7 +24,7 @@ public class LocationService
             .Select(l => new LocationDto(
                 l.Id,
                 l.Name,
-                l.Address, l.WorkingHours, l.ContactPhone, l.IsActive))
+                l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.TwoGisUrl))
             .ToListAsync(ct);
 
     public async Task<List<AdminLocationDto>> GetAllLocationsAsync(CancellationToken ct = default)
@@ -32,7 +32,7 @@ public class LocationService
             .OrderBy(l => l.Name)
             .Select(l => new AdminLocationDto(
                 l.Id, l.Name,
-                l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.IikoTerminalGroupId))
+                l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.IikoTerminalGroupId, l.TwoGisUrl))
             .ToListAsync(ct);
 
     public async Task<Result<AdminLocationDto>> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -44,13 +44,17 @@ public class LocationService
 
     public async Task<Result<AdminLocationDto>> CreateAsync(CreateLocationDto dto, CancellationToken ct = default)
     {
+        if (!TryNormalizeTwoGisUrl(dto.TwoGisUrl, out var twoGisUrl))
+            return Result<AdminLocationDto>.Failure(TwoGisUrlError, 422);
+
         var loc = new Location
         {
             Name = dto.Name,
             Address = dto.Address,
             WorkingHours = dto.WorkingHours,
             ContactPhone = dto.ContactPhone,
-            IikoTerminalGroupId = dto.IikoTerminalGroupId
+            IikoTerminalGroupId = dto.IikoTerminalGroupId,
+            TwoGisUrl = twoGisUrl
         };
         _db.Locations.Add(loc);
         await _db.SaveChangesAsync(ct);
@@ -60,6 +64,9 @@ public class LocationService
 
     public async Task<Result<AdminLocationDto>> UpdateAsync(Guid id, UpdateLocationDto dto, CancellationToken ct = default)
     {
+        if (!TryNormalizeTwoGisUrl(dto.TwoGisUrl, out var twoGisUrl))
+            return Result<AdminLocationDto>.Failure(TwoGisUrlError, 422);
+
         var loc = await _db.Locations.FindAsync([id], ct);
         if (loc == null) return Result<AdminLocationDto>.NotFound();
 
@@ -69,6 +76,7 @@ public class LocationService
         loc.ContactPhone = dto.ContactPhone;
         loc.IsActive = dto.IsActive;
         loc.IikoTerminalGroupId = dto.IikoTerminalGroupId;
+        loc.TwoGisUrl = twoGisUrl;
         loc.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
@@ -87,6 +95,25 @@ public class LocationService
         return Result<bool>.Success(true);
     }
 
+    private const string TwoGisUrlError = "2GIS link must be a valid http(s) link to 2gis (e.g. https://2gis.kz/… or https://go.2gis.com/…).";
+
+    // Empty = no link. Otherwise only absolute http(s) URLs on a 2gis host are accepted, so a
+    // stored value can never be a javascript:/data: URL or point at an unrelated site.
+    private static bool TryNormalizeTwoGisUrl(string? raw, out string? normalized)
+    {
+        normalized = null;
+        if (string.IsNullOrWhiteSpace(raw)) return true;
+        var value = raw.Trim();
+        if (value.Length > 1000) return false;
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri)) return false;
+        if (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp) return false;
+        var host = uri.Host.ToLowerInvariant();
+        var isTwoGis = host.StartsWith("2gis.") || host.Contains(".2gis.");
+        if (!isTwoGis) return false;
+        normalized = uri.AbsoluteUri;
+        return true;
+    }
+
     private static AdminLocationDto MapToAdminDto(Location l)
-        => new(l.Id, l.Name, l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.IikoTerminalGroupId);
+        => new(l.Id, l.Name, l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.IikoTerminalGroupId, l.TwoGisUrl);
 }

@@ -69,7 +69,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'locations.addTitle': 'Add Location', 'locations.editTitle': 'Edit Location',
     'locations.noLocations': 'No locations yet',
     'locations.name': 'Name *', 'locations.address': 'Address *',
-    'locations.workingHours': 'Working Hours', 'locations.contactPhone': 'Contact Phone',
+    'locations.twoGis': '2GIS link (optional)', 'locations.twoGisHint': 'Customers get a “Get directions” button to this place once their order is accepted.', 'locations.workingHours': 'Working Hours', 'locations.contactPhone': 'Contact Phone',
     'locations.active': 'Active', 'locations.inactive': 'Inactive',
     'locations.nameRu': 'Name (RU)', 'locations.nameKk': 'Name (KZ)',
 
@@ -240,7 +240,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'locations.addTitle': 'Добавить локацию', 'locations.editTitle': 'Изменить локацию',
     'locations.noLocations': 'Нет локаций',
     'locations.name': 'Название *', 'locations.address': 'Адрес *',
-    'locations.workingHours': 'Часы работы', 'locations.contactPhone': 'Контактный телефон',
+    'locations.twoGis': 'Ссылка на 2ГИС (необязательно)', 'locations.twoGisHint': 'Клиент увидит кнопку «Построить маршрут» к этому месту, когда заказ будет принят.', 'locations.workingHours': 'Часы работы', 'locations.contactPhone': 'Контактный телефон',
     'locations.active': 'Активна', 'locations.inactive': 'Неактивна',
     'locations.nameRu': 'Название (RU)', 'locations.nameKk': 'Название (KZ)',
 
@@ -411,7 +411,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'locations.addTitle': 'Мекен қосу', 'locations.editTitle': 'Мекенді өзгерту',
     'locations.noLocations': 'Мекендер жоқ',
     'locations.name': 'Атауы *', 'locations.address': 'Мекенжай *',
-    'locations.workingHours': 'Жұмыс уақыты', 'locations.contactPhone': 'Байланыс телефоны',
+    'locations.twoGis': '2GIS сілтемесі (міндетті емес)', 'locations.twoGisHint': 'Тапсырыс қабылданғаннан кейін клиент осы жерге «Бағыт салу» түймесін көреді.', 'locations.workingHours': 'Жұмыс уақыты', 'locations.contactPhone': 'Байланыс телефоны',
     'locations.active': 'Белсенді', 'locations.inactive': 'Белсенді емес',
     'locations.nameRu': 'Атауы (RU)', 'locations.nameKk': 'Атауы (KZ)',
 

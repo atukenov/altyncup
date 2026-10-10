@@ -36,7 +36,8 @@ public record OrderDto(
     decimal? LoyaltyPointsEarned = null,
     int? Rating = null,
     string? RatingComment = null,
-    IikoOrderSyncStatus? IikoOrderSyncStatus = null);
+    IikoOrderSyncStatus? IikoOrderSyncStatus = null,
+    string? LocationTwoGisUrl = null);
 
 public record OrderItemDto(
     Guid Id,

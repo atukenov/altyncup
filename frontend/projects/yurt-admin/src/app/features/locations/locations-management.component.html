@@ -101,6 +101,21 @@
           />
         </div>
 
+        <!-- 2GIS link -->
+        <div>
+          <label for="location-2gis" class="block text-xs font-medium text-slate-600 mb-1">{{ 'locations.twoGis' | t }}</label>
+          <input
+            id="location-2gis"
+            type="url"
+            inputmode="url"
+            placeholder="https://2gis.kz/…"
+            [ngModel]="form().twoGisUrl"
+            (ngModelChange)="patch('twoGisUrl', $event)"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+          />
+          <p class="text-xs text-slate-400 mt-1">{{ 'locations.twoGisHint' | t }}</p>
+        </div>
+
         <!-- Working Hours -->
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-2">{{ 'locations.workingHours' | t }}</label>
