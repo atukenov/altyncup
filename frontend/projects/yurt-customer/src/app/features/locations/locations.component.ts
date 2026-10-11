@@ -7,6 +7,7 @@ import { SkeletonCardComponent } from 'shared-ui';
 import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { LocationService } from '../../core/location.service';
+import { SwrCache } from '../../core/swr-cache.service';
 import { buildScheduleInfo, ScheduleInfo } from '../../core/schedule';
 
 @Component({
@@ -22,6 +23,7 @@ export class LocationsComponent {
   private route = inject(ActivatedRoute);
   private langService = inject(LangService);
   private locationSvc = inject(LocationService);
+  private swr = inject(SwrCache);
 
   locations = signal<Location[]>([]);
   loading = signal(true);
@@ -31,7 +33,7 @@ export class LocationsComponent {
     effect(() => {
       const lang = this.langService.lang();
       this.loading.set(true);
-      this.api.getLocations(lang).subscribe({
+      this.swr.swr(`locs:${lang}`, () => this.api.getLocations(lang)).subscribe({
         next: (locs) => { this.locations.set(locs); this.loading.set(false); },
         error: () => this.loading.set(false),
       });

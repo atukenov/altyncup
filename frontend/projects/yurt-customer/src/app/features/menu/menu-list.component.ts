@@ -14,6 +14,7 @@ import {
 import { Currency2Pipe, SkeletonCardComponent, ToastService } from 'shared-ui';
 import { LangService } from '../../core/lang.service';
 import { StoreStatusService } from '../../core/store-status.service';
+import { SwrCache } from '../../core/swr-cache.service';
 import { LocationService } from '../../core/location.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
@@ -43,6 +44,7 @@ export class MenuListComponent implements OnInit {
   readonly auth = inject(AuthStateService);
   readonly langService = inject(LangService);
   private locationSvc = inject(LocationService);
+  private swr = inject(SwrCache);
   private storeStatus = inject(StoreStatusService);
   private promoViewer = inject(PromoViewerService);
   readonly locationName = this.locationSvc.locationName;
@@ -116,7 +118,7 @@ export class MenuListComponent implements OnInit {
     effect(() => {
       const lang = this.langService.lang();
       const locationId = this.locationSvc.locationId() || undefined;
-      this.api.getCategories(lang, locationId).subscribe((cats) => {
+      this.swr.swr(`cats:${lang}:${locationId ?? ''}`, () => this.api.getCategories(lang, locationId)).subscribe((cats) => {
         this.categories.set(cats);
         const saved = this.selectedCategoryId();
         if (saved && !cats.some((c) => c.id === saved)) {
@@ -124,7 +126,6 @@ export class MenuListComponent implements OnInit {
           sessionStorage.removeItem('menu_cat');
         }
       });
-      this.api.getActivePromotions().subscribe((promos) => this.promotions.set(promos));
       this.loadItems(lang);
     });
   }
@@ -247,11 +248,15 @@ export class MenuListComponent implements OnInit {
   }
 
   loadItems(lang?: string): void {
-    this.api.getActivePromotions().subscribe({ next: (p) => this.promotions.set(p), error: () => {} });
-    this.loading.set(true);
+    this.swr.swr('promos', () => this.api.getActivePromotions()).subscribe({ next: (p) => this.promotions.set(p), error: () => {} });
     const locationId = this.locationSvc.locationId() || undefined;
-    this.api
-      .getMenuItems(undefined, undefined, lang ?? this.langService.lang(), locationId)
+    const language = lang ?? this.langService.lang();
+    // Saved copy (if any) paints instantly and flips loading off; the fresh copy replaces it.
+    this.loading.set(true);
+    this.swr
+      .swr(`items:${language}:${locationId ?? ''}`, () =>
+        this.api.getMenuItems(undefined, undefined, language, locationId),
+      )
       .subscribe({
         next: (items) => {
           this.allItems.set(items);
