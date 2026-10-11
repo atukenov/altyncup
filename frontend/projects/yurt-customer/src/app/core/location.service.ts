@@ -1,11 +1,13 @@
 import { Injectable, signal, effect, inject } from '@angular/core';
 import { YurtApiService } from 'shared-api';
 import { LangService } from './lang.service';
+import { SwrCache } from './swr-cache.service';
 
 @Injectable({ providedIn: 'root' })
 export class LocationService {
   private api = inject(YurtApiService);
   private langService = inject(LangService);
+  private swr = inject(SwrCache);
 
   readonly locationId = signal(localStorage.getItem('yurt_location_id') ?? '');
   // Seeded from cache so the name shows instantly on startup; refreshed from API below
@@ -25,7 +27,7 @@ export class LocationService {
         this.locationName.set('');
         this.workingHours.set('');
       }
-      this.api.getLocations(lang).subscribe({
+      this.swr.swr(`locs:${lang}`, () => this.api.getLocations(lang)).subscribe({
         next: (locs) => {
           this.allWorkingHours.set(locs.filter((l) => l.isActive).map((l) => l.workingHours ?? ''));
           if (!id) return;
