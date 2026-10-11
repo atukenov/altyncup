@@ -29,7 +29,10 @@ public class FavoriteService
             f.MenuItem.Price,
             f.MenuItem.IsAvailable,
             f.MenuItem.IsNew,
-            f.MenuItem.ImageUrl)).ToList();
+            f.MenuItem.ImageUrl,
+            NameEn: f.MenuItem.Name,
+            NameRu: f.MenuItem.NameRu,
+            NameKk: f.MenuItem.NameKk)).ToList();
     }
 
     public async Task<Result<bool>> AddFavoriteAsync(

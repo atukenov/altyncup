@@ -128,4 +128,26 @@ public class MenuServiceTests
         Assert.False(result.Succeeded);
         Assert.Equal(400, result.StatusCode);
     }
+
+    [Fact]
+    public async Task GetItemsAsync_ExposesNamesInAllLanguages_AndSearchMatchesAnyOfThem()
+    {
+        var cat = new MenuCategory { Name = "Drinks" };
+        var apple = new MenuItem { Name = "Apple Juice", NameRu = "Яблочный сок", NameKk = "Алма шырыны", Category = cat, CategoryId = cat.Id, IsAvailable = true };
+        var cola = new MenuItem { Name = "Cola", NameRu = "Кола", Category = cat, CategoryId = cat.Id, IsAvailable = true };
+        var (svc, db) = Build(items: [apple, cola]);
+        var links = new List<MenuToppingCategory>().BuildMockDbSet();
+        db.MenuToppingCategories.Returns(links);
+
+        // App is in Russian, customer searches in English
+        var result = await svc.GetItemsAsync(null, "apple", "ru");
+
+        var dto = Assert.Single(result);
+        Assert.Equal("Яблочный сок", dto.Name);
+        Assert.Equal("Apple Juice", dto.NameEn);
+        Assert.Equal("Алма шырыны", dto.NameKk);
+
+        // App is in English, customer searches in Kazakh
+        Assert.Single(await svc.GetItemsAsync(null, "АЛМА", "en"));
+    }
 }

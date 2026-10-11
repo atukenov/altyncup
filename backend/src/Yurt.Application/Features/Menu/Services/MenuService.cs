@@ -75,8 +75,14 @@ public class MenuService
             query = query.Where(i => i.CategoryId == categoryId.Value);
 
         if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLower();
             query = query.Where(i =>
-                i.Name.Contains(search) || i.Description.Contains(search));
+                i.Name.ToLower().Contains(term) ||
+                (i.NameRu != null && i.NameRu.ToLower().Contains(term)) ||
+                (i.NameKk != null && i.NameKk.ToLower().Contains(term)) ||
+                i.Description.ToLower().Contains(term));
+        }
 
         if (locationId.HasValue)
             query = query.Where(i =>
@@ -506,7 +512,8 @@ public class MenuService
         return new(i.Id, i.CategoryId, i.Category?.Name ?? "",
                LocalizationHelper.Localize(i.Name, i.NameRu, i.NameKk, lang),
                LocalizationHelper.Localize(i.Description, i.DescriptionRu, i.DescriptionKk, lang),
-               i.Price, i.IsAvailable, i.IsNew, i.ImageUrl, i.CreatedAt, locationIds, toppings, variants);
+               i.Price, i.IsAvailable, i.IsNew, i.ImageUrl, i.CreatedAt, locationIds, toppings, variants,
+               i.Name, i.NameRu, i.NameKk);
     }
 
     private static AdminMenuItemDto MapAdminItemToDto(MenuItem i, List<MenuToppingDto>? toppings = null)
