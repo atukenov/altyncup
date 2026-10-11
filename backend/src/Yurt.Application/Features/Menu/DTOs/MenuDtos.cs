@@ -19,7 +19,11 @@ public record MenuItemDto(
     DateTime CreatedAt = default,
     List<Guid>? LocationIds = null,
     List<MenuToppingDto>? AvailableToppings = null,
-    List<MenuItemVariantDto>? Variants = null);
+    List<MenuItemVariantDto>? Variants = null,
+    // Names in every language so the client can search across languages.
+    string? NameEn = null,
+    string? NameRu = null,
+    string? NameKk = null);
 
 public record MenuToppingDto(Guid Id, string Name, decimal Price, bool IsAvailable, List<Guid> CategoryIds, string? Group = null);
 

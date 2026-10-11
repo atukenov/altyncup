@@ -128,6 +128,7 @@ export interface MenuItem {
   categoryId: string;
   categoryName: string;
   name: string;
+  nameEn?: string;
   nameRu?: string;
   nameKk?: string;
   description: string;

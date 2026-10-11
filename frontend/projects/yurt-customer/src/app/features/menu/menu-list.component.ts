@@ -20,6 +20,11 @@ import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 import { PromoViewerService } from '../../core/promo-viewer.service';
 import { CartService } from '../cart/cart.service';
 
+/** Case- and ё/е-insensitive text for matching search input against names. */
+function normalizeForSearch(text: string): string {
+  return text.toLowerCase().replace(/ё/g, 'е').trim();
+}
+
 @Component({
   selector: 'app-menu-list',
   standalone: true,
@@ -141,15 +146,14 @@ export class MenuListComponent implements OnInit {
   });
 
   readonly filteredItems = computed(() => {
-    const q = this.searchTerm().toLowerCase().trim();
+    const q = normalizeForSearch(this.searchTerm());
     let items = this.allItems();
     if (q) {
-      items = items.filter(
-        (i) =>
-          i.name.toLowerCase().includes(q) ||
-          (i.nameRu ?? '').toLowerCase().includes(q) ||
-          (i.nameKk ?? '').toLowerCase().includes(q) ||
-          i.categoryName.toLowerCase().includes(q),
+      // Match against the name in every language, whichever one the app is showing
+      items = items.filter((i) =>
+        [i.name, i.nameEn, i.nameRu, i.nameKk, i.categoryName].some((n) =>
+          normalizeForSearch(n ?? '').includes(q),
+        ),
       );
     } else if (this.selectedCategoryId()) {
       items = items.filter((i) => i.categoryId === this.selectedCategoryId());
