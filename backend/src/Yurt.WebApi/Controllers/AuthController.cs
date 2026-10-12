@@ -36,6 +36,8 @@ public class AuthController : ApiControllerBase
     /// <summary>
     /// Start registration: sends a 4-digit verification code to the customer's mobile
     /// number over WhatsApp. Call <c>register/verify</c> with the code to finish.
+    /// With <c>Otp:Required=false</c> the account is created immediately and the response
+    /// carries the tokens (<c>verificationRequired=false</c>).
     /// </summary>
     [HttpPost("register/start")]
     public async Task<IActionResult> RegisterStart(
@@ -46,7 +48,8 @@ public class AuthController : ApiControllerBase
         if (!validation.IsValid)
             return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
 
-        var result = await _authService.StartRegistrationAsync(dto, ct);
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await _authService.StartRegistrationAsync(dto, ip, ct);
         return ToResult(result);
     }
 
