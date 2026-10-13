@@ -18,6 +18,7 @@ using Yurt.Application.Features.Orders.Services;
 using Yurt.Application.Features.Customers;
 using Yurt.Application.Features.GroupOrders;
 using Yurt.Application.Features.Workers;
+using Yurt.Application.Features.Payments;
 using Yurt.Application.Features.Payments.Services;
 using Yurt.Application.Features.Promotions.Services;
 using Yurt.Application.Features.DiscountCodes.Services;
@@ -95,6 +96,11 @@ public static class DependencyInjection
         services.AddSingleton(configuration.GetSection("Firebase").Get<FirebaseOptions>() ?? new FirebaseOptions());
         services.AddSingleton<IPushNotificationSender, FcmPushNotificationSender>();
         services.AddScoped<PushNotificationService>();
+
+        // Apple Pay via Freedom Pay (issue #49) — feature-flagged via FreedomPay:Enabled;
+        // the SDK itself runs client-side, this is just the kill switch + Apple Merchant ID
+        services.AddSingleton(configuration.GetSection("FreedomPay").Get<FreedomPayOptions>() ?? new FreedomPayOptions());
+        services.AddScoped<IPaymentProvider, FreedomPayPaymentProvider>();
         services.AddHttpClient<IIikoApiClient, IikoApiClient>();
         services.AddScoped<LoyaltyService>();
         services.AddScoped<IikoOrderSyncService>();

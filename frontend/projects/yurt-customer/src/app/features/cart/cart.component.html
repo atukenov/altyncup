@@ -234,6 +234,19 @@
       } @else {
         <p style="margin:18px 4px 8px;font-size:11px;font-weight:700;color:#a8a29e;text-transform:uppercase;letter-spacing:.12em">{{ 'cart.payHow' | t }}</p>
         <div class="grid grid-cols-3 gap-2">
+          @if (applePayAvailable()) {
+            <button
+              (click)="selectedPaymentMethod.set(PaymentMethod.ApplePay)"
+              class="flex flex-col items-center justify-center gap-2 py-3 px-2 rounded-2xl border-2 font-semibold text-xs transition-all active:scale-95"
+              [class]="selectedPaymentMethod() === PaymentMethod.ApplePay
+                ? 'border-amber-400 bg-amber-50 text-amber-700 shadow-sm'
+                : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300'"
+            >
+              <span style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:4px">
+                 Pay
+              </span>
+            </button>
+          }
           @for (bank of [
             { method: PaymentMethod.KaspiBank, logo: 'kaspi.png', label: 'cart.kaspiBank' },
             { method: PaymentMethod.HalykBank, logo: 'halyk.png', label: 'cart.halykBank' },

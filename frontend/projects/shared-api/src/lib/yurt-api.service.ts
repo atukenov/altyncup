@@ -5,10 +5,12 @@ import {
   AcceptOrderRequest,
   AddGroupOrderItemRequest,
   AnalyticsResponse,
+  ApplePayConfigResponse,
   AppRelease,
   AppUpdateInfo,
   AuditLogEntry,
   AuthResponse,
+  ConfirmApplePayRequest,
   CreateOrderRequest,
   CreatePaymentRequest,
   CustomerDetail,
@@ -289,6 +291,14 @@ export class YurtApiService {
 
   getPaymentStatus(invoiceId: string): Observable<PaymentStatusResponse> {
     return this.http.get<PaymentStatusResponse>(`${this.api}/payments/status/${invoiceId}`);
+  }
+
+  getApplePayConfig(): Observable<ApplePayConfigResponse> {
+    return this.http.get<ApplePayConfigResponse>(`${this.api}/payments/apple-pay/config`);
+  }
+
+  confirmApplePay(request: ConfirmApplePayRequest): Observable<PaymentStatusResponse> {
+    return this.http.post<PaymentStatusResponse>(`${this.api}/payments/apple-pay/confirm`, request);
   }
 
   getOrderHistory(): Observable<Order[]> {

@@ -48,6 +48,32 @@ public class PaymentsController : ApiControllerBase
     return ToResult(result);
   }
 
+  /// <summary>Apple Pay feature flag + Apple Merchant ID, fetched at runtime so the app
+  /// doesn't hardcode either and ops can kill the feature without a release.</summary>
+  [HttpGet("apple-pay/config")]
+  [Authorize(Policy = "CustomerOnly")]
+  public IActionResult ApplePayConfig()
+  {
+    return Ok(_paymentService.GetApplePayConfig());
+  }
+
+  /// <summary>Confirms an Apple Pay payment after the native Freedom Pay SDK flow succeeds
+  /// on-device. See <see cref="Services.PaymentService.ConfirmApplePayAsync"/> for the
+  /// trust-model caveat (no independent Freedom Pay verification yet).</summary>
+  [HttpPost("apple-pay/confirm")]
+  [Authorize(Policy = "CustomerOnly")]
+  public async Task<IActionResult> ConfirmApplePay([FromBody] ConfirmApplePayDto dto, CancellationToken ct)
+  {
+    if (string.IsNullOrWhiteSpace(dto.InvoiceId) || string.IsNullOrWhiteSpace(dto.FreedomPaymentId))
+      return ValidationError("InvoiceId and FreedomPaymentId are required.");
+
+    if (_currentUser.UserId == null)
+      return Unauthorized(new ProblemDetails { Title = "Unable to resolve current user." });
+
+    var result = await _paymentService.ConfirmApplePayAsync(_currentUser.UserId.Value, dto, ct);
+    return ToResult(result);
+  }
+
   [HttpPost("webhook")]
   [AllowAnonymous]
   public async Task<IActionResult> Webhook(CancellationToken ct)

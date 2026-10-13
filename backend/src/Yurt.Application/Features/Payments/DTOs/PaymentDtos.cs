@@ -49,6 +49,10 @@ public record PaymentStatusResponse(
     DateTime? UpdatedAt,
     string? RawResponse);
 
+public record ConfirmApplePayDto(string InvoiceId, string FreedomPaymentId);
+
+public record ApplePayConfigResponse(bool Enabled, string AppleMerchantId);
+
 public record ValidatedPaymentWebhook(
     string InvoiceId,
     string EventType,

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Yurt.Application.Common.Interfaces;
@@ -15,6 +16,7 @@ public class PaymentService
   private readonly IOrdersHubService _ordersHub;
   private readonly IPaymentProviderFactory _providerFactory;
   private readonly IPaymentWebhookValidator _webhookValidator;
+  private readonly FreedomPayOptions _freedomPayOptions;
   private readonly ILogger<PaymentService> _logger;
 
   public PaymentService(
@@ -22,12 +24,14 @@ public class PaymentService
       IOrdersHubService ordersHub,
       IPaymentProviderFactory providerFactory,
       IPaymentWebhookValidator webhookValidator,
+      FreedomPayOptions freedomPayOptions,
       ILogger<PaymentService> logger)
   {
     _db = db;
     _ordersHub = ordersHub;
     _providerFactory = providerFactory;
     _webhookValidator = webhookValidator;
+    _freedomPayOptions = freedomPayOptions;
     _logger = logger;
   }
 
@@ -57,6 +61,9 @@ public class PaymentService
 
     if (pendingPayment != null)
       return Result<PaymentInvoiceResponse>.Failure("A payment is already pending for this order.", 409);
+
+    if (dto.Provider == PaymentProvider.FreedomPay && !_freedomPayOptions.Enabled)
+      return Result<PaymentInvoiceResponse>.Failure("Apple Pay is not enabled.", 422);
 
     var provider = _providerFactory.GetProvider(dto.Provider);
     var invoiceRequest = new CreatePaymentInvoiceRequest(
@@ -115,6 +122,50 @@ public class PaymentService
         payment.CreatedAt,
         payment.UpdatedAt,
         payment.RawResponse));
+  }
+
+  public ApplePayConfigResponse GetApplePayConfig()
+      => new(_freedomPayOptions.Enabled, _freedomPayOptions.AppleMerchantId);
+
+  /// <summary>Marks an Apple Pay payment Paid after the native Freedom Pay SDK flow succeeds
+  /// client-side. Unlike <see cref="ProcessWebhookAsync"/>, there is no independent
+  /// server-to-server verification against Freedom Pay here — Freedom Pay's server-side
+  /// verification API isn't confirmed yet (see issue #49's open questions). This trusts the
+  /// authenticated customer's own report that their device completed the charge, which is
+  /// weaker than a provider webhook; harden this once that API is confirmed.</summary>
+  public async Task<Result<PaymentStatusResponse>> ConfirmApplePayAsync(
+      Guid customerId, ConfirmApplePayDto dto, CancellationToken cancellationToken = default)
+  {
+    if (!_freedomPayOptions.Enabled)
+      return Result<PaymentStatusResponse>.Failure("Apple Pay is not enabled.", 422);
+
+    var payment = await _db.Payments
+        .Include(p => p.Order)
+        .FirstOrDefaultAsync(
+            p => p.InvoiceId == dto.InvoiceId && p.Provider == PaymentProvider.FreedomPay,
+            cancellationToken);
+
+    if (payment == null) return Result<PaymentStatusResponse>.NotFound("Payment invoice not found.");
+    if (payment.Order.CustomerUserId != customerId) return Result<PaymentStatusResponse>.Forbidden();
+
+    if (payment.Status == PaymentRecordStatus.Paid)
+      return Result<PaymentStatusResponse>.Success(BuildStatusResponse(payment)); // idempotent retry
+
+    if (payment.Status != PaymentRecordStatus.Pending)
+      return Result<PaymentStatusResponse>.Failure("Payment is no longer pending.", 409);
+
+    payment.Status = PaymentRecordStatus.Paid;
+    payment.RawResponse = JsonSerializer.Serialize(new { freedomPaymentId = dto.FreedomPaymentId });
+    payment.UpdatedAt = DateTime.UtcNow;
+    payment.Order.PaymentStatus = PaymentStatus.Paid;
+    if (payment.Order.Status == OrderStatus.Created) payment.Order.Status = OrderStatus.Preparing;
+
+    await _db.SaveChangesAsync(cancellationToken);
+
+    await _ordersHub.NotifyPaymentUpdatedAsync(payment.Order, cancellationToken);
+    await _ordersHub.NotifyPaymentSucceededAsync(payment.Order, cancellationToken);
+
+    return Result<PaymentStatusResponse>.Success(BuildStatusResponse(payment));
   }
 
   public async Task<Result<PaymentStatusResponse>> ProcessWebhookAsync(

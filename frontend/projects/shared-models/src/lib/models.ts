@@ -25,6 +25,7 @@ export enum PaymentMethod {
   KaspiBank = 'KaspiBank',
   HalykBank = 'HalykBank',
   FreedomBank = 'FreedomBank',
+  ApplePay = 'ApplePay',
 }
 
 export enum PaymentProvider {
@@ -214,6 +215,16 @@ export interface PaymentInvoiceResponse {
   createdAt: string;
   expiresAt?: string;
   rawResponse?: string;
+}
+
+export interface ApplePayConfigResponse {
+  enabled: boolean;
+  appleMerchantId: string;
+}
+
+export interface ConfirmApplePayRequest {
+  invoiceId: string;
+  freedomPaymentId: string;
 }
 
 export interface PaymentStatusResponse {
