@@ -34,6 +34,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<MenuItemVariant> MenuItemVariants => Set<MenuItemVariant>();
     public DbSet<UserReport> UserReports => Set<UserReport>();
     public DbSet<AppRelease> AppReleases => Set<AppRelease>();
+    public DbSet<CustomerDeviceToken> CustomerDeviceTokens => Set<CustomerDeviceToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

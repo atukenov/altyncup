@@ -92,3 +92,10 @@ public enum IikoOrderSyncPendingAction
     Push = 1,
     Close = 2
 }
+
+/// <summary>Which native push transport a <see cref="Entities.CustomerDeviceToken"/> was registered through — both resolve to FCM tokens, but iOS routes through APNs first.</summary>
+public enum DevicePlatform
+{
+    Ios = 0,
+    Android = 1
+}

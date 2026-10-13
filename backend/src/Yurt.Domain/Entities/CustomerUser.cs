@@ -19,4 +19,5 @@ public class CustomerUser : BaseEntity
 
     public ICollection<Order> Orders { get; set; } = new List<Order>();
     public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
+    public ICollection<CustomerDeviceToken> DeviceTokens { get; set; } = new List<CustomerDeviceToken>();
 }

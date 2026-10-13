@@ -284,6 +284,19 @@ public class MenuItemVariantConfiguration : IEntityTypeConfiguration<MenuItemVar
     }
 }
 
+public class CustomerDeviceTokenConfiguration : IEntityTypeConfiguration<CustomerDeviceToken>
+{
+    public void Configure(EntityTypeBuilder<CustomerDeviceToken> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.HasIndex(e => e.Token).IsUnique();
+        builder.Property(e => e.Token).HasMaxLength(500).IsRequired();
+        builder.Property(e => e.Platform).HasConversion<string>().HasMaxLength(20);
+        builder.HasOne(e => e.Customer).WithMany(c => c.DeviceTokens)
+            .HasForeignKey(e => e.CustomerUserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class UserReportConfiguration : IEntityTypeConfiguration<UserReport>
 {
     public void Configure(EntityTypeBuilder<UserReport> builder)

@@ -5,6 +5,7 @@ using Yurt.Application.Features.Auth.DTOs;
 using Yurt.Application.Features.Auth.Services;
 using Yurt.Application.Features.Auth.Validators;
 using Yurt.Application.Common.Interfaces;
+using Yurt.Domain.Entities;
 using Yurt.Domain.Enums;
 using Yurt.WebApi.Common;
 using Microsoft.AspNetCore.Authorization;
@@ -190,6 +191,57 @@ public class AuthController : ApiControllerBase
         user.IsActive = false;
         user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    /// <summary>Register (or re-assign) a device's push token for the current customer.
+    /// Upserts by token so re-registering the same device is idempotent, and so a device
+    /// that logs out and back in as a different customer reassigns the token rather than
+    /// duplicating it.</summary>
+    [HttpPost("device-tokens")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> RegisterDeviceToken(
+        [FromBody] RegisterDeviceTokenDto dto, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Token) ||
+            !Enum.TryParse<DevicePlatform>(dto.Platform, ignoreCase: true, out var platform))
+            return ValidationError("A token and a valid platform (ios/android) are required.");
+
+        var userId = _currentUser.UserId!.Value;
+        var existing = await _db.CustomerDeviceTokens.FirstOrDefaultAsync(t => t.Token == dto.Token, ct);
+        if (existing != null)
+        {
+            existing.CustomerUserId = userId;
+            existing.Platform = platform;
+            existing.LastSeenAt = DateTime.UtcNow;
+        }
+        else
+        {
+            _db.CustomerDeviceTokens.Add(new CustomerDeviceToken
+            {
+                CustomerUserId = userId,
+                Token = dto.Token,
+                Platform = platform,
+            });
+        }
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    /// <summary>Remove a device's push token, e.g. on logout, so a signed-out device stops
+    /// receiving another customer's pushes if someone else logs in on it.</summary>
+    [HttpDelete("device-tokens/{token}")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> UnregisterDeviceToken(string token, CancellationToken ct)
+    {
+        var userId = _currentUser.UserId!.Value;
+        var existing = await _db.CustomerDeviceTokens
+            .FirstOrDefaultAsync(t => t.Token == token && t.CustomerUserId == userId, ct);
+        if (existing != null)
+        {
+            _db.CustomerDeviceTokens.Remove(existing);
+            await _db.SaveChangesAsync(ct);
+        }
         return NoContent();
     }
 

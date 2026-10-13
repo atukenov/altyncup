@@ -386,6 +386,14 @@ export class YurtApiService {
     return this.http.delete<void>(`${this.api}/auth/me`);
   }
 
+  registerDeviceToken(token: string, platform: 'ios' | 'android'): Observable<void> {
+    return this.http.post<void>(`${this.api}/auth/device-tokens`, { token, platform });
+  }
+
+  unregisterDeviceToken(token: string): Observable<void> {
+    return this.http.delete<void>(`${this.api}/auth/device-tokens/${encodeURIComponent(token)}`);
+  }
+
   getCustomerStats(): Observable<CustomerStats> {
     return this.http.get<CustomerStats>(`${this.api}/auth/me/stats`);
   }

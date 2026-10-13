@@ -6,6 +6,7 @@ import {
   AuthStateService,
   NotificationService,
   OrderNotificationService,
+  PushNotificationService,
   SignalrService,
   YurtApiService,
 } from 'shared-api';
@@ -29,6 +30,7 @@ export class App implements OnInit, OnDestroy {
   private signalr = inject(SignalrService);
   private orderNotifications = inject(OrderNotificationService);
   private notifications = inject(NotificationService);
+  private pushNotifications = inject(PushNotificationService);
   private appState = inject(AppStateService);
   private appResume = inject(AppResumeService);
   private appUpdate = inject(AppUpdateService);
@@ -73,6 +75,7 @@ export class App implements OnInit, OnDestroy {
       this.appState.setReady();
     }
     this.notifications.initialize();
+    this.pushNotifications.initialize();
 
     // Initialize SignalR connection and order notifications
     this.signalr

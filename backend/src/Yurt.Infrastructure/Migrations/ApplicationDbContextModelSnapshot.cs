@@ -150,6 +150,44 @@ namespace Yurt.Infrastructure.Migrations
                     b.ToTable("AuditLogs");
                 });
 
+            modelBuilder.Entity("Yurt.Domain.Entities.CustomerDeviceToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CustomerUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerUserId");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.ToTable("CustomerDeviceTokens");
+                });
+
             modelBuilder.Entity("Yurt.Domain.Entities.CustomerUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1182,6 +1220,17 @@ namespace Yurt.Infrastructure.Migrations
                     b.ToTable("UserReports");
                 });
 
+            modelBuilder.Entity("Yurt.Domain.Entities.CustomerDeviceToken", b =>
+                {
+                    b.HasOne("Yurt.Domain.Entities.CustomerUser", "Customer")
+                        .WithMany("DeviceTokens")
+                        .HasForeignKey("CustomerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
             modelBuilder.Entity("Yurt.Domain.Entities.Favorite", b =>
                 {
                     b.HasOne("Yurt.Domain.Entities.CustomerUser", "CustomerUser")
@@ -1374,6 +1423,8 @@ namespace Yurt.Infrastructure.Migrations
 
             modelBuilder.Entity("Yurt.Domain.Entities.CustomerUser", b =>
                 {
+                    b.Navigation("DeviceTokens");
+
                     b.Navigation("Favorites");
 
                     b.Navigation("Orders");

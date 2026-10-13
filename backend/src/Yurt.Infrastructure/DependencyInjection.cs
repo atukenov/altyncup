@@ -27,12 +27,15 @@ using Yurt.Application.Features.AppUpdate;
 using Yurt.Application.Features.IikoIntegration.Services;
 using Yurt.Application.Features.Loyalty;
 using Yurt.Application.Features.Loyalty.Services;
+using Yurt.Application.Features.Push;
+using Yurt.Application.Features.Push.Services;
 using Yurt.Infrastructure.Health;
 using Yurt.Infrastructure.Hubs;
 using Yurt.Infrastructure.Iiko;
 using Yurt.Infrastructure.Messaging;
 using Yurt.Infrastructure.Payments;
 using Yurt.Infrastructure.Persistence;
+using Yurt.Infrastructure.Push;
 using Yurt.Infrastructure.Services;
 
 namespace Yurt.Infrastructure;
@@ -87,6 +90,11 @@ public static class DependencyInjection
 
         // Forced-update gate (blank MinVersion* disables the gate for that platform)
         services.AddSingleton(configuration.GetSection("AppUpdate").Get<AppUpdateOptions>() ?? new AppUpdateOptions());
+
+        // Remote push notifications (feature-flagged via Firebase:Enabled; secrets via env vars)
+        services.AddSingleton(configuration.GetSection("Firebase").Get<FirebaseOptions>() ?? new FirebaseOptions());
+        services.AddSingleton<IPushNotificationSender, FcmPushNotificationSender>();
+        services.AddScoped<PushNotificationService>();
         services.AddHttpClient<IIikoApiClient, IikoApiClient>();
         services.AddScoped<LoyaltyService>();
         services.AddScoped<IikoOrderSyncService>();
