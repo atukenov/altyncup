@@ -48,13 +48,25 @@ public class FcmPushNotificationSender : IPushNotificationSender
             };
 
             var response = await FirebaseMessaging.GetMessaging(app).SendEachForMulticastAsync(message, ct);
+            _logger.LogInformation(
+                "FCM send: {SuccessCount} succeeded, {FailureCount} failed (of {Count}).",
+                response.SuccessCount, response.FailureCount, tokens.Count);
 
             var dead = new List<string>();
             for (var i = 0; i < response.Responses.Count; i++)
             {
-                var errorCode = response.Responses[i].Exception?.MessagingErrorCode;
+                var sendResponse = response.Responses[i];
+                if (sendResponse.IsSuccess) continue;
+
+                var errorCode = sendResponse.Exception?.MessagingErrorCode;
                 if (errorCode is MessagingErrorCode.Unregistered or MessagingErrorCode.InvalidArgument)
+                {
                     dead.Add(tokens[i]);
+                }
+                else
+                {
+                    _logger.LogWarning(sendResponse.Exception, "FCM send failed for one token: {ErrorCode}.", errorCode);
+                }
             }
             return new PushSendResult(dead);
         }

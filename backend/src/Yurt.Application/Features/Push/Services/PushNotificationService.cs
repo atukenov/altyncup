@@ -41,11 +41,21 @@ public class PushNotificationService
                 .Where(t => t.CustomerUserId == customerUserId)
                 .Select(t => t.Token)
                 .ToListAsync(ct);
-            if (tokens.Count == 0) return;
+            if (tokens.Count == 0)
+            {
+                _logger.LogInformation(
+                    "No registered device tokens for customer {CustomerUserId} — skipping push.", customerUserId);
+                return;
+            }
 
+            _logger.LogInformation(
+                "Sending push to {Count} device(s) for customer {CustomerUserId}.", tokens.Count, customerUserId);
             var result = await _sender.SendAsync(tokens, title, body, data, ct);
             if (result.DeadTokens.Count == 0) return;
 
+            _logger.LogInformation(
+                "Pruning {Count} dead device token(s) for customer {CustomerUserId}.",
+                result.DeadTokens.Count, customerUserId);
             var deadTokens = await _db.CustomerDeviceTokens
                 .Where(t => result.DeadTokens.Contains(t.Token))
                 .ToListAsync(ct);

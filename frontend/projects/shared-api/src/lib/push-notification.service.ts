@@ -28,6 +28,7 @@ export class PushNotificationService {
         // retrievable once Messaging.apnsToken has been set from it.
         const token = isIos ? (await FCM.getToken()).token : apnsOrFcmToken.value;
         this.lastToken = token;
+        console.log('FCM token:', token);
         this.api.registerDeviceToken(token, isIos ? 'ios' : 'android').subscribe({
           error: (error) => console.error('Failed to save push token:', error),
         });
