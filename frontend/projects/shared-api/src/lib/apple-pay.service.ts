@@ -39,15 +39,27 @@ export class ApplePayService {
   /** True only when: running on iOS, the backend hasn't killed the feature
    * (`FreedomPay:Enabled`), and the device itself can present the Apple Pay sheet. */
   async isAvailable(): Promise<boolean> {
-    if (!this.platform.IOS) return false;
+    if (!this.platform.IOS) {
+      console.log('Apple Pay unavailable: not running on iOS.');
+      return false;
+    }
 
     try {
       const config = await firstValueFrom(this.api.getApplePayConfig());
-      if (!config.enabled) return false;
+      console.log('Apple Pay config:', config);
+      if (!config.enabled) {
+        console.log('Apple Pay unavailable: backend FreedomPay:Enabled is false.');
+        return false;
+      }
 
       const native = await ApplePayNative.canMakePayments();
+      console.log('Apple Pay native canMakePayments:', native);
+      if (!native.available) {
+        console.log('Apple Pay unavailable: no Visa/Mastercard card in Wallet (or device unsupported).');
+      }
       return native.available;
-    } catch {
+    } catch (error) {
+      console.error('Apple Pay availability check failed:', error);
       return false;
     }
   }
