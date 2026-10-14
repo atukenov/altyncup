@@ -23,12 +23,32 @@ commented-out TODOs — three things need to happen outside this repo before it 
 
 ## 2. Freedom Pay merchant setup
 
+Freedom Pay's own Apple Pay iOS SDK docs: https://docs.freedompay.kz/doc-690101 (Kazakhstan;
+a near-identical Kyrgyzstan mirror exists at https://docs.freedompay.kg/doc-833034, whose SSL
+cert was expired as of this writing — use the `.kz` one). Confirmed via search to cover
+enabling the Apple Pay capability, checking device availability, setting supported networks,
+and "initializing and confirming payment through the SDK" — consistent with this scaffold's
+`createApplePayment`/`confirmApplePayment` shape — but the page itself returned 404 when
+fetched programmatically, so read it directly in a browser rather than trusting this repo's
+guess at exact method signatures.
+
+Don't confuse this with the *other*, unrelated company also named "FreedomPay" (a US
+enterprise payments provider) that turns up in search results — different company, different
+SDK, not what issue #49's `freedompay-global/merchant-sdk-ios` refers to.
+
 1. Apply for / confirm a Freedom Pay merchant account that supports **Apple Pay**
    specifically — this is a separate capability from normal card processing, confirm it's
    enabled for your merchant ID with their support team.
 2. Get the merchant ID, secret key, and confirm which `Region` value to use (issue #49
    assumes `.kz`).
-3. **Before writing the real SDK calls**, verify the exact method/type names in
+3. **Ask whether your Apple Merchant ID or Apple Pay certificate needs to be registered in
+   Freedom Pay's own merchant dashboard.** Not confirmed for Freedom Pay specifically, but
+   it's the common pattern for this kind of integration in this market — Halyk's epayment.kz
+   requires uploading both a Payment Processing Certificate and a Merchant Identity
+   Certificate to the merchant profile before Apple Pay shows as active
+   (https://epayment.kz/en-US/docs/Setting%20up%20Apple%20Pay%20in%20your%20merchant%20profile).
+   Don't assume Freedom Pay skips this step without checking.
+4. **Before writing the real SDK calls**, verify the exact method/type names in
    `ApplePayPlugin.swift`'s TODO comments (`StandardPaymentRequest`,
    `createApplePayment`, `confirmApplePayment`) against Freedom Pay's current SDK docs —
    these were taken from a description, not a verified live integration (see issue #49's
