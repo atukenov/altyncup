@@ -50,6 +50,28 @@ commented-out TODOs — three things need to happen outside this repo before it 
 `docs/push-notifications-setup.md`: adding the package reference to the committed Xcode
 project before it's actually available would break every other dev's/CI's build.
 
+### ⚠️ `capacitor.config.json` and `npx cap sync`
+
+`ApplePayPlugin` is a local plugin (a `.swift` file living directly in `ios/App/App/`, not a
+separate npm/Capacitor plugin package), so it has to be registered manually in
+`frontend/ios/App/App/capacitor.config.json`'s `packageClassList` array — Capacitor's bridge
+reads this exact file at runtime (`CapacitorBridge.swift`'s `registerPlugins()`) and resolves
+each entry via `NSClassFromString`; it does **not** scan the Objective-C/Swift runtime for
+`CAPBridgedPlugin` conformance on its own. Without this entry, every call to the plugin fails
+with `{"code":"UNIMPLEMENTED"}` even though the Swift file compiles and links fine — this bit
+us once already.
+
+**The catch**: `npx cap sync ios` regenerates this exact array from scratch
+(`@capacitor/cli`'s `iosplugin.js` → `writePluginJSON`), built only by scanning plugin
+*packages* in `node_modules` — it never looks at `ios/App/App/` at all, so it has no way to
+know `ApplePayPlugin` should be there. **Every time someone runs `cap sync` (including when
+the `FreedomPaymentSdk` package gets added per step 3 above), re-add `"ApplePayPlugin"` to
+the array afterward**, or this regresses silently with no build error. The real long-term fix
+is converting this into a proper local Capacitor plugin package (its own tiny `package.json`
++ podspec under e.g. `frontend/packages/apple-pay-plugin`, linked via a `file:` dependency) so
+`cap sync` picks it up automatically — not done here since it's a bigger structural change
+than this fix needed.
+
 ## 4. Backend config
 
 Once the Apple Merchant ID exists, set it and flip the feature on:

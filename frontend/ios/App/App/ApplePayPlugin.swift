@@ -10,6 +10,11 @@ import PassKit
 
 /// Bridges Apple PassKit + the Freedom Pay SDK to the Angular app. JS side:
 /// `frontend/projects/shared-api/src/lib/apple-pay.service.ts` (`registerPlugin('ApplePay')`).
+///
+/// This is a LOCAL plugin (lives directly in the app target, not a separate package), so
+/// Capacitor's bridge does NOT auto-discover it — it must be listed by name in
+/// `capacitor.config.json`'s `packageClassList`, which `npx cap sync` regenerates from
+/// scratch and will silently drop on next sync. See docs/apple-pay-setup.md's "⚠️" note.
 @objc(ApplePayPlugin)
 public class ApplePayPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "ApplePayPlugin"
