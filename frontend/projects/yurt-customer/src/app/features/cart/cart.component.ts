@@ -2,7 +2,7 @@ import { Component, computed, effect, inject, OnInit, signal } from '@angular/co
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { YurtApiService, AuthStateService } from 'shared-api';
+import { YurtApiService, AuthStateService, ApplePayService } from 'shared-api';
 import { CartItem, LoyaltyBalance, PaymentMethod } from 'shared-models';
 import { CartService } from './cart.service';
 import { ToastService, Currency2Pipe } from 'shared-ui';
@@ -21,6 +21,7 @@ export class CartComponent implements OnInit {
   readonly cart = inject(CartService);
   readonly langService = inject(LangService);
   private api = inject(YurtApiService);
+  private applePay = inject(ApplePayService);
   private router = inject(Router);
   private toast = inject(ToastService);
 
@@ -31,6 +32,7 @@ export class CartComponent implements OnInit {
 
   loading = signal(false);
   selectedPaymentMethod = signal<PaymentMethod | null>(null);
+  applePayAvailable = signal(false);
   private checkoutKey: string | null = null;
 
   // iiko loyalty — pay with bonus points
@@ -72,6 +74,7 @@ export class CartComponent implements OnInit {
       next: (l) => this.loyalty.set(l),
       error: () => {},
     });
+    this.applePay.isAvailable().then((available) => this.applePayAvailable.set(available));
   }
 
   useAllBonus(): void {
@@ -211,10 +214,23 @@ export class CartComponent implements OnInit {
       { locationId, items, paymentMethod: paymentMethod ?? undefined, discountCode, loyaltyPointsToSpend },
       this.checkoutKey,
     ).subscribe({
-      next: (order) => {
+      next: async (order) => {
         this.checkoutKey = null;
         this.cart.clear();
-        this.toast.success('Order placed! ☕');
+
+        if (paymentMethod === PaymentMethod.ApplePay) {
+          try {
+            await this.applePay.pay(order.id, order.total);
+            this.toast.success('Order placed! ☕');
+          } catch {
+            // Order already exists (Unpaid) — a cancelled or failed Apple Pay sheet
+            // falls back to paying at the counter, same as any other unpaid order.
+            this.toast.warning('Apple Pay didn’t complete. You can pay at the counter.');
+          }
+        } else {
+          this.toast.success('Order placed! ☕');
+        }
+
         this.router.navigate(['/orders', order.id]);
       },
       // Keep checkoutKey on error so a retry reuses it and won't create a duplicate order

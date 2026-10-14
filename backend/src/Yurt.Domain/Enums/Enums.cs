@@ -51,7 +51,8 @@ public enum PaymentMethod
     Other = 2,
     KaspiBank = 3,
     HalykBank = 4,
-    FreedomBank = 5
+    FreedomBank = 5,
+    ApplePay = 6
 }
 
 public enum AdminRole
