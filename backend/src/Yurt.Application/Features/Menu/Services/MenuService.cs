@@ -514,7 +514,7 @@ public class MenuService
         return result;
     }
 
-    private static MenuItemDto MapItemToDto(MenuItem i, string lang, List<MenuToppingDto>? toppings = null)
+    internal static MenuItemDto MapItemToDto(MenuItem i, string lang, List<MenuToppingDto>? toppings = null)
     {
         var locationIds = i.MenuItemLocations?.Select(l => l.LocationId).ToList();
         var variants = i.Variants?.Count > 0

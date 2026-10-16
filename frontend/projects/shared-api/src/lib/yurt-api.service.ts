@@ -190,6 +190,15 @@ export class YurtApiService {
     return this.http.get<MenuItem[]>(`${this.api}/menu`, { params });
   }
 
+  /** "Frequently added together" suggestions for the items currently in the cart. */
+  getCartRecommendations(itemIds: string[], lang?: string, locationId?: string): Observable<MenuItem[]> {
+    let params = new HttpParams();
+    for (const id of itemIds) params = params.append('itemIds', id);
+    if (lang) params = params.set('lang', lang);
+    if (locationId) params = params.set('locationId', locationId);
+    return this.http.get<MenuItem[]>(`${this.api}/menu/recommendations`, { params });
+  }
+
   getMenuItem(id: string, lang?: string, locationId?: string): Observable<MenuItem> {
     let params = new HttpParams();
     if (lang) params = params.set('lang', lang);
