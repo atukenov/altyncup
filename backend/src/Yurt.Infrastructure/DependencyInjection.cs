@@ -115,6 +115,7 @@ public static class DependencyInjection
         services.AddScoped<LocationService>();
         services.AddScoped<AppReleaseService>();
         services.AddScoped<MenuService>();
+        services.AddScoped<RecommendationService>();
         services.AddScoped<OrderService>();
         services.AddScoped<PaymentService>();
         services.AddScoped<PromotionService>();

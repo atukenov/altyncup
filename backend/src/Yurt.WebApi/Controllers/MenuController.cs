@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
+using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.Menu.Services;
 using Yurt.WebApi.Common;
 
@@ -11,8 +12,16 @@ namespace Yurt.WebApi.Controllers;
 public class MenuController : ApiControllerBase
 {
     private readonly MenuService _menuService;
+    private readonly RecommendationService _recommendations;
+    private readonly ICurrentUserService _currentUser;
 
-    public MenuController(MenuService menuService) => _menuService = menuService;
+    public MenuController(
+        MenuService menuService, RecommendationService recommendations, ICurrentUserService currentUser)
+    {
+        _menuService = menuService;
+        _recommendations = recommendations;
+        _currentUser = currentUser;
+    }
 
     /// <summary>Get all menu categories, optionally filtered to those with items at a location.</summary>
     [HttpGet("categories")]
@@ -43,4 +52,21 @@ public class MenuController : ApiControllerBase
         [FromQuery] string lang = "ru",
         CancellationToken ct = default)
         => Ok(await _menuService.GetToppingsAsync(categoryId, lang, ct));
+
+    /// <summary>
+    /// "Frequently added together" suggestions for the given cart items. Anonymous callers get
+    /// order-history and popularity based picks; signed-in customers also get their own habits.
+    /// </summary>
+    [HttpGet("recommendations")]
+    public async Task<IActionResult> GetRecommendations(
+        [FromQuery] List<Guid>? itemIds,
+        [FromQuery] Guid? locationId = null,
+        [FromQuery] string lang = "ru",
+        [FromQuery] int limit = 4,
+        CancellationToken ct = default)
+    {
+        var customerId = _currentUser.UserType == "customer" ? _currentUser.UserId : null;
+        return Ok(await _recommendations.GetCartRecommendationsAsync(
+            itemIds ?? [], locationId, customerId, lang, limit, ct));
+    }
 }

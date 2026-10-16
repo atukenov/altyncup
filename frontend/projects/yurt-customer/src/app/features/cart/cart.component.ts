@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService, AuthStateService, ApplePayService } from 'shared-api';
-import { CartItem, LoyaltyBalance, PaymentMethod } from 'shared-models';
+import { CartItem, LoyaltyBalance, MenuItem, PaymentMethod } from 'shared-models';
 import { CartService } from './cart.service';
 import { ToastService, Currency2Pipe } from 'shared-ui';
 import { TranslatePipe } from '../../core/translate.pipe';
@@ -52,6 +52,19 @@ export class CartComponent implements OnInit {
   readonly payableTotal = computed(() => this.cart.total() - this.appliedBonus());
   readonly fullyCoveredByBonus = computed(() => this.appliedBonus() >= this.cart.total());
 
+  // "Often added together" row — refetched (debounced) whenever the set of items in the
+  // cart, the location or the language changes. Items the user just added drop out
+  // immediately, before the refetch lands.
+  private recommendations = signal<MenuItem[]>([]);
+  private readonly cartItemIds = computed(() =>
+    [...new Set(this.cart.items().map((i) => i.menuItemId))].sort(),
+  );
+  readonly visibleRecommendations = computed(() => {
+    const inCart = new Set(this.cartItemIds());
+    return this.recommendations().filter((r) => !inCart.has(r.id)).slice(0, 4);
+  });
+  private recsRequest = 0;
+
   // Pop animation on the total whenever it changes (bonus toggle, promo, qty change)
   totalPulse = signal(false);
   private lastPayableTotal = this.payableTotal();
@@ -67,6 +80,53 @@ export class CartComponent implements OnInit {
         setTimeout(() => this.totalPulse.set(false), 350);
       });
     });
+
+    effect((onCleanup) => {
+      const ids = this.cartItemIds();
+      const lang = this.langService.lang();
+      const locationId = this.locationSvc.locationId() || undefined;
+      if (!ids.length) {
+        this.recommendations.set([]);
+        return;
+      }
+      const timer = setTimeout(() => this.loadRecommendations(ids, lang, locationId), 300);
+      onCleanup(() => clearTimeout(timer));
+    });
+  }
+
+  private loadRecommendations(ids: string[], lang: string, locationId?: string): void {
+    const request = ++this.recsRequest;
+    this.api.getCartRecommendations(ids, lang, locationId).subscribe({
+      next: (items) => {
+        if (request === this.recsRequest) this.recommendations.set(items);
+      },
+      error: () => {},
+    });
+  }
+
+  addRecommendation(item: MenuItem): void {
+    const variant = item.variants?.find((v) => v.isDefault) ?? item.variants?.[0];
+    const added = this.cart.addItem({
+      menuItemId: item.id,
+      name: item.name,
+      nameRu: item.nameRu,
+      nameKk: item.nameKk,
+      price: variant?.price ?? item.price,
+      quantity: 1,
+      imageUrl: item.imageUrl,
+      variantId: variant?.id,
+      variantLabel: variant?.label,
+    });
+    if (added) this.toast.success(`${item.name} ${this.langService.t('cart.recsAdded')}`);
+  }
+
+  openRecommendation(item: MenuItem): void {
+    this.router.navigate(['/menu/item', item.id]);
+  }
+
+  recommendationPrice(item: MenuItem): number {
+    const variant = item.variants?.find((v) => v.isDefault) ?? item.variants?.[0];
+    return variant?.price ?? item.price;
   }
 
   ngOnInit(): void {

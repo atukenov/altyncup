@@ -267,6 +267,31 @@
           }
         </div>
       }
+
+      <!-- Often added together — last block before the (hidden) group cart links -->
+      @if (visibleRecommendations().length) {
+        <p style="margin:22px 4px 8px;font-size:11px;font-weight:700;color:#a8a29e;text-transform:uppercase;letter-spacing:.12em">{{ 'cart.recsTitle' | t }}</p>
+        <div class="recs-row">
+          @for (rec of visibleRecommendations(); track rec.id) {
+            <div class="rec-card active:scale-[0.97] transition-transform" (click)="openRecommendation(rec)">
+              @if (rec.imageUrl) {
+                <img [src]="rec.imageUrl" [alt]="rec.name" class="rec-img" loading="lazy" />
+              } @else {
+                <span class="rec-img rec-img-empty">☕</span>
+              }
+              <p class="rec-name">{{ rec.name }}</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:auto">
+                <span style="font-size:12.5px;font-weight:800;color:#1c1917;font-variant-numeric:tabular-nums">{{ recommendationPrice(rec) | currency2 }}</span>
+                <button
+                  (click)="$event.stopPropagation(); addRecommendation(rec)"
+                  class="rec-add active:scale-90 transition-transform"
+                  [attr.aria-label]="rec.name"
+                >+</button>
+              </div>
+            </div>
+          }
+        </div>
+      }
     </div>
   }
 
