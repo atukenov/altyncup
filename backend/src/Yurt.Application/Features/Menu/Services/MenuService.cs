@@ -251,8 +251,10 @@ public class MenuService
 
     // ── MenuItem CRUD ─────────────────────────────────────────────────────────
 
+    /// <param name="canEditIiko">False for non-super-admins: iiko product/size mappings are an IT
+    /// setting, so they are left unset on create and kept as they were on update.</param>
     public async Task<Result<AdminMenuItemDto>> CreateItemAsync(
-        CreateMenuItemDto dto, CancellationToken ct = default)
+        CreateMenuItemDto dto, bool canEditIiko = true, CancellationToken ct = default)
     {
         var cat = await _db.MenuCategories.FindAsync([dto.CategoryId], ct);
         if (cat == null)
@@ -274,8 +276,8 @@ public class MenuService
             IsNew = dto.IsNew,
             ImageUrl = dto.ImageUrl,
             SortOrder = nextSortOrder,
-            IikoProductId = dto.IikoProductId,
-            IikoProductSizeId = dto.IikoProductSizeId
+            IikoProductId = canEditIiko ? dto.IikoProductId : null,
+            IikoProductSizeId = canEditIiko ? dto.IikoProductSizeId : null
         };
         _db.MenuItems.Add(item);
 
@@ -292,7 +294,7 @@ public class MenuService
                 Price = v.Price,
                 SortOrder = v.SortOrder,
                 IsDefault = v.IsDefault,
-                IikoProductSizeId = v.IikoProductSizeId
+                IikoProductSizeId = canEditIiko ? v.IikoProductSizeId : null
             });
 
         await _db.SaveChangesAsync(ct);
@@ -306,7 +308,7 @@ public class MenuService
     }
 
     public async Task<Result<AdminMenuItemDto>> UpdateItemAsync(
-        Guid id, UpdateMenuItemDto dto, CancellationToken ct = default)
+        Guid id, UpdateMenuItemDto dto, bool canEditIiko = true, CancellationToken ct = default)
     {
         var item = await _db.MenuItems
             .Include(i => i.Category)
@@ -327,8 +329,11 @@ public class MenuService
         item.IsAvailable = dto.IsAvailable;
         item.IsNew = dto.IsNew;
         item.ImageUrl = dto.ImageUrl;
-        item.IikoProductId = dto.IikoProductId;
-        item.IikoProductSizeId = dto.IikoProductSizeId;
+        if (canEditIiko)
+        {
+            item.IikoProductId = dto.IikoProductId;
+            item.IikoProductSizeId = dto.IikoProductSizeId;
+        }
         item.UpdatedAt = DateTime.UtcNow;
 
         foreach (var link in item.MenuItemLocations.ToList())
@@ -336,6 +341,13 @@ public class MenuService
 
         foreach (var locId in dto.LocationIds?.Distinct() ?? [])
             _db.MenuItemLocations.Add(new MenuItemLocation { MenuItemId = item.Id, LocationId = locId });
+
+        // Variants are recreated on every save; without iiko rights, carry each variant's existing
+        // iiko size mapping over by label so a cafe admin's edit doesn't wipe it.
+        var previousVariantIikoSizes = item.Variants
+            .Where(v => v.IikoProductSizeId != null)
+            .GroupBy(v => v.Label)
+            .ToDictionary(g => g.Key, g => g.First().IikoProductSizeId);
 
         foreach (var v in item.Variants.ToList())
             _db.MenuItemVariants.Remove(v);
@@ -350,7 +362,9 @@ public class MenuService
                 Price = v.Price,
                 SortOrder = v.SortOrder,
                 IsDefault = v.IsDefault,
-                IikoProductSizeId = v.IikoProductSizeId
+                IikoProductSizeId = canEditIiko
+                    ? v.IikoProductSizeId
+                    : previousVariantIikoSizes.GetValueOrDefault(v.Label)
             });
 
         await _db.SaveChangesAsync(ct);

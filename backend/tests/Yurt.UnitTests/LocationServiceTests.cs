@@ -64,4 +64,23 @@ public class LocationServiceTests
         db.Locations.Received(1).Add(Arg.Is<Location>(l => l.Name == "New Branch" && l.Address == "Main St 1"));
         await db.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task CreateAsync_WithoutIikoRights_IgnoresTerminalGroup()
+    {
+        var (svc, db) = Build();
+        var dto = new CreateLocationDto
+        {
+            Name = "Branch",
+            Address = "Main St 1",
+            WorkingHours = "09:00-21:00",
+            ContactPhone = "+7000000000",
+            IikoTerminalGroupId = Guid.NewGuid(),
+        };
+
+        var result = await svc.CreateAsync(dto, canEditIiko: false);
+
+        Assert.True(result.Succeeded);
+        db.Locations.Received(1).Add(Arg.Is<Location>(l => l.IikoTerminalGroupId == null));
+    }
 }

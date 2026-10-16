@@ -2,7 +2,7 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CdkDropList, CdkDrag, CdkDragHandle, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { YurtApiService } from 'shared-api';
+import { AuthStateService, YurtApiService } from 'shared-api';
 import { MenuItem, MenuCategory, MenuTopping, Location, MenuItemVariant, IikoNomenclatureProduct } from 'shared-models';
 import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { AdminLangService } from '../../core/lang.service';
@@ -67,6 +67,8 @@ export class MenuManagementComponent implements OnInit {
   private api = inject(YurtApiService);
   private toast = inject(ToastService);
   private confirmSvc = inject(ConfirmService);
+  /** iiko mapping is an IT setting — only super admins see and edit it (the server enforces this too). */
+  readonly canEditIiko = inject(AuthStateService).isSuperAdmin;
   readonly langService = inject(AdminLangService);
 
   activeTab = signal<'items' | 'toppings'>('items');
@@ -139,10 +141,12 @@ export class MenuManagementComponent implements OnInit {
     });
     this.api.adminGetToppings().subscribe((toppings) => this.toppings.set(toppings));
     this.api.getAdminLocations().subscribe((locs) => this.locations.set(locs));
-    this.api.getIikoNomenclature().subscribe({
-      next: (products) => this.iikoNomenclature.set(products),
-      error: () => this.iikoNomenclature.set([]), // iiko disabled/unreachable — mapping picker just stays empty
-    });
+    if (this.canEditIiko) {
+      this.api.getIikoNomenclature().subscribe({
+        next: (products) => this.iikoNomenclature.set(products),
+        error: () => this.iikoNomenclature.set([]), // iiko disabled/unreachable — mapping picker just stays empty
+      });
+    }
   }
 
   localizedCatName(cat: MenuCategory): string {

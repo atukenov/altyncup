@@ -42,7 +42,10 @@ public class LocationService
         return Result<AdminLocationDto>.Success(MapToAdminDto(loc));
     }
 
-    public async Task<Result<AdminLocationDto>> CreateAsync(CreateLocationDto dto, CancellationToken ct = default)
+    /// <param name="canEditIiko">False for non-super-admins: the iiko terminal group mapping is an IT
+    /// setting, so it is left unset on create and unchanged on update.</param>
+    public async Task<Result<AdminLocationDto>> CreateAsync(
+        CreateLocationDto dto, bool canEditIiko = true, CancellationToken ct = default)
     {
         if (!TryNormalizeTwoGisUrl(dto.TwoGisUrl, out var twoGisUrl))
             return Result<AdminLocationDto>.Failure(TwoGisUrlError, 422);
@@ -53,7 +56,7 @@ public class LocationService
             Address = dto.Address,
             WorkingHours = dto.WorkingHours,
             ContactPhone = dto.ContactPhone,
-            IikoTerminalGroupId = dto.IikoTerminalGroupId,
+            IikoTerminalGroupId = canEditIiko ? dto.IikoTerminalGroupId : null,
             TwoGisUrl = twoGisUrl
         };
         _db.Locations.Add(loc);
@@ -62,7 +65,8 @@ public class LocationService
         return Result<AdminLocationDto>.Success(MapToAdminDto(loc), 201);
     }
 
-    public async Task<Result<AdminLocationDto>> UpdateAsync(Guid id, UpdateLocationDto dto, CancellationToken ct = default)
+    public async Task<Result<AdminLocationDto>> UpdateAsync(
+        Guid id, UpdateLocationDto dto, bool canEditIiko = true, CancellationToken ct = default)
     {
         if (!TryNormalizeTwoGisUrl(dto.TwoGisUrl, out var twoGisUrl))
             return Result<AdminLocationDto>.Failure(TwoGisUrlError, 422);
@@ -75,7 +79,8 @@ public class LocationService
         loc.WorkingHours = dto.WorkingHours;
         loc.ContactPhone = dto.ContactPhone;
         loc.IsActive = dto.IsActive;
-        loc.IikoTerminalGroupId = dto.IikoTerminalGroupId;
+        if (canEditIiko)
+            loc.IikoTerminalGroupId = dto.IikoTerminalGroupId;
         loc.TwoGisUrl = twoGisUrl;
         loc.UpdatedAt = DateTime.UtcNow;
 

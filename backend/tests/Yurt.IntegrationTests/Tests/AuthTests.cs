@@ -183,6 +183,67 @@ public class AuthTests(YurtWebAppFactory factory)
         Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
     }
 
+    // ── Role split: Worker / Admin (cafe) / SuperAdmin (IT) ───────────────────
+
+    [Theory]
+    [InlineData("/api/v1/admin/menu/items")]
+    [InlineData("/api/v1/admin/customers")]
+    [InlineData("/api/v1/admin/analytics")]
+    public async Task WorkerToken_CafeEndpoints_Return403(string url)
+    {
+        var client = factory.CreateClient();
+        var token = await ApiHelpers.CreateAdminTokenAsync(
+            factory.Services, client, username: "roleworker", password: "Worker@123", role: AdminRole.Worker);
+        ApiHelpers.Authorize(client, token);
+
+        var resp = await client.GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task WorkerToken_OrdersAndLocationList_StillAllowed()
+    {
+        var client = factory.CreateClient();
+        var token = await ApiHelpers.CreateAdminTokenAsync(
+            factory.Services, client, username: "roleworker", password: "Worker@123", role: AdminRole.Worker);
+        ApiHelpers.Authorize(client, token);
+
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/v1/admin/orders")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/v1/admin/locations")).StatusCode);
+    }
+
+    [Theory]
+    [InlineData("/api/v1/admin/audit-log")]
+    [InlineData("/api/v1/admin/app-releases")]
+    [InlineData("/api/v1/admin/iiko/terminal-groups")]
+    public async Task AdminToken_ItEndpoints_Return403(string url)
+    {
+        var client = factory.CreateClient();
+        var token = await ApiHelpers.CreateAdminTokenAsync(factory.Services, client);
+        ApiHelpers.Authorize(client, token);
+
+        var resp = await client.GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("/api/v1/admin/audit-log")]
+    [InlineData("/api/v1/admin/app-releases")]
+    [InlineData("/api/v1/admin/menu/items")]
+    public async Task SuperAdminToken_SeesEverything(string url)
+    {
+        var client = factory.CreateClient();
+        var token = await ApiHelpers.CreateAdminTokenAsync(
+            factory.Services, client, username: "rolesuper", password: "Super@1234", role: AdminRole.SuperAdmin);
+        ApiHelpers.Authorize(client, token);
+
+        var resp = await client.GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
     // ── Phone-change OTP verification ────────────────────────────────────────
 
     [Fact]

@@ -55,10 +55,13 @@ public enum PaymentMethod
     ApplePay = 6
 }
 
+/// <summary>Staff role. SuperAdmin sees everything, including IT sections (app releases, audit log,
+/// iiko integration, admin accounts); Admin runs the cafe; Worker handles live orders only.</summary>
 public enum AdminRole
 {
     Admin = 0,
-    Worker = 1
+    Worker = 1,
+    SuperAdmin = 2
 }
 
 public enum DiscountType

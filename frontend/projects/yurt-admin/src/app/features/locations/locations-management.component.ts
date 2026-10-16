@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { YurtApiService } from 'shared-api';
+import { AuthStateService, YurtApiService } from 'shared-api';
 import { Location, IikoTerminalGroup } from 'shared-models';
 import { ButtonComponent, ToastService } from 'shared-ui';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
@@ -72,16 +72,20 @@ export class LocationsManagementComponent implements OnInit {
 
   // iiko terminal groups for the routing picker (Phase 3 order-push feature).
   iikoTerminalGroups = signal<IikoTerminalGroup[]>([]);
+  /** iiko mapping is an IT setting — only super admins see and edit it (the server enforces this too). */
+  readonly canEditIiko = inject(AuthStateService).isSuperAdmin;
 
   ngOnInit(): void {
     this.api.getAdminLocations().subscribe({
       next: (locs) => { this.locations.set(locs); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
-    this.api.getIikoTerminalGroups().subscribe({
-      next: (groups) => this.iikoTerminalGroups.set(groups),
-      error: () => this.iikoTerminalGroups.set([]), // iiko disabled/unreachable — picker just stays empty
-    });
+    if (this.canEditIiko) {
+      this.api.getIikoTerminalGroups().subscribe({
+        next: (groups) => this.iikoTerminalGroups.set(groups),
+        error: () => this.iikoTerminalGroups.set([]), // iiko disabled/unreachable — picker just stays empty
+      });
+    }
   }
 
   openDialog(loc?: Location): void {

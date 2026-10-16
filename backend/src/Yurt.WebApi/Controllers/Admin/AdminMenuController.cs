@@ -10,7 +10,7 @@ namespace Yurt.WebApi.Controllers.Admin;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/admin/menu")]
-[Authorize(Policy = "AdminOnly")]
+[Authorize(Policy = "AdminRoleAdmin")]
 public class AdminMenuController : ApiControllerBase
 {
     private readonly MenuService _menuService;
@@ -55,12 +55,12 @@ public class AdminMenuController : ApiControllerBase
     [HttpPost("items")]
     public async Task<IActionResult> CreateItem(
         [FromBody] CreateMenuItemDto dto, CancellationToken ct)
-        => ToResult(await _menuService.CreateItemAsync(dto, ct));
+        => ToResult(await _menuService.CreateItemAsync(dto, User.IsInRole("SuperAdmin"), ct));
 
     [HttpPut("items/{id:guid}")]
     public async Task<IActionResult> UpdateItem(
         Guid id, [FromBody] UpdateMenuItemDto dto, CancellationToken ct)
-        => ToResult(await _menuService.UpdateItemAsync(id, dto, ct));
+        => ToResult(await _menuService.UpdateItemAsync(id, dto, User.IsInRole("SuperAdmin"), ct));
 
     [HttpDelete("items/{id:guid}")]
     public async Task<IActionResult> DeleteItem(Guid id, CancellationToken ct)

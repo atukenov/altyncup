@@ -9,7 +9,7 @@ namespace Yurt.WebApi.Controllers.Admin;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/admin/reports")]
-[Authorize(Policy = "AdminOnly")]
+[Authorize(Policy = "AdminRoleAdmin")]
 public class AdminReportsController : ApiControllerBase
 {
     private readonly ReportService _reports;

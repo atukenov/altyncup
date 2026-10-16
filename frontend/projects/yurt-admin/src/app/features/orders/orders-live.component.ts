@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, OnDestroy, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { YurtApiService, SignalrService } from 'shared-api';
+import { AuthStateService, YurtApiService, SignalrService } from 'shared-api';
 import { Order, OrderStatus, Location, IikoOrderSyncStatus } from 'shared-models';
 import {
   BadgeComponent,
@@ -34,6 +34,8 @@ import { SoundService } from '../../core/sound.service';
 export class OrdersLiveComponent implements OnInit, OnDestroy {
   readonly signalr = inject(SignalrService);
   private api = inject(YurtApiService);
+  /** iiko sync status is IT detail — shown to super admins only. */
+  readonly showIikoSync = inject(AuthStateService).isSuperAdmin;
   private toast = inject(ToastService);
   private sound = inject(SoundService);
 

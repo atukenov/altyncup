@@ -31,8 +31,14 @@ export class AuthStateService {
   get isLoggedIn(): boolean {
     return !!this.currentUser;
   }
+  /** Cafe admin or super admin — can manage menu, locations, promotions, customers, etc. */
   get isAdmin(): boolean {
-    return this.currentUser?.role === 'Admin';
+    const role = this.currentUser?.role;
+    return role === 'Admin' || role === 'SuperAdmin';
+  }
+  /** Super admin — additionally sees IT sections (app releases, audit log, iiko integration, admin accounts). */
+  get isSuperAdmin(): boolean {
+    return this.currentUser?.role === 'SuperAdmin';
   }
 
   setUser(user: AuthUser): void {
