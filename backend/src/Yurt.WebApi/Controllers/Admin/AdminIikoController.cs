@@ -17,7 +17,7 @@ namespace Yurt.WebApi.Controllers.Admin;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/admin/iiko")]
-[Authorize(Policy = "AdminOnly")]
+[Authorize(Policy = "SuperAdminOnly")]
 public class AdminIikoController : ApiControllerBase
 {
     private readonly IIikoApiClient _iiko;

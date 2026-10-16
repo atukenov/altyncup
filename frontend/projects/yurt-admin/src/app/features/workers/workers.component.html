@@ -39,7 +39,7 @@
               <td class="px-5 py-3 font-medium text-slate-800">{{ w.username }}</td>
               <td class="px-5 py-3">
                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                  [class]="w.role === 'Admin' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'">
+                  [class]="roleBadgeClass(w.role)">
                   {{ w.role }}
                 </span>
               </td>
@@ -92,7 +92,7 @@
             </div>
             <div class="flex gap-1.5">
               <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                [class]="w.role === 'Admin' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'">
+                [class]="roleBadgeClass(w.role)">
                 {{ w.role }}
               </span>
               <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
@@ -138,6 +138,11 @@
       <div class="space-y-3">
         <input [(ngModel)]="createUsername" [placeholder]="'workers.username' | t" [attr.aria-label]="'workers.username' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
         <input [(ngModel)]="createPassword" type="password" [placeholder]="'workers.pwMinChars' | t" [attr.aria-label]="'workers.pwMinChars' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+        @if (isSuperAdmin) {
+          <select [(ngModel)]="createRole" [attr.aria-label]="'workers.role' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300">
+            @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
+          </select>
+        }
       </div>
       <div class="flex gap-3 mt-5">
         <button (click)="showCreate.set(false)" class="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">{{ 'action.cancel' | t }}</button>
@@ -156,6 +161,11 @@
       <h2 id="worker-edit-title" class="text-lg font-bold text-slate-800 mb-4">{{ 'workers.editWorker' | t }}</h2>
       <div class="space-y-3">
         <input [(ngModel)]="editUsername" [placeholder]="'workers.username' | t" [attr.aria-label]="'workers.username' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+        @if (isSuperAdmin) {
+          <select [(ngModel)]="editRole" [attr.aria-label]="'workers.role' | t" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300">
+            @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
+          </select>
+        }
         <label class="flex items-center gap-3 cursor-pointer">
           <input type="checkbox" [(ngModel)]="editActive" class="w-4 h-4 rounded text-amber-500" />
           <span class="text-sm text-slate-700">{{ 'workers.active' | t }}</span>

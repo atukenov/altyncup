@@ -181,10 +181,17 @@ public static class DependencyInjection
                 policy.RequireClaim("user_type", "admin"));
             options.AddPolicy("CustomerOnly", policy =>
                 policy.RequireClaim("user_type", "customer"));
+            // Cafe management (menu, locations, promotions, customers, ...): Admin or SuperAdmin.
             options.AddPolicy("AdminRoleAdmin", policy =>
             {
                 policy.RequireClaim("user_type", "admin");
-                policy.RequireRole("Admin");
+                policy.RequireRole("Admin", "SuperAdmin");
+            });
+            // IT sections (app releases, audit log, iiko integration, admin accounts): SuperAdmin only.
+            options.AddPolicy("SuperAdminOnly", policy =>
+            {
+                policy.RequireClaim("user_type", "admin");
+                policy.RequireRole("SuperAdmin");
             });
         });
 

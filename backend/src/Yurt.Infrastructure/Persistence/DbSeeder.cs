@@ -214,7 +214,7 @@ public static class DbSeeder
         {
             Username = username.Trim(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-            Role = AdminRole.Admin,
+            Role = AdminRole.SuperAdmin,
             IsActive = true,
             MustChangePassword = true
         });

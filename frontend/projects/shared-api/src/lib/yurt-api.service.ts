@@ -371,11 +371,11 @@ export class YurtApiService {
     return this.http.get<WorkerAccount[]>(`${this.api}/admin/workers`);
   }
 
-  createWorker(data: { username: string; password: string }): Observable<WorkerAccount> {
+  createWorker(data: { username: string; password: string; role?: string }): Observable<WorkerAccount> {
     return this.http.post<WorkerAccount>(`${this.api}/admin/workers`, data);
   }
 
-  updateWorker(id: string, data: { username: string; isActive: boolean }): Observable<WorkerAccount> {
+  updateWorker(id: string, data: { username: string; isActive: boolean; role?: string }): Observable<WorkerAccount> {
     return this.http.put<WorkerAccount>(`${this.api}/admin/workers/${id}`, data);
   }
 

@@ -10,7 +10,7 @@ namespace Yurt.WebApi.Controllers.Admin;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/admin/discount-codes")]
-[Authorize(Policy = "AdminOnly")]
+[Authorize(Policy = "AdminRoleAdmin")]
 public class AdminDiscountCodesController : ApiControllerBase
 {
     private readonly DiscountCodeService _service;

@@ -10,7 +10,7 @@ namespace Yurt.WebApi.Controllers.Admin;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/admin/locations")]
-[Authorize(Policy = "AdminOnly")]
+[Authorize(Policy = "AdminOnly")] // list is shared with workers (orders page location filter)
 public class AdminLocationsController : ApiControllerBase
 {
     private readonly LocationService _locationService;
@@ -23,19 +23,23 @@ public class AdminLocationsController : ApiControllerBase
         => Ok(await _locationService.GetAllLocationsAsync(ct));
 
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "AdminRoleAdmin")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
         => ToResult(await _locationService.GetByIdAsync(id, ct));
 
     [HttpPost]
+    [Authorize(Policy = "AdminRoleAdmin")]
     public async Task<IActionResult> Create([FromBody] CreateLocationDto dto, CancellationToken ct)
-        => ToResult(await _locationService.CreateAsync(dto, ct));
+        => ToResult(await _locationService.CreateAsync(dto, User.IsInRole("SuperAdmin"), ct));
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = "AdminRoleAdmin")]
     public async Task<IActionResult> Update(
         Guid id, [FromBody] UpdateLocationDto dto, CancellationToken ct)
-        => ToResult(await _locationService.UpdateAsync(id, dto, ct));
+        => ToResult(await _locationService.UpdateAsync(id, dto, User.IsInRole("SuperAdmin"), ct));
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "AdminRoleAdmin")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
         => ToResult(await _locationService.DeleteAsync(id, ct));
 }

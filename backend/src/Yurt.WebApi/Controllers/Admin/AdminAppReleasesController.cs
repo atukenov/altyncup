@@ -9,7 +9,7 @@ namespace Yurt.WebApi.Controllers.Admin;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/admin/app-releases")]
-[Authorize(Policy = "AdminOnly")]
+[Authorize(Policy = "SuperAdminOnly")]
 public class AdminAppReleasesController : ApiControllerBase
 {
     private readonly AppReleaseService _releases;
