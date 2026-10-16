@@ -1,4 +1,4 @@
-<div class="min-h-screen flex bg-slate-50">
+<div class="h-screen flex overflow-hidden bg-slate-50">
   <!-- Sidebar -->
   <aside
     [class]="collapsed() ? 'w-16' : 'w-64'"
@@ -259,7 +259,7 @@
   </aside>
 
   <!-- Main content -->
-  <main class="flex-1 overflow-hidden flex flex-col min-w-0">
+  <main class="flex-1 overflow-y-auto flex flex-col min-w-0">
     <router-outlet />
   </main>
 </div>
