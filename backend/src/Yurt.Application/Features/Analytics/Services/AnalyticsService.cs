@@ -31,6 +31,7 @@ public class AnalyticsService
                 o.Status, o.Total, o.AcceptedAt, o.CompletedAt, o.CustomerUserId,
                 o.CreatedAt, o.PaymentMethod,
                 o.Location != null ? o.Location.Name : null,
+                o.Rating, o.RatingComment,
                 o.Items.Select(i => new OrderItemRow(i.MenuItemName, i.Quantity, i.LineTotal)).ToList()))
             .ToListAsync(ct);
 
@@ -147,9 +148,25 @@ public class AnalyticsService
             .OrderByDescending(s => s.Count)
             .ToList();
 
+        // ── Ratings ──────────────────────────────────────────────────────────
+        var rated = completedOrders.Where(o => o.Rating is >= 1 and <= 5).ToList();
+        var ratings = new RatingSummaryDto(
+            rated.Count > 0 ? Math.Round(rated.Average(o => o.Rating!.Value), 2) : null,
+            rated.Count,
+            completedOrders.Count,
+            Enumerable.Range(1, 5).Reverse()
+                .Select(stars => new RatingBucketDto(stars, rated.Count(o => o.Rating == stars)))
+                .ToList(),
+            rated
+                .Where(o => !string.IsNullOrWhiteSpace(o.RatingComment))
+                .OrderByDescending(o => o.CreatedAt)
+                .Take(10)
+                .Select(o => new RatingCommentDto(o.Rating!.Value, o.RatingComment!, o.CreatedAt, o.LocationName))
+                .ToList());
+
         return new AnalyticsResponse(
             kpis, trends, revenueOverTime, topItems, locationPerf,
-            allHours, paymentBreakdown, statusBreakdown);
+            allHours, paymentBreakdown, statusBreakdown, ratings);
     }
 
     private async Task<KpiTrends> GetTrendsAsync(
@@ -321,5 +338,5 @@ public class AnalyticsService
     private sealed record OrderRow(
         OrderStatus Status, decimal Total, DateTime? AcceptedAt, DateTime? CompletedAt,
         Guid CustomerUserId, DateTime CreatedAt, PaymentMethod? PaymentMethod,
-        string? LocationName, List<OrderItemRow> Items);
+        string? LocationName, int? Rating, string? RatingComment, List<OrderItemRow> Items);
 }

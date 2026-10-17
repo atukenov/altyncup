@@ -175,6 +175,14 @@ export class YurtApiService {
     return this.http.get<Location[]>(`${this.api}/admin/locations`);
   }
 
+  pauseLocationOrders(id: string, minutes: number): Observable<Location> {
+    return this.http.post<Location>(`${this.api}/admin/locations/${id}/pause`, { minutes });
+  }
+
+  resumeLocationOrders(id: string): Observable<Location> {
+    return this.http.post<Location>(`${this.api}/admin/locations/${id}/resume`, {});
+  }
+
   createLocation(data: Partial<Location>): Observable<Location> {
     return this.http.post<Location>(`${this.api}/admin/locations`, data);
   }

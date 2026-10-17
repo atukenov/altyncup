@@ -12,7 +12,7 @@ import {
   BadgeVariant,
 } from 'shared-ui';
 import { environment } from '../../../environments/environment';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
 import { SoundService } from '../../core/sound.service';
 
@@ -58,6 +58,9 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   paymentStatus = 'Unpaid';
 
   actionLoading = signal(false);
+  pauseLoading = signal(false);
+  readonly pauseOptions = [15, 30, 60, 120];
+  pauseMinutes = 30;
   paymentLoading = signal(false);
   showDecline = signal(false);
 
@@ -141,6 +144,36 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subs.forEach((s) => s.unsubscribe());
     this.signalr.stopConnection();
+  }
+
+  selectedLocation(): Location | undefined {
+    return this.locations().find((l) => l.id === this.selectedLocationId);
+  }
+
+  isPaused(loc: Location): boolean {
+    return !!loc.ordersPausedUntil && new Date(loc.ordersPausedUntil).getTime() > Date.now();
+  }
+
+  pauseOrders(loc: Location): void {
+    this.updatePause(this.api.pauseLocationOrders(loc.id, this.pauseMinutes));
+  }
+
+  resumeOrders(loc: Location): void {
+    this.updatePause(this.api.resumeLocationOrders(loc.id));
+  }
+
+  private updatePause(request: Observable<Location>): void {
+    this.pauseLoading.set(true);
+    request.subscribe({
+      next: (updated) => {
+        this.locations.update((list) => list.map((l) => (l.id === updated.id ? { ...l, ...updated } : l)));
+        this.pauseLoading.set(false);
+      },
+      error: () => {
+        this.pauseLoading.set(false);
+        this.toast.error('Could not update the pause. Please try again.');
+      },
+    });
   }
 
   onSearchChange(): void {

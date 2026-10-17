@@ -8,7 +8,20 @@ public record AnalyticsResponse(
     List<LocationPerformanceDto> LocationPerformance,
     List<HourlyDistributionDto> HourlyDistribution,
     List<PaymentBreakdownDto> PaymentBreakdown,
-    List<OrderStatusBreakdownDto> StatusBreakdown);
+    List<OrderStatusBreakdownDto> StatusBreakdown,
+    RatingSummaryDto Ratings);
+
+/// <summary>Customer star ratings on completed orders in the period.</summary>
+public record RatingSummaryDto(
+    double? AverageRating,
+    int RatedCount,
+    int CompletedCount,
+    List<RatingBucketDto> Distribution,
+    List<RatingCommentDto> RecentComments);
+
+public record RatingBucketDto(int Stars, int Count);
+
+public record RatingCommentDto(int Rating, string Comment, DateTime CreatedAt, string? LocationName);
 
 public record KpiSummary(
     decimal TotalRevenue,

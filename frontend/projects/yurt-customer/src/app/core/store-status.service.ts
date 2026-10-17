@@ -19,7 +19,13 @@ export class StoreStatusService {
     if (this.location.locationId()) return [buildScheduleInfo(this.location.workingHours(), now)];
     return this.location.allWorkingHours().map((wh) => buildScheduleInfo(wh, now));
   });
+  /** Staff paused new orders at the selected location. */
+  readonly isPaused = computed(() => {
+    const until = this.location.ordersPausedUntil();
+    return !!until && new Date(until).getTime() > this.now().getTime();
+  });
   readonly isOpen = computed(() => {
+    if (this.isPaused()) return false;
     const list = this.schedules();
     return list.length === 0 || list.some((s) => s.isOpen);
   });

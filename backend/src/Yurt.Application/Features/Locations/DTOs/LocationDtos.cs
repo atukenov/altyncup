@@ -8,7 +8,8 @@ public record LocationDto(
     string WorkingHours,
     string ContactPhone,
     bool IsActive,
-    string? TwoGisUrl = null);
+    string? TwoGisUrl = null,
+    DateTime? OrdersPausedUntil = null);
 
 // Admin-facing
 public record AdminLocationDto(
@@ -19,7 +20,10 @@ public record AdminLocationDto(
     string ContactPhone,
     bool IsActive,
     Guid? IikoTerminalGroupId = null,
-    string? TwoGisUrl = null);
+    string? TwoGisUrl = null,
+    DateTime? OrdersPausedUntil = null);
+
+public record PauseOrdersDto(int Minutes);
 
 public record CreateLocationDto
 {

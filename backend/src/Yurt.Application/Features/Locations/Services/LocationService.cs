@@ -18,22 +18,48 @@ public class LocationService
     }
 
     public async Task<List<LocationDto>> GetActiveLocationsAsync(CancellationToken ct = default)
-        => await _db.Locations
+    {
+        var now = DateTime.UtcNow;
+        return await _db.Locations
             .Where(l => l.IsActive)
             .OrderBy(l => l.Name)
             .Select(l => new LocationDto(
                 l.Id,
                 l.Name,
-                l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.TwoGisUrl))
+                l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.TwoGisUrl,
+                l.OrdersPausedUntil > now ? l.OrdersPausedUntil : null))
             .ToListAsync(ct);
+    }
 
     public async Task<List<AdminLocationDto>> GetAllLocationsAsync(CancellationToken ct = default)
-        => await _db.Locations
+    {
+        var now = DateTime.UtcNow;
+        return await _db.Locations
             .OrderBy(l => l.Name)
             .Select(l => new AdminLocationDto(
                 l.Id, l.Name,
-                l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.IikoTerminalGroupId, l.TwoGisUrl))
+                l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.IikoTerminalGroupId, l.TwoGisUrl,
+                l.OrdersPausedUntil > now ? l.OrdersPausedUntil : null))
             .ToListAsync(ct);
+    }
+
+    /// <summary>Stop new orders at a location for <paramref name="minutes"/> (1–240); 0 resumes now.</summary>
+    public async Task<Result<AdminLocationDto>> SetOrdersPausedAsync(
+        Guid id, int minutes, CancellationToken ct = default)
+    {
+        if (minutes < 0 || minutes > 240)
+            return Result<AdminLocationDto>.Failure("Pause must be between 0 and 240 minutes.", 400);
+
+        var loc = await _db.Locations.FindAsync([id], ct);
+        if (loc == null) return Result<AdminLocationDto>.NotFound();
+
+        loc.OrdersPausedUntil = minutes == 0 ? null : DateTime.UtcNow.AddMinutes(minutes);
+        await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync(minutes == 0 ? "LocationOrdersResumed" : "LocationOrdersPaused",
+            "Location", id.ToString(), minutes == 0 ? loc.Name : $"{loc.Name} ({minutes} min)", ct);
+
+        return Result<AdminLocationDto>.Success(MapToAdminDto(loc));
+    }
 
     public async Task<Result<AdminLocationDto>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
@@ -120,5 +146,6 @@ public class LocationService
     }
 
     private static AdminLocationDto MapToAdminDto(Location l)
-        => new(l.Id, l.Name, l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.IikoTerminalGroupId, l.TwoGisUrl);
+        => new(l.Id, l.Name, l.Address, l.WorkingHours, l.ContactPhone, l.IsActive, l.IikoTerminalGroupId, l.TwoGisUrl,
+            l.OrdersPausedUntil > DateTime.UtcNow ? l.OrdersPausedUntil : null);
 }

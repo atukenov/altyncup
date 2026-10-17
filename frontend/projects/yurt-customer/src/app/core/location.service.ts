@@ -16,6 +16,9 @@ export class LocationService {
   // Raw working-hours string of the selected location (JSON slots); '' = unknown
   readonly workingHours = signal(localStorage.getItem('yurt_location_hours') ?? '');
 
+  // When staff paused new orders at the selected location (ISO time); null = not paused
+  readonly ordersPausedUntil = signal<string | null>(null);
+
   // Working hours of every active location — used when the customer hasn't picked one yet
   readonly allWorkingHours = signal<string[]>([]);
 
@@ -26,12 +29,14 @@ export class LocationService {
       if (!id) {
         this.locationName.set('');
         this.workingHours.set('');
+        this.ordersPausedUntil.set(null);
       }
       this.swr.swr(`locs:${lang}`, () => this.api.getLocations(lang)).subscribe({
         next: (locs) => {
           this.allWorkingHours.set(locs.filter((l) => l.isActive).map((l) => l.workingHours ?? ''));
           if (!id) return;
           const loc = locs.find((l) => l.id === id);
+          this.ordersPausedUntil.set(loc?.ordersPausedUntil ?? null);
           if (loc) {
             this.workingHours.set(loc.workingHours ?? '');
             localStorage.setItem('yurt_location_hours', loc.workingHours ?? '');
