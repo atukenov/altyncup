@@ -166,7 +166,9 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
     this.pauseLoading.set(true);
     request.subscribe({
       next: (updated) => {
-        this.locations.update((list) => list.map((l) => (l.id === updated.id ? { ...l, ...updated } : l)));
+        // Replace, don't merge: the API omits null fields, so on resume `ordersPausedUntil`
+        // is absent and a spread would keep the old pause time.
+        this.locations.update((list) => list.map((l) => (l.id === updated.id ? updated : l)));
         this.pauseLoading.set(false);
       },
       error: () => {
