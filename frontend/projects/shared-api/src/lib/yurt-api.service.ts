@@ -458,6 +458,12 @@ export class YurtApiService {
     return this.http.get<AnalyticsResponse>(`${this.api}/admin/analytics`, { params });
   }
 
+  exportOrdersCsv(period: string, locationId?: string): Observable<Blob> {
+    let params = new HttpParams().set('period', period);
+    if (locationId) params = params.set('locationId', locationId);
+    return this.http.get(`${this.api}/admin/analytics/export`, { params, responseType: 'blob' });
+  }
+
   // ── Promotions ──────────────────────────────────────────────────────────────
   getActivePromotions(): Observable<Promotion[]> {
     return this.http.get<Promotion[]>(`${this.api}/promotions/active`);

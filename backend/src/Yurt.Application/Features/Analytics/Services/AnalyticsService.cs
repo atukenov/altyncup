@@ -283,6 +283,63 @@ public class AnalyticsService
         };
     }
 
+    /// <summary>
+    /// Orders in the period as CSV (one row per order) for accounting. Customer phone
+    /// numbers are left out on purpose.
+    /// </summary>
+    public async Task<string> ExportOrdersCsvAsync(
+        string period, Guid? locationId = null, CancellationToken ct = default)
+    {
+        var fromDate = GetFromDate(period);
+        var query = _db.Orders.AsNoTracking().Where(o => o.CreatedAt >= fromDate);
+        if (locationId.HasValue)
+            query = query.Where(o => o.LocationId == locationId.Value);
+
+        var rows = await query
+            .OrderBy(o => o.CreatedAt)
+            .Select(o => new
+            {
+                o.Id, o.CreatedAt, o.Status, o.PaymentMethod, o.PaymentStatus,
+                o.Subtotal, o.DiscountAmount, o.LoyaltyPointsSpent, o.Total, o.Rating,
+                Location = o.Location != null ? o.Location.Name : "",
+                Customer = o.CustomerUser != null ? o.CustomerUser.FirstName + " " + o.CustomerUser.LastName : "",
+                Items = o.Items.Select(i => new { i.MenuItemName, i.VariantLabel, i.Quantity }).ToList()
+            })
+            .ToListAsync(ct);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Order,Created (UTC),Location,Customer,Status,Payment method,Payment status,Subtotal,Discount,Bonuses spent,Total,Rating,Items");
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        foreach (var o in rows)
+        {
+            var items = string.Join("; ", o.Items.Select(i =>
+                $"{i.Quantity}x {i.MenuItemName}{(string.IsNullOrEmpty(i.VariantLabel) ? "" : $" ({i.VariantLabel})")}"));
+            sb.AppendJoin(',',
+                Csv(o.Id.ToString("N")[^6..].ToUpperInvariant()),
+                Csv(o.CreatedAt.ToString("yyyy-MM-dd HH:mm", inv)),
+                Csv(o.Location),
+                Csv(o.Customer.Trim()),
+                Csv(o.Status.ToString()),
+                Csv(o.PaymentMethod?.ToString() ?? "Loyalty Points"),
+                Csv(o.PaymentStatus.ToString()),
+                o.Subtotal.ToString("0.00", inv),
+                o.DiscountAmount.ToString("0.00", inv),
+                (o.LoyaltyPointsSpent ?? 0m).ToString("0.00", inv),
+                o.Total.ToString("0.00", inv),
+                o.Rating?.ToString(inv) ?? "",
+                Csv(items));
+            sb.AppendLine();
+        }
+        return sb.ToString();
+    }
+
+    // Quotes a CSV cell, and neutralises values a spreadsheet would run as a formula.
+    private static string Csv(string value)
+    {
+        if (value.Length > 0 && "=+-@\t\r".Contains(value[0])) value = "'" + value;
+        return "\"" + value.Replace("\"", "\"\"") + "\"";
+    }
+
     public async Task<DashboardDto> GetDashboardAsync(CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;

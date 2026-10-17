@@ -74,7 +74,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'locations.nameRu': 'Name (RU)', 'locations.nameKk': 'Name (KZ)',
 
     // Analytics
-    'analytics.title': 'Analytics', 'analytics.exportCsv': 'Export CSV',
+    'analytics.title': 'Analytics', 'analytics.exportOrders': 'Export orders', 'analytics.exportCsv': 'Export CSV',
     'analytics.overview': 'Coffee shop performance overview',
     'analytics.totalRevenue': 'Total Revenue', 'analytics.completedOrders': 'completed orders',
     'analytics.totalOrders': 'Total Orders', 'analytics.uniqueCustomers': 'unique customers',
@@ -245,7 +245,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'locations.nameRu': 'Название (RU)', 'locations.nameKk': 'Название (KZ)',
 
     // Analytics
-    'analytics.title': 'Аналитика', 'analytics.exportCsv': 'Экспорт CSV',
+    'analytics.title': 'Аналитика', 'analytics.exportOrders': 'Выгрузить заказы', 'analytics.exportCsv': 'Экспорт CSV',
     'analytics.overview': 'Обзор показателей кофейни',
     'analytics.totalRevenue': 'Общая выручка', 'analytics.completedOrders': 'завершённых заказов',
     'analytics.totalOrders': 'Всего заказов', 'analytics.uniqueCustomers': 'уникальных клиентов',
@@ -416,7 +416,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'locations.nameRu': 'Атауы (RU)', 'locations.nameKk': 'Атауы (KZ)',
 
     // Analytics
-    'analytics.title': 'Аналитика', 'analytics.exportCsv': 'CSV экспорт',
+    'analytics.title': 'Аналитика', 'analytics.exportOrders': 'Тапсырыстарды жүктеу', 'analytics.exportCsv': 'CSV экспорт',
     'analytics.overview': 'Кофеханның жұмыс көрсеткіштері',
     'analytics.totalRevenue': 'Жалпы табыс', 'analytics.completedOrders': 'аяқталған тапсырыс',
     'analytics.totalOrders': 'Барлық тапсырыстар', 'analytics.uniqueCustomers': 'бірегей клиенттер',
