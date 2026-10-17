@@ -1,3 +1,4 @@
+using Yurt.Application.Features.Engagement;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -94,8 +95,10 @@ public static class DependencyInjection
 
         // Remote push notifications (feature-flagged via Firebase:Enabled; secrets via env vars)
         services.AddSingleton(configuration.GetSection("Firebase").Get<FirebaseOptions>() ?? new FirebaseOptions());
+        services.AddSingleton(configuration.GetSection("Engagement").Get<EngagementOptions>() ?? new EngagementOptions());
         services.AddSingleton<IPushNotificationSender, FcmPushNotificationSender>();
         services.AddScoped<PushNotificationService>();
+        services.AddScoped<EngagementService>();
 
         // Apple Pay via Freedom Pay (issue #49) — feature-flagged via FreedomPay:Enabled;
         // the SDK itself runs client-side, this is just the kill switch + Apple Merchant ID
@@ -131,6 +134,7 @@ public static class DependencyInjection
         services.AddHostedService<OrderTimerService>();
         services.AddHostedService<LoyaltyRetryService>();
         services.AddHostedService<IikoOrderSyncRetryService>();
+        services.AddHostedService<EngagementPushService>();
 
         // JWT Auth — fail-fast secret validation
         var jwtSecret = configuration["Jwt:Secret"];
