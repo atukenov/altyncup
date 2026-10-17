@@ -17,15 +17,22 @@ public class AnalyticsService
         var fromDate = GetFromDate(period);
 
         var orders = _db.Orders
-            .Include(o => o.Location)
-            .Include(o => o.Items)
             .Where(o => o.CreatedAt >= fromDate)
             .AsQueryable();
 
         if (locationId.HasValue)
             orders = orders.Where(o => o.LocationId == locationId.Value);
 
-        var allOrders = await orders.ToListAsync(ct);
+        // Project only the columns the aggregations below use, untracked, instead of
+        // materialising full Order + Location + OrderItem entities for the whole period.
+        var allOrders = await orders
+            .AsNoTracking()
+            .Select(o => new OrderRow(
+                o.Status, o.Total, o.AcceptedAt, o.CompletedAt, o.CustomerUserId,
+                o.CreatedAt, o.PaymentMethod,
+                o.Location != null ? o.Location.Name : null,
+                o.Items.Select(i => new OrderItemRow(i.MenuItemName, i.Quantity, i.LineTotal)).ToList()))
+            .ToListAsync(ct);
 
         var completedOrders = allOrders
             .Where(o => o.Status == OrderStatus.Completed).ToList();
@@ -90,7 +97,7 @@ public class AnalyticsService
 
         // ── Location performance ─────────────────────────────────────────────
         var locationPerf = completedOrders
-            .GroupBy(o => o.Location?.Name ?? "Unknown")
+            .GroupBy(o => o.LocationName ?? "Unknown")
             .Select(g => new LocationPerformanceDto(
                 g.Key,
                 g.Sum(o => o.Total),
@@ -215,7 +222,7 @@ public class AnalyticsService
     };
 
     private static List<RevenueDataPoint> GetRevenueOverTime(
-        List<Domain.Entities.Order> completedOrders, string period, DateTime fromDate)
+        List<OrderRow> completedOrders, string period, DateTime fromDate)
     {
         return period.ToLowerInvariant() switch
         {
@@ -266,7 +273,9 @@ public class AnalyticsService
         var tomorrow = today.AddDays(1);
 
         var todayOrders = await _db.Orders
+            .AsNoTracking()
             .Where(o => o.CreatedAt >= today && o.CreatedAt < tomorrow && !o.IsArchived)
+            .Select(o => new { o.Status, o.Total, o.CreatedAt })
             .ToListAsync(ct);
 
         var pendingCount = await _db.Orders
@@ -306,4 +315,11 @@ public class AnalyticsService
         12 => "12 PM",
         _ => $"{hour - 12} PM"
     };
+
+    private sealed record OrderItemRow(string MenuItemName, int Quantity, decimal LineTotal);
+
+    private sealed record OrderRow(
+        OrderStatus Status, decimal Total, DateTime? AcceptedAt, DateTime? CompletedAt,
+        Guid CustomerUserId, DateTime CreatedAt, PaymentMethod? PaymentMethod,
+        string? LocationName, List<OrderItemRow> Items);
 }

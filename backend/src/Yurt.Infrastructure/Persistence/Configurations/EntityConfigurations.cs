@@ -109,6 +109,9 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasIndex(e => new { e.CustomerUserId, e.IdempotencyKey })
             .IsUnique()
             .HasFilter("\"IdempotencyKey\" IS NOT NULL");
+        // Hot filters: analytics/reports by date range, live orders board by status.
+        builder.HasIndex(e => e.CreatedAt);
+        builder.HasIndex(e => new { e.Status, e.IsArchived });
         builder.Property(e => e.Subtotal).HasPrecision(10, 2);
         builder.Property(e => e.DiscountAmount).HasPrecision(10, 2).HasDefaultValue(0m);
         builder.Property(e => e.Total).HasPrecision(10, 2);

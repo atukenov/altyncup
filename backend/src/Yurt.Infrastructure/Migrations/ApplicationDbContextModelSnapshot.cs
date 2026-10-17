@@ -829,6 +829,8 @@ namespace Yurt.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("DiscountCodeId");
 
                     b.HasIndex("LocationId");
@@ -836,6 +838,8 @@ namespace Yurt.Infrastructure.Migrations
                     b.HasIndex("CustomerUserId", "IdempotencyKey")
                         .IsUnique()
                         .HasFilter("\"IdempotencyKey\" IS NOT NULL");
+
+                    b.HasIndex("Status", "IsArchived");
 
                     b.ToTable("Orders");
                 });
