@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Yurt.Application.Common.Helpers;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Common.Models;
 using Yurt.Application.Features.Auth.DTOs;
@@ -65,7 +66,7 @@ public class AuthService
                 $"Please wait {wait}s before requesting another code.", 429);
         }
 
-        var code = Random.Shared.Next(0, 10000).ToString("D4");
+        var code = TokenHasher.NumericCode();
         var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
 
         if (pending == null)
@@ -220,8 +221,34 @@ public class AuthService
         var admin = await _db.AdminUsers
             .FirstOrDefaultAsync(u => u.Username == dto.Username && u.IsActive, ct);
 
-        if (admin == null || !_passwordHasher.Verify(dto.Password, admin.PasswordHash))
+        if (admin == null)
             return Result<AuthResponseDto>.Failure("Invalid credentials.", 401);
+
+        if (admin.LockoutEnd.HasValue && admin.LockoutEnd.Value > DateTime.UtcNow)
+        {
+            var minutesRemaining = (int)Math.Ceiling((admin.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
+            return Result<AuthResponseDto>.Locked(minutesRemaining);
+        }
+
+        if (!_passwordHasher.Verify(dto.Password, admin.PasswordHash))
+        {
+            admin.FailedLoginAttempts++;
+            if (admin.FailedLoginAttempts >= MaxFailedAttempts)
+            {
+                admin.LockoutEnd = DateTime.UtcNow.Add(LockoutDuration);
+                admin.FailedLoginAttempts = 0;
+                _logger.LogWarning("Admin account {Username} locked after repeated failed logins.", admin.Username);
+            }
+            await _db.SaveChangesAsync(ct);
+            return Result<AuthResponseDto>.Failure("Invalid credentials.", 401);
+        }
+
+        if (admin.FailedLoginAttempts != 0 || admin.LockoutEnd != null)
+        {
+            admin.FailedLoginAttempts = 0;
+            admin.LockoutEnd = null;
+            await _db.SaveChangesAsync(ct);
+        }
 
         var role = admin.Role.ToString();
         var accessToken = _tokenService.GenerateAdminToken(admin.Id, admin.Username, role, admin.MustChangePassword);
@@ -234,8 +261,9 @@ public class AuthService
     public async Task<Result<AuthResponseDto>> RefreshAsync(
         string refreshTokenValue, string? ip = null, CancellationToken ct = default)
     {
+        var tokenHash = TokenHasher.Hash(refreshTokenValue);
         var storedToken = await _db.RefreshTokens
-            .FirstOrDefaultAsync(t => t.Token == refreshTokenValue, ct);
+            .FirstOrDefaultAsync(t => t.Token == tokenHash || t.Token == refreshTokenValue, ct);
 
         if (storedToken == null || storedToken.ExpiresAt <= DateTime.UtcNow)
             return Result<AuthResponseDto>.Failure("Invalid or expired refresh token.", 401);
@@ -260,11 +288,11 @@ public class AuthService
         var newRefreshValue = _tokenService.GenerateRefreshToken();
         storedToken.IsRevoked = true;
         storedToken.RevokedAt = DateTime.UtcNow;
-        storedToken.ReplacedByToken = newRefreshValue;
+        storedToken.ReplacedByToken = TokenHasher.Hash(newRefreshValue);
 
         var newRefreshToken = new RefreshToken
         {
-            Token = newRefreshValue,
+            Token = TokenHasher.Hash(newRefreshValue),
             UserType = storedToken.UserType,
             UserId = storedToken.UserId,
             ExpiresAt = DateTime.UtcNow.AddDays(_tokenService.RefreshTokenDays),
@@ -308,8 +336,9 @@ public class AuthService
 
     public async Task RevokeAsync(string refreshTokenValue, string? ip = null, CancellationToken ct = default)
     {
+        var tokenHash = TokenHasher.Hash(refreshTokenValue);
         var storedToken = await _db.RefreshTokens
-            .FirstOrDefaultAsync(t => t.Token == refreshTokenValue, ct);
+            .FirstOrDefaultAsync(t => t.Token == tokenHash || t.Token == refreshTokenValue, ct);
 
         if (storedToken == null || storedToken.IsRevoked)
             return;
@@ -390,7 +419,7 @@ public class AuthService
                 $"Please wait {wait}s before requesting another code.", 429);
         }
 
-        var code = Random.Shared.Next(0, 10000).ToString("D4");
+        var code = TokenHasher.NumericCode();
         var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
 
         if (pending == null)
@@ -528,7 +557,7 @@ public class AuthService
 
         _db.RefreshTokens.Add(new RefreshToken
         {
-            Token = tokenValue,
+            Token = TokenHasher.Hash(tokenValue),
             UserType = userType,
             UserId = userId,
             ExpiresAt = DateTime.UtcNow.AddDays(days),

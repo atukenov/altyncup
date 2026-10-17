@@ -30,3 +30,8 @@ appsettings.Production.json
 # Firebase / Google services
 google-services.json
 GoogleService-Info.plist
+# Runtime logs
+**/logs/
+
+# Local Claude Code settings
+.claude/settings.local.json

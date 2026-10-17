@@ -170,9 +170,29 @@ public class AuthController : ApiControllerBase
         var user = await _db.CustomerUsers.FindAsync([userId], ct);
         if (user == null) return NotFound();
 
-        if (!_hasher.Verify(dto.CurrentPin, user.PinHash))
-            return Unauthorized(new ProblemDetails { Title = "Current PIN is incorrect." });
+        if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
+        {
+            var minutesRemaining = (int)Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
+            var locked = new ProblemDetails { Status = 423, Title = "Too many incorrect attempts. Try again later." };
+            locked.Extensions["minutesRemaining"] = minutesRemaining;
+            return StatusCode(423, locked);
+        }
 
+        if (!_hasher.Verify(dto.CurrentPin, user.PinHash))
+        {
+            // Same counter and limits as login, so a stolen session can't brute-force the PIN here.
+            user.FailedLoginAttempts++;
+            if (user.FailedLoginAttempts >= 5)
+            {
+                user.LockoutEnd = DateTime.UtcNow.AddMinutes(15);
+                user.FailedLoginAttempts = 0;
+            }
+            await _db.SaveChangesAsync(ct);
+            return Unauthorized(new ProblemDetails { Title = "Current PIN is incorrect." });
+        }
+
+        user.FailedLoginAttempts = 0;
+        user.LockoutEnd = null;
         user.PinHash = _hasher.Hash(dto.NewPin);
         user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);

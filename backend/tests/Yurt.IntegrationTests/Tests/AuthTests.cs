@@ -66,7 +66,7 @@ public class AuthTests(YurtWebAppFactory factory)
         // Old token must be revoked in DB
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var stored = await db.RefreshTokens.FirstOrDefaultAsync(t => t.Token == oldRefreshToken);
+        var stored = await db.RefreshTokens.FirstOrDefaultAsync(t => t.Token == Yurt.Application.Common.Helpers.TokenHasher.Hash(oldRefreshToken));
         Assert.NotNull(stored);
         Assert.True(stored.IsRevoked);
 
@@ -101,7 +101,7 @@ public class AuthTests(YurtWebAppFactory factory)
         // token2 must also be revoked now
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var t2 = await db.RefreshTokens.FirstOrDefaultAsync(t => t.Token == token2);
+        var t2 = await db.RefreshTokens.FirstOrDefaultAsync(t => t.Token == Yurt.Application.Common.Helpers.TokenHasher.Hash(token2));
         Assert.NotNull(t2);
         Assert.True(t2.IsRevoked, "token2 should have been revoked by reuse detection");
     }
