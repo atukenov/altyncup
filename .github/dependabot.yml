@@ -1,0 +1,32 @@
+# Weekly dependency update PRs. Minor/patch bumps are grouped into one PR per
+# ecosystem so CI can vet them together; majors come separately.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      angular:
+        patterns: ["@angular/*", "@angular-devkit/*", "angular-eslint"]
+        update-types: [minor, patch]
+      capacitor:
+        patterns: ["@capacitor/*", "@capacitor-community/*"]
+        update-types: [minor, patch]
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -60,9 +60,14 @@ jobs:
           name: test-results
           path: backend/**/*.trx
 
-      - name: Check for vulnerable packages (non-blocking)
+      - name: Check for vulnerable packages
         working-directory: backend
-        run: dotnet list package --vulnerable --include-transitive 2>&1 || true
+        run: |
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then
+            echo "::error::Vulnerable NuGet packages found (see above)."
+            exit 1
+          fi
 
   # ── Frontend ─────────────────────────────────────────────────────────────
   frontend:
@@ -82,6 +87,18 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Unit tests
+        working-directory: frontend
+        run: |
+          npx ng test shared-api --watch=false
+          npx ng test shared-ui --watch=false
+          npx ng test shared-models --watch=false
+          npx ng test yurt-customer --watch=false
 
       - name: Build customer app
         working-directory: frontend
