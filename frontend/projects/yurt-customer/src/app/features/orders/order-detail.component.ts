@@ -15,6 +15,7 @@ import { Currency2Pipe, OrderStatusLabelPipe, ToastService } from 'shared-ui';
 import { environment } from '../../../environments/environment';
 import { LangService } from '../../core/lang.service';
 import { TranslatePipe } from '../../core/translate.pipe';
+import { CartService } from '../cart/cart.service';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 
 @Component({
@@ -39,6 +40,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   private signalr = inject(SignalrService);
   private toast = inject(ToastService);
   private lang = inject(LangService);
+  private cart = inject(CartService);
   readonly OrderStatus = OrderStatus;
   readonly PaymentStatus = PaymentStatus;
   readonly PaymentMethod = PaymentMethod;
@@ -184,6 +186,10 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
 
   toppingList(toppings: { toppingName: string }[]): string {
     return toppings.map(t => t.toppingName).join(', ');
+  }
+
+  orderAgain(order: Order): void {
+    if (this.cart.addFromOrder(order)) this.router.navigate(['/cart']);
   }
 
   submitRating(): void {

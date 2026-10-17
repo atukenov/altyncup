@@ -68,3 +68,35 @@ public class AdminLoginValidator : AbstractValidator<AdminLoginDto>
         RuleFor(x => x.Password).NotEmpty();
     }
 }
+
+public class PinResetStartValidator : AbstractValidator<PinResetStartDto>
+{
+    public PinResetStartValidator()
+    {
+        RuleFor(x => x.MobileNumber)
+            .NotEmpty()
+            .Matches(@"^\+?[1-9]\d{6,14}$")
+            .WithMessage("Invalid mobile number format.");
+    }
+}
+
+public class PinResetVerifyValidator : AbstractValidator<PinResetVerifyDto>
+{
+    public PinResetVerifyValidator()
+    {
+        RuleFor(x => x.MobileNumber)
+            .NotEmpty()
+            .Matches(@"^\+?[1-9]\d{6,14}$")
+            .WithMessage("Invalid mobile number format.");
+
+        RuleFor(x => x.Code)
+            .NotEmpty()
+            .Matches(@"^\d{4}$")
+            .WithMessage("Code must be exactly 4 digits.");
+
+        RuleFor(x => x.NewPin4)
+            .NotEmpty()
+            .Matches(@"^\d{4}$")
+            .WithMessage("PIN must be exactly 4 digits.");
+    }
+}

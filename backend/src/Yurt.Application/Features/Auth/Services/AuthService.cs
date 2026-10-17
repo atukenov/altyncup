@@ -539,6 +539,146 @@ public class AuthService
         return Result<bool>.Success(true);
     }
 
+    /// <summary>
+    /// Step 1 of "Forgot PIN": send a WhatsApp code to the account's number. The response
+    /// looks the same whether or not the number is registered, so it can't be used to
+    /// discover which numbers have accounts.
+    /// </summary>
+    public async Task<Result<RegistrationStartResponseDto>> StartPinResetAsync(
+        PinResetStartDto dto, CancellationToken ct = default)
+    {
+        var normalizedMobile = NormalizeMobile(dto.MobileNumber);
+        var now = DateTime.UtcNow;
+        var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+
+        var user = await _db.CustomerUsers
+            .FirstOrDefaultAsync(u => u.MobileNumber == normalizedMobile && u.IsActive, ct);
+        if (user == null)
+            return Result<RegistrationStartResponseDto>.Success(
+                new RegistrationStartResponseDto(normalizedMobile, expiresAt));
+
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile
+                && v.Purpose == VerificationPurpose.PinReset, ct);
+
+        if (pending != null &&
+            pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) > now)
+        {
+            var wait = (int)Math.Ceiling(
+                (pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) - now).TotalSeconds);
+            return Result<RegistrationStartResponseDto>.Failure(
+                $"Please wait {wait}s before requesting another code.", 429);
+        }
+
+        var code = TokenHasher.NumericCode();
+
+        if (pending == null)
+        {
+            pending = new PhoneVerification
+            {
+                MobileNumber = normalizedMobile,
+                Purpose = VerificationPurpose.PinReset,
+            };
+            _db.PhoneVerifications.Add(pending);
+        }
+
+        pending.CodeHash = _passwordHasher.Hash(code);
+        pending.ExpiresAt = expiresAt;
+        pending.LastSentAt = now;
+        pending.Attempts = 0;
+        pending.CustomerUserId = user.Id;
+
+        await _db.SaveChangesAsync(ct);
+
+        if (_otpOptions.Enabled)
+        {
+            try
+            {
+                await _otpSender.SendAsync(normalizedMobile, code, ct);
+            }
+            catch (OtpSendException ex)
+            {
+                _logger.LogError(ex, "Failed to send PIN-reset OTP to {Mobile}", normalizedMobile);
+                return Result<RegistrationStartResponseDto>.Failure(
+                    "Could not send the verification code. Please try again.", 502);
+            }
+        }
+        else
+        {
+            _logger.LogWarning(
+                "OTP delivery disabled — PIN-reset code for {Mobile} is {Code}", normalizedMobile, code);
+        }
+
+        return Result<RegistrationStartResponseDto>.Success(
+            new RegistrationStartResponseDto(
+                normalizedMobile, expiresAt, _otpOptions.Enabled ? null : code));
+    }
+
+    /// <summary>
+    /// Step 2 of "Forgot PIN": confirm the code, set the new PIN, clear any lockout,
+    /// sign out every other session and log the customer in.
+    /// </summary>
+    public async Task<Result<AuthResponseDto>> VerifyPinResetAsync(
+        PinResetVerifyDto dto, string? ip = null, CancellationToken ct = default)
+    {
+        var normalizedMobile = NormalizeMobile(dto.MobileNumber);
+
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile
+                && v.Purpose == VerificationPurpose.PinReset, ct);
+
+        if (pending == null || pending.CustomerUserId == null)
+            return Result<AuthResponseDto>.Failure("No pending verification. Start again.", 400);
+
+        if (pending.ExpiresAt <= DateTime.UtcNow)
+        {
+            _db.PhoneVerifications.Remove(pending);
+            await _db.SaveChangesAsync(ct);
+            return Result<AuthResponseDto>.Failure("The code has expired. Request a new one.", 400);
+        }
+
+        if (pending.Attempts >= _otpOptions.MaxAttempts)
+            return Result<AuthResponseDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
+
+        if (!_passwordHasher.Verify(dto.Code, pending.CodeHash))
+        {
+            pending.Attempts++;
+            await _db.SaveChangesAsync(ct);
+            return Result<AuthResponseDto>.Failure("Incorrect code.", 400);
+        }
+
+        var user = await _db.CustomerUsers
+            .FirstOrDefaultAsync(u => u.Id == pending.CustomerUserId && u.IsActive, ct);
+        _db.PhoneVerifications.Remove(pending);
+        if (user == null || user.MobileNumber != normalizedMobile)
+        {
+            await _db.SaveChangesAsync(ct);
+            return Result<AuthResponseDto>.Failure("No pending verification. Start again.", 400);
+        }
+
+        user.PinHash = _passwordHasher.Hash(dto.NewPin4);
+        user.FailedLoginAttempts = 0;
+        user.LockoutEnd = null;
+
+        var sessions = await _db.RefreshTokens
+            .Where(t => t.UserId == user.Id && t.UserType == RefreshTokenUserType.Customer && !t.IsRevoked)
+            .ToListAsync(ct);
+        foreach (var t in sessions)
+        {
+            t.IsRevoked = true;
+            t.RevokedAt = DateTime.UtcNow;
+        }
+        await _db.SaveChangesAsync(ct);
+
+        var displayName = string.IsNullOrWhiteSpace(user.FirstName)
+            ? user.MobileNumber
+            : $"{user.FirstName} {user.LastName}".Trim();
+
+        return Result<AuthResponseDto>.Success(
+            await IssueTokenPairAsync(user.Id, user.MobileNumber, RefreshTokenUserType.Customer,
+                "customer", displayName, role: null, ip, ct));
+    }
+
     private async Task<AuthResponseDto> IssueTokenPairAsync(
         Guid userId, string mobileNumber, RefreshTokenUserType userType,
         string userTypeStr, string displayName, string? role,

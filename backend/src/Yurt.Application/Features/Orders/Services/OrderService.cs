@@ -475,7 +475,7 @@ public class OrderService
             o.Items.Select(i => new OrderItemDto(
                 i.Id, i.MenuItemId, i.MenuItemName, i.Quantity, i.UnitPrice, i.LineTotal,
                 i.Toppings.Select(t => new OrderItemToppingDto(t.ToppingId, t.ToppingName, t.Price)).ToList(),
-                i.Notes, i.VariantLabel
+                i.Notes, i.VariantLabel, i.VariantId
             )).ToList(),
             o.LoyaltyPointsSpent,
             o.LoyaltyPointsEarned,

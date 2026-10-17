@@ -97,6 +97,20 @@ export class YurtApiService {
     });
   }
 
+  pinResetStart(mobileNumber: string): Observable<RegistrationStartResponse> {
+    return this.http.post<RegistrationStartResponse>(`${this.api}/auth/pin-reset/start`, {
+      mobileNumber,
+    });
+  }
+
+  pinResetVerify(mobileNumber: string, code: string, newPin4: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.api}/auth/pin-reset/verify`, {
+      mobileNumber,
+      code,
+      newPin4,
+    });
+  }
+
   login(mobileNumber: string, pin4: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.api}/auth/login`, { mobileNumber, pin4 });
   }

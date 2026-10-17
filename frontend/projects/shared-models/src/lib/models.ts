@@ -258,6 +258,7 @@ export interface OrderItem {
   toppings: OrderItemTopping[];
   notes?: string;
   variantLabel?: string;
+  variantId?: string;
 }
 
 export interface Order {

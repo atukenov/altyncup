@@ -75,6 +75,13 @@
       {{ 'auth.signIn' | t }}
     </yurt-button>
 
+    <a
+      routerLink="/auth/forgot-pin"
+      class="block w-full text-center py-3 mt-2 text-amber-600 text-sm font-semibold hover:text-amber-700 transition-colors"
+    >
+      {{ 'auth.forgotPin' | t }}
+    </a>
+
     <div class="flex items-center gap-3 my-6">
       <div class="flex-1 h-px bg-stone-200"></div>
       <span class="text-stone-400 text-xs font-medium">{{ 'auth.newHere' | t }}</span>

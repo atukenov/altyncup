@@ -76,7 +76,8 @@ public enum DiscountType
 public enum VerificationPurpose
 {
     Registration = 0,
-    PhoneChange = 1
+    PhoneChange = 1,
+    PinReset = 2
 }
 
 /// <summary>Whether an order has been pushed to iiko as a real delivery order (reporting/kitchen-routing side-channel; never drives customer-facing OrderStatus).</summary>

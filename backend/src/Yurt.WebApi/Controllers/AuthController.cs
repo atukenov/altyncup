@@ -66,6 +66,31 @@ public class AuthController : ApiControllerBase
         return ToResult(result);
     }
 
+    /// <summary>Forgot PIN, step 1: send a WhatsApp code to the account's number.</summary>
+    [HttpPost("pin-reset/start")]
+    public async Task<IActionResult> PinResetStart(
+        [FromBody] PinResetStartDto dto, CancellationToken ct)
+    {
+        var validation = await new PinResetStartValidator().ValidateAsync(dto, ct);
+        if (!validation.IsValid)
+            return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+
+        return ToResult(await _authService.StartPinResetAsync(dto, ct));
+    }
+
+    /// <summary>Forgot PIN, step 2: confirm the code, set a new PIN and log in.</summary>
+    [HttpPost("pin-reset/verify")]
+    public async Task<IActionResult> PinResetVerify(
+        [FromBody] PinResetVerifyDto dto, CancellationToken ct)
+    {
+        var validation = await new PinResetVerifyValidator().ValidateAsync(dto, ct);
+        if (!validation.IsValid)
+            return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        return ToResult(await _authService.VerifyPinResetAsync(dto, ip, ct));
+    }
+
     /// <summary>Login with mobile number and 4-digit PIN.</summary>
     [HttpPost("login")]
     public async Task<IActionResult> Login(
