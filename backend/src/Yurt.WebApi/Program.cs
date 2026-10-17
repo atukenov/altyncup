@@ -93,7 +93,8 @@ var app = builder.Build();
 // Nothing in the pipeline can interfere with it.
 app.Use(async (ctx, next) =>
 {
-    if (ctx.Request.Path.StartsWithSegments("/health"))
+    // Exact match so /health/ready (DB readiness, mapped below) isn't swallowed here.
+    if (ctx.Request.Path.Equals("/health", StringComparison.OrdinalIgnoreCase))
     {
         ctx.Response.StatusCode = 200;
         ctx.Response.ContentType = "text/plain";
@@ -104,12 +105,21 @@ app.Use(async (ctx, next) =>
 });
 
 // HTTPS / Forwarded Headers
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+// Railway's edge proxy isn't on loopback, so by default ASP.NET ignores its
+// X-Forwarded-For and every request looks like it comes from the proxy, which
+// makes the per-IP rate limits global. Trusting the header is safe here: the API
+// is only reachable through Railway's proxy, and ForwardLimit = 1 takes the
+// address the proxy itself appended, not anything a client put in the header.
+var forwardedOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders =
         ForwardedHeaders.XForwardedFor |
-        ForwardedHeaders.XForwardedProto
-});
+        ForwardedHeaders.XForwardedProto,
+    ForwardLimit = 1
+};
+forwardedOptions.KnownIPNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
 
 app.UseHttpsRedirection();
 
@@ -204,6 +214,22 @@ app.Use(async (ctx, next) =>
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<OrdersHub>("/hubs/orders");
+
+// Readiness: checks the database. /health (above) stays a plain liveness probe.
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
+
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing") &&
+    !app.Configuration.GetValue<bool>("Otp:Enabled"))
+{
+    // With OTP delivery off, registration codes are returned in the API response.
+    // That's intended for local work only, so make it loud if it happens elsewhere.
+    app.Logger.LogCritical(
+        "Otp:Enabled is false in {Environment}: verification codes are returned in API responses. " +
+        "Set Otp__Enabled=true and the Green API credentials.", app.Environment.EnvironmentName);
+}
 
 // ── Seed ──────────────────────────────────────────────────────────────────────
 await DbSeeder.SeedAsync(app.Services);

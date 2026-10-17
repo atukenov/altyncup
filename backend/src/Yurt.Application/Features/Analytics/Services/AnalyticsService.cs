@@ -17,15 +17,23 @@ public class AnalyticsService
         var fromDate = GetFromDate(period);
 
         var orders = _db.Orders
-            .Include(o => o.Location)
-            .Include(o => o.Items)
             .Where(o => o.CreatedAt >= fromDate)
             .AsQueryable();
 
         if (locationId.HasValue)
             orders = orders.Where(o => o.LocationId == locationId.Value);
 
-        var allOrders = await orders.ToListAsync(ct);
+        // Project only the columns the aggregations below use, untracked, instead of
+        // materialising full Order + Location + OrderItem entities for the whole period.
+        var allOrders = await orders
+            .AsNoTracking()
+            .Select(o => new OrderRow(
+                o.Status, o.Total, o.AcceptedAt, o.CompletedAt, o.CustomerUserId,
+                o.CreatedAt, o.PaymentMethod,
+                o.Location != null ? o.Location.Name : null,
+                o.Rating, o.RatingComment,
+                o.Items.Select(i => new OrderItemRow(i.MenuItemName, i.Quantity, i.LineTotal)).ToList()))
+            .ToListAsync(ct);
 
         var completedOrders = allOrders
             .Where(o => o.Status == OrderStatus.Completed).ToList();
@@ -90,7 +98,7 @@ public class AnalyticsService
 
         // ── Location performance ─────────────────────────────────────────────
         var locationPerf = completedOrders
-            .GroupBy(o => o.Location?.Name ?? "Unknown")
+            .GroupBy(o => o.LocationName ?? "Unknown")
             .Select(g => new LocationPerformanceDto(
                 g.Key,
                 g.Sum(o => o.Total),
@@ -140,9 +148,25 @@ public class AnalyticsService
             .OrderByDescending(s => s.Count)
             .ToList();
 
+        // ── Ratings ──────────────────────────────────────────────────────────
+        var rated = completedOrders.Where(o => o.Rating is >= 1 and <= 5).ToList();
+        var ratings = new RatingSummaryDto(
+            rated.Count > 0 ? Math.Round(rated.Average(o => o.Rating!.Value), 2) : null,
+            rated.Count,
+            completedOrders.Count,
+            Enumerable.Range(1, 5).Reverse()
+                .Select(stars => new RatingBucketDto(stars, rated.Count(o => o.Rating == stars)))
+                .ToList(),
+            rated
+                .Where(o => !string.IsNullOrWhiteSpace(o.RatingComment))
+                .OrderByDescending(o => o.CreatedAt)
+                .Take(10)
+                .Select(o => new RatingCommentDto(o.Rating!.Value, o.RatingComment!, o.CreatedAt, o.LocationName))
+                .ToList());
+
         return new AnalyticsResponse(
             kpis, trends, revenueOverTime, topItems, locationPerf,
-            allHours, paymentBreakdown, statusBreakdown);
+            allHours, paymentBreakdown, statusBreakdown, ratings);
     }
 
     private async Task<KpiTrends> GetTrendsAsync(
@@ -215,7 +239,7 @@ public class AnalyticsService
     };
 
     private static List<RevenueDataPoint> GetRevenueOverTime(
-        List<Domain.Entities.Order> completedOrders, string period, DateTime fromDate)
+        List<OrderRow> completedOrders, string period, DateTime fromDate)
     {
         return period.ToLowerInvariant() switch
         {
@@ -259,6 +283,63 @@ public class AnalyticsService
         };
     }
 
+    /// <summary>
+    /// Orders in the period as CSV (one row per order) for accounting. Customer phone
+    /// numbers are left out on purpose.
+    /// </summary>
+    public async Task<string> ExportOrdersCsvAsync(
+        string period, Guid? locationId = null, CancellationToken ct = default)
+    {
+        var fromDate = GetFromDate(period);
+        var query = _db.Orders.AsNoTracking().Where(o => o.CreatedAt >= fromDate);
+        if (locationId.HasValue)
+            query = query.Where(o => o.LocationId == locationId.Value);
+
+        var rows = await query
+            .OrderBy(o => o.CreatedAt)
+            .Select(o => new
+            {
+                o.Id, o.CreatedAt, o.Status, o.PaymentMethod, o.PaymentStatus,
+                o.Subtotal, o.DiscountAmount, o.LoyaltyPointsSpent, o.Total, o.Rating,
+                Location = o.Location != null ? o.Location.Name : "",
+                Customer = o.CustomerUser != null ? o.CustomerUser.FirstName + " " + o.CustomerUser.LastName : "",
+                Items = o.Items.Select(i => new { i.MenuItemName, i.VariantLabel, i.Quantity }).ToList()
+            })
+            .ToListAsync(ct);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Order,Created (UTC),Location,Customer,Status,Payment method,Payment status,Subtotal,Discount,Bonuses spent,Total,Rating,Items");
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        foreach (var o in rows)
+        {
+            var items = string.Join("; ", o.Items.Select(i =>
+                $"{i.Quantity}x {i.MenuItemName}{(string.IsNullOrEmpty(i.VariantLabel) ? "" : $" ({i.VariantLabel})")}"));
+            sb.AppendJoin(',',
+                Csv(o.Id.ToString("N")[^6..].ToUpperInvariant()),
+                Csv(o.CreatedAt.ToString("yyyy-MM-dd HH:mm", inv)),
+                Csv(o.Location),
+                Csv(o.Customer.Trim()),
+                Csv(o.Status.ToString()),
+                Csv(o.PaymentMethod?.ToString() ?? "Loyalty Points"),
+                Csv(o.PaymentStatus.ToString()),
+                o.Subtotal.ToString("0.00", inv),
+                o.DiscountAmount.ToString("0.00", inv),
+                (o.LoyaltyPointsSpent ?? 0m).ToString("0.00", inv),
+                o.Total.ToString("0.00", inv),
+                o.Rating?.ToString(inv) ?? "",
+                Csv(items));
+            sb.AppendLine();
+        }
+        return sb.ToString();
+    }
+
+    // Quotes a CSV cell, and neutralises values a spreadsheet would run as a formula.
+    private static string Csv(string value)
+    {
+        if (value.Length > 0 && "=+-@\t\r".Contains(value[0])) value = "'" + value;
+        return "\"" + value.Replace("\"", "\"\"") + "\"";
+    }
+
     public async Task<DashboardDto> GetDashboardAsync(CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
@@ -266,7 +347,9 @@ public class AnalyticsService
         var tomorrow = today.AddDays(1);
 
         var todayOrders = await _db.Orders
+            .AsNoTracking()
             .Where(o => o.CreatedAt >= today && o.CreatedAt < tomorrow && !o.IsArchived)
+            .Select(o => new { o.Status, o.Total, o.CreatedAt })
             .ToListAsync(ct);
 
         var pendingCount = await _db.Orders
@@ -306,4 +389,11 @@ public class AnalyticsService
         12 => "12 PM",
         _ => $"{hour - 12} PM"
     };
+
+    private sealed record OrderItemRow(string MenuItemName, int Quantity, decimal LineTotal);
+
+    private sealed record OrderRow(
+        OrderStatus Status, decimal Total, DateTime? AcceptedAt, DateTime? CompletedAt,
+        Guid CustomerUserId, DateTime CreatedAt, PaymentMethod? PaymentMethod,
+        string? LocationName, int? Rating, string? RatingComment, List<OrderItemRow> Items);
 }

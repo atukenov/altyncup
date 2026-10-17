@@ -48,6 +48,7 @@ public record OrderItemDto(
     decimal LineTotal,
     List<OrderItemToppingDto> Toppings,
     string? Notes = null,
-    string? VariantLabel = null);
+    string? VariantLabel = null,
+    Guid? VariantId = null);
 
 public record OrderItemToppingDto(Guid ToppingId, string ToppingName, decimal Price);

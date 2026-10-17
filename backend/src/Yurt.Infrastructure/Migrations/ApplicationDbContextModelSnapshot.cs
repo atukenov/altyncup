@@ -31,8 +31,14 @@ namespace Yurt.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("FailedLoginAttempts")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LockoutEnd")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("boolean");
@@ -216,9 +222,15 @@ namespace Yurt.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<int?>("LastBirthdayPushYear")
+                        .HasColumnType("integer");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastWinBackPushAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
@@ -474,6 +486,9 @@ namespace Yurt.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("OrdersPausedUntil")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("TwoGisUrl")
                         .HasMaxLength(1000)
@@ -823,6 +838,8 @@ namespace Yurt.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("DiscountCodeId");
 
                     b.HasIndex("LocationId");
@@ -830,6 +847,8 @@ namespace Yurt.Infrastructure.Migrations
                     b.HasIndex("CustomerUserId", "IdempotencyKey")
                         .IsUnique()
                         .HasFilter("\"IdempotencyKey\" IS NOT NULL");
+
+                    b.HasIndex("Status", "IsArchived");
 
                     b.ToTable("Orders");
                 });

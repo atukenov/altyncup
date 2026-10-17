@@ -138,23 +138,7 @@ export class NewsComponent implements OnInit {
   }
 
   reorder(order: Order): void {
-    if (!this.storeStatus.guardOpen()) return;
-    order.items.forEach((item) => {
-      this.cart.addItem({
-        menuItemId: item.menuItemId,
-        name: item.menuItemName,
-        price: item.unitPrice,
-        quantity: item.quantity,
-        selectedToppings: item.toppings.map((t) => ({
-          toppingId: t.toppingId,
-          toppingName: t.toppingName,
-          price: t.price,
-        })),
-        notes: item.notes,
-        variantLabel: item.variantLabel,
-      });
-    });
-    this.router.navigate(['/cart']);
+    if (this.cart.addFromOrder(order)) this.router.navigate(['/cart']);
   }
 
   // Items with size variants or optional toppings don't have a single valid price/config

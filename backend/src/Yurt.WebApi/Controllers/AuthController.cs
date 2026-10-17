@@ -66,6 +66,31 @@ public class AuthController : ApiControllerBase
         return ToResult(result);
     }
 
+    /// <summary>Forgot PIN, step 1: send a WhatsApp code to the account's number.</summary>
+    [HttpPost("pin-reset/start")]
+    public async Task<IActionResult> PinResetStart(
+        [FromBody] PinResetStartDto dto, CancellationToken ct)
+    {
+        var validation = await new PinResetStartValidator().ValidateAsync(dto, ct);
+        if (!validation.IsValid)
+            return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+
+        return ToResult(await _authService.StartPinResetAsync(dto, ct));
+    }
+
+    /// <summary>Forgot PIN, step 2: confirm the code, set a new PIN and log in.</summary>
+    [HttpPost("pin-reset/verify")]
+    public async Task<IActionResult> PinResetVerify(
+        [FromBody] PinResetVerifyDto dto, CancellationToken ct)
+    {
+        var validation = await new PinResetVerifyValidator().ValidateAsync(dto, ct);
+        if (!validation.IsValid)
+            return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        return ToResult(await _authService.VerifyPinResetAsync(dto, ip, ct));
+    }
+
     /// <summary>Login with mobile number and 4-digit PIN.</summary>
     [HttpPost("login")]
     public async Task<IActionResult> Login(
@@ -170,9 +195,29 @@ public class AuthController : ApiControllerBase
         var user = await _db.CustomerUsers.FindAsync([userId], ct);
         if (user == null) return NotFound();
 
-        if (!_hasher.Verify(dto.CurrentPin, user.PinHash))
-            return Unauthorized(new ProblemDetails { Title = "Current PIN is incorrect." });
+        if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
+        {
+            var minutesRemaining = (int)Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
+            var locked = new ProblemDetails { Status = 423, Title = "Too many incorrect attempts. Try again later." };
+            locked.Extensions["minutesRemaining"] = minutesRemaining;
+            return StatusCode(423, locked);
+        }
 
+        if (!_hasher.Verify(dto.CurrentPin, user.PinHash))
+        {
+            // Same counter and limits as login, so a stolen session can't brute-force the PIN here.
+            user.FailedLoginAttempts++;
+            if (user.FailedLoginAttempts >= 5)
+            {
+                user.LockoutEnd = DateTime.UtcNow.AddMinutes(15);
+                user.FailedLoginAttempts = 0;
+            }
+            await _db.SaveChangesAsync(ct);
+            return Unauthorized(new ProblemDetails { Title = "Current PIN is incorrect." });
+        }
+
+        user.FailedLoginAttempts = 0;
+        user.LockoutEnd = null;
         user.PinHash = _hasher.Hash(dto.NewPin);
         user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);

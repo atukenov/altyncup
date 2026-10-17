@@ -27,6 +27,33 @@
           <option [value]="loc.id">{{ loc.name }}{{ loc.address ? ' — ' + loc.address : '' }}</option>
         }
       </select>
+      <!-- Pause new orders at the selected location -->
+      @if (selectedLocation(); as loc) {
+        @if (isPaused(loc)) {
+          <div class="mt-2 flex items-center justify-between gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2">
+            <span class="text-xs font-semibold text-amber-800">
+              ⏸ {{ 'orders.pausedUntil' | t }} {{ loc.ordersPausedUntil | date: 'HH:mm' }}
+            </span>
+            <button type="button" (click)="resumeOrders(loc)" [disabled]="pauseLoading()"
+              class="text-xs font-semibold text-amber-700 bg-white border border-amber-300 rounded-lg px-2.5 py-1 hover:bg-amber-100 disabled:opacity-50">
+              {{ 'orders.resume' | t }}
+            </button>
+          </div>
+        } @else {
+          <div class="mt-2 flex items-center gap-2">
+            <select [(ngModel)]="pauseMinutes" aria-label="{{ 'orders.pause' | t }}"
+              class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-amber-400">
+              @for (m of pauseOptions; track m) {
+                <option [ngValue]="m">{{ m }} {{ 'orders.pauseMinutes' | t }}</option>
+              }
+            </select>
+            <button type="button" (click)="pauseOrders(loc)" [disabled]="pauseLoading()"
+              class="flex-1 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-50">
+              ⏸ {{ 'orders.pause' | t }}
+            </button>
+          </div>
+        }
+      }
       <!-- Search -->
       <input
         type="text"

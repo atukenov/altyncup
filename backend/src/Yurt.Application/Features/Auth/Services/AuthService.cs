@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Yurt.Application.Common.Helpers;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Common.Models;
 using Yurt.Application.Features.Auth.DTOs;
@@ -65,7 +66,7 @@ public class AuthService
                 $"Please wait {wait}s before requesting another code.", 429);
         }
 
-        var code = Random.Shared.Next(0, 10000).ToString("D4");
+        var code = TokenHasher.NumericCode();
         var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
 
         if (pending == null)
@@ -220,8 +221,34 @@ public class AuthService
         var admin = await _db.AdminUsers
             .FirstOrDefaultAsync(u => u.Username == dto.Username && u.IsActive, ct);
 
-        if (admin == null || !_passwordHasher.Verify(dto.Password, admin.PasswordHash))
+        if (admin == null)
             return Result<AuthResponseDto>.Failure("Invalid credentials.", 401);
+
+        if (admin.LockoutEnd.HasValue && admin.LockoutEnd.Value > DateTime.UtcNow)
+        {
+            var minutesRemaining = (int)Math.Ceiling((admin.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
+            return Result<AuthResponseDto>.Locked(minutesRemaining);
+        }
+
+        if (!_passwordHasher.Verify(dto.Password, admin.PasswordHash))
+        {
+            admin.FailedLoginAttempts++;
+            if (admin.FailedLoginAttempts >= MaxFailedAttempts)
+            {
+                admin.LockoutEnd = DateTime.UtcNow.Add(LockoutDuration);
+                admin.FailedLoginAttempts = 0;
+                _logger.LogWarning("Admin account {Username} locked after repeated failed logins.", admin.Username);
+            }
+            await _db.SaveChangesAsync(ct);
+            return Result<AuthResponseDto>.Failure("Invalid credentials.", 401);
+        }
+
+        if (admin.FailedLoginAttempts != 0 || admin.LockoutEnd != null)
+        {
+            admin.FailedLoginAttempts = 0;
+            admin.LockoutEnd = null;
+            await _db.SaveChangesAsync(ct);
+        }
 
         var role = admin.Role.ToString();
         var accessToken = _tokenService.GenerateAdminToken(admin.Id, admin.Username, role, admin.MustChangePassword);
@@ -234,8 +261,9 @@ public class AuthService
     public async Task<Result<AuthResponseDto>> RefreshAsync(
         string refreshTokenValue, string? ip = null, CancellationToken ct = default)
     {
+        var tokenHash = TokenHasher.Hash(refreshTokenValue);
         var storedToken = await _db.RefreshTokens
-            .FirstOrDefaultAsync(t => t.Token == refreshTokenValue, ct);
+            .FirstOrDefaultAsync(t => t.Token == tokenHash || t.Token == refreshTokenValue, ct);
 
         if (storedToken == null || storedToken.ExpiresAt <= DateTime.UtcNow)
             return Result<AuthResponseDto>.Failure("Invalid or expired refresh token.", 401);
@@ -260,11 +288,11 @@ public class AuthService
         var newRefreshValue = _tokenService.GenerateRefreshToken();
         storedToken.IsRevoked = true;
         storedToken.RevokedAt = DateTime.UtcNow;
-        storedToken.ReplacedByToken = newRefreshValue;
+        storedToken.ReplacedByToken = TokenHasher.Hash(newRefreshValue);
 
         var newRefreshToken = new RefreshToken
         {
-            Token = newRefreshValue,
+            Token = TokenHasher.Hash(newRefreshValue),
             UserType = storedToken.UserType,
             UserId = storedToken.UserId,
             ExpiresAt = DateTime.UtcNow.AddDays(_tokenService.RefreshTokenDays),
@@ -308,8 +336,9 @@ public class AuthService
 
     public async Task RevokeAsync(string refreshTokenValue, string? ip = null, CancellationToken ct = default)
     {
+        var tokenHash = TokenHasher.Hash(refreshTokenValue);
         var storedToken = await _db.RefreshTokens
-            .FirstOrDefaultAsync(t => t.Token == refreshTokenValue, ct);
+            .FirstOrDefaultAsync(t => t.Token == tokenHash || t.Token == refreshTokenValue, ct);
 
         if (storedToken == null || storedToken.IsRevoked)
             return;
@@ -390,7 +419,7 @@ public class AuthService
                 $"Please wait {wait}s before requesting another code.", 429);
         }
 
-        var code = Random.Shared.Next(0, 10000).ToString("D4");
+        var code = TokenHasher.NumericCode();
         var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
 
         if (pending == null)
@@ -510,6 +539,146 @@ public class AuthService
         return Result<bool>.Success(true);
     }
 
+    /// <summary>
+    /// Step 1 of "Forgot PIN": send a WhatsApp code to the account's number. The response
+    /// looks the same whether or not the number is registered, so it can't be used to
+    /// discover which numbers have accounts.
+    /// </summary>
+    public async Task<Result<RegistrationStartResponseDto>> StartPinResetAsync(
+        PinResetStartDto dto, CancellationToken ct = default)
+    {
+        var normalizedMobile = NormalizeMobile(dto.MobileNumber);
+        var now = DateTime.UtcNow;
+        var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+
+        var user = await _db.CustomerUsers
+            .FirstOrDefaultAsync(u => u.MobileNumber == normalizedMobile && u.IsActive, ct);
+        if (user == null)
+            return Result<RegistrationStartResponseDto>.Success(
+                new RegistrationStartResponseDto(normalizedMobile, expiresAt));
+
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile
+                && v.Purpose == VerificationPurpose.PinReset, ct);
+
+        if (pending != null &&
+            pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) > now)
+        {
+            var wait = (int)Math.Ceiling(
+                (pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) - now).TotalSeconds);
+            return Result<RegistrationStartResponseDto>.Failure(
+                $"Please wait {wait}s before requesting another code.", 429);
+        }
+
+        var code = TokenHasher.NumericCode();
+
+        if (pending == null)
+        {
+            pending = new PhoneVerification
+            {
+                MobileNumber = normalizedMobile,
+                Purpose = VerificationPurpose.PinReset,
+            };
+            _db.PhoneVerifications.Add(pending);
+        }
+
+        pending.CodeHash = _passwordHasher.Hash(code);
+        pending.ExpiresAt = expiresAt;
+        pending.LastSentAt = now;
+        pending.Attempts = 0;
+        pending.CustomerUserId = user.Id;
+
+        await _db.SaveChangesAsync(ct);
+
+        if (_otpOptions.Enabled)
+        {
+            try
+            {
+                await _otpSender.SendAsync(normalizedMobile, code, ct);
+            }
+            catch (OtpSendException ex)
+            {
+                _logger.LogError(ex, "Failed to send PIN-reset OTP to {Mobile}", normalizedMobile);
+                return Result<RegistrationStartResponseDto>.Failure(
+                    "Could not send the verification code. Please try again.", 502);
+            }
+        }
+        else
+        {
+            _logger.LogWarning(
+                "OTP delivery disabled — PIN-reset code for {Mobile} is {Code}", normalizedMobile, code);
+        }
+
+        return Result<RegistrationStartResponseDto>.Success(
+            new RegistrationStartResponseDto(
+                normalizedMobile, expiresAt, _otpOptions.Enabled ? null : code));
+    }
+
+    /// <summary>
+    /// Step 2 of "Forgot PIN": confirm the code, set the new PIN, clear any lockout,
+    /// sign out every other session and log the customer in.
+    /// </summary>
+    public async Task<Result<AuthResponseDto>> VerifyPinResetAsync(
+        PinResetVerifyDto dto, string? ip = null, CancellationToken ct = default)
+    {
+        var normalizedMobile = NormalizeMobile(dto.MobileNumber);
+
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile
+                && v.Purpose == VerificationPurpose.PinReset, ct);
+
+        if (pending == null || pending.CustomerUserId == null)
+            return Result<AuthResponseDto>.Failure("No pending verification. Start again.", 400);
+
+        if (pending.ExpiresAt <= DateTime.UtcNow)
+        {
+            _db.PhoneVerifications.Remove(pending);
+            await _db.SaveChangesAsync(ct);
+            return Result<AuthResponseDto>.Failure("The code has expired. Request a new one.", 400);
+        }
+
+        if (pending.Attempts >= _otpOptions.MaxAttempts)
+            return Result<AuthResponseDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
+
+        if (!_passwordHasher.Verify(dto.Code, pending.CodeHash))
+        {
+            pending.Attempts++;
+            await _db.SaveChangesAsync(ct);
+            return Result<AuthResponseDto>.Failure("Incorrect code.", 400);
+        }
+
+        var user = await _db.CustomerUsers
+            .FirstOrDefaultAsync(u => u.Id == pending.CustomerUserId && u.IsActive, ct);
+        _db.PhoneVerifications.Remove(pending);
+        if (user == null || user.MobileNumber != normalizedMobile)
+        {
+            await _db.SaveChangesAsync(ct);
+            return Result<AuthResponseDto>.Failure("No pending verification. Start again.", 400);
+        }
+
+        user.PinHash = _passwordHasher.Hash(dto.NewPin4);
+        user.FailedLoginAttempts = 0;
+        user.LockoutEnd = null;
+
+        var sessions = await _db.RefreshTokens
+            .Where(t => t.UserId == user.Id && t.UserType == RefreshTokenUserType.Customer && !t.IsRevoked)
+            .ToListAsync(ct);
+        foreach (var t in sessions)
+        {
+            t.IsRevoked = true;
+            t.RevokedAt = DateTime.UtcNow;
+        }
+        await _db.SaveChangesAsync(ct);
+
+        var displayName = string.IsNullOrWhiteSpace(user.FirstName)
+            ? user.MobileNumber
+            : $"{user.FirstName} {user.LastName}".Trim();
+
+        return Result<AuthResponseDto>.Success(
+            await IssueTokenPairAsync(user.Id, user.MobileNumber, RefreshTokenUserType.Customer,
+                "customer", displayName, role: null, ip, ct));
+    }
+
     private async Task<AuthResponseDto> IssueTokenPairAsync(
         Guid userId, string mobileNumber, RefreshTokenUserType userType,
         string userTypeStr, string displayName, string? role,
@@ -528,7 +697,7 @@ public class AuthService
 
         _db.RefreshTokens.Add(new RefreshToken
         {
-            Token = tokenValue,
+            Token = TokenHasher.Hash(tokenValue),
             UserType = userType,
             UserId = userId,
             ExpiresAt = DateTime.UtcNow.AddDays(days),

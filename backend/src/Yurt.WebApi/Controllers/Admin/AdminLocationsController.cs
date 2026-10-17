@@ -38,6 +38,16 @@ public class AdminLocationsController : ApiControllerBase
         Guid id, [FromBody] UpdateLocationDto dto, CancellationToken ct)
         => ToResult(await _locationService.UpdateAsync(id, dto, User.IsInRole("SuperAdmin"), ct));
 
+    /// <summary>Pause new orders at a location (rush, machine down). Open to all staff,
+    /// since it's an orders-board action. Minutes = 0 resumes.</summary>
+    [HttpPost("{id:guid}/pause")]
+    public async Task<IActionResult> Pause(Guid id, [FromBody] PauseOrdersDto dto, CancellationToken ct)
+        => ToResult(await _locationService.SetOrdersPausedAsync(id, dto.Minutes, ct));
+
+    [HttpPost("{id:guid}/resume")]
+    public async Task<IActionResult> Resume(Guid id, CancellationToken ct)
+        => ToResult(await _locationService.SetOrdersPausedAsync(id, 0, ct));
+
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "AdminRoleAdmin")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)

@@ -21,5 +21,7 @@ public record ChangeMobileNumberDto(string MobileNumber);
 
 public record CustomerProfileDto(Guid Id, string MobileNumber, string FirstName, string LastName, DateTime CreatedAt, DateOnly? DateOfBirth = null);
 public record ChangePinDto(string CurrentPin, string NewPin);
+public record PinResetStartDto(string MobileNumber);
+public record PinResetVerifyDto(string MobileNumber, string Code, string NewPin4);
 public record ChangeAdminPasswordDto(string CurrentPassword, string NewPassword);
 public record RegisterDeviceTokenDto(string Token, string Platform);

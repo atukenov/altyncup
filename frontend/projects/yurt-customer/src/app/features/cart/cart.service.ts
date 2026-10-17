@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { inject } from '@angular/core';
 import { StoreStatusService } from '../../core/store-status.service';
-import { CartItem, ValidateDiscountCodeResponse } from 'shared-models';
+import { CartItem, Order, ValidateDiscountCodeResponse } from 'shared-models';
 
 export interface AppliedDiscount {
   code: string;
@@ -63,6 +63,33 @@ export class CartService {
       return [...cart, item];
     });
     this.save();
+    return true;
+  }
+
+  /**
+   * Re-adds every line of a past order to the cart, with the same size and toppings.
+   * Returns false (and shows the closed popup) when the cafe is closed.
+   */
+  addFromOrder(order: Order): boolean {
+    if (!this.storeStatus.guardOpen()) return false;
+    order.items.forEach((item) => {
+      const toppingsPrice = item.toppings.reduce((s, t) => s + t.price, 0);
+      this.addItem({
+        menuItemId: item.menuItemId,
+        name: item.menuItemName,
+        // unitPrice already includes toppings; the cart adds them back on top.
+        price: item.unitPrice - toppingsPrice,
+        quantity: item.quantity,
+        selectedToppings: item.toppings.map((t) => ({
+          toppingId: t.toppingId,
+          toppingName: t.toppingName,
+          price: t.price,
+        })),
+        notes: item.notes,
+        variantId: item.variantId,
+        variantLabel: item.variantLabel,
+      });
+    });
     return true;
   }
 

@@ -49,7 +49,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     // Live Orders
     'orders.title': 'Live Orders', 'orders.noOrders': 'No orders',
     'orders.tabActive': 'Active', 'orders.tabDone': 'Done', 'orders.tabAll': 'All',
-    'orders.allLocations': 'All Locations', 'orders.search': 'Search by order # or phone…',
+    'orders.allLocations': 'All Locations', 'orders.pause': 'Pause new orders', 'orders.pausedUntil': 'New orders paused until', 'orders.resume': 'Resume', 'orders.pauseMinutes': 'min', 'orders.search': 'Search by order # or phone…',
     'orders.selectOrder': 'Select an order', 'orders.clickToView': 'Click any order to view details',
     'orders.accept': '✓ Accept', 'orders.decline': '✕ Decline',
     'orders.markPreparing': 'Mark Preparing', 'orders.markReady': 'Mark Ready',
@@ -74,7 +74,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'locations.nameRu': 'Name (RU)', 'locations.nameKk': 'Name (KZ)',
 
     // Analytics
-    'analytics.title': 'Analytics', 'analytics.exportCsv': 'Export CSV',
+    'analytics.title': 'Analytics', 'analytics.exportOrders': 'Export orders', 'analytics.exportCsv': 'Export CSV',
     'analytics.overview': 'Coffee shop performance overview',
     'analytics.totalRevenue': 'Total Revenue', 'analytics.completedOrders': 'completed orders',
     'analytics.totalOrders': 'Total Orders', 'analytics.uniqueCustomers': 'unique customers',
@@ -85,7 +85,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.revenueByLocation': 'Revenue by Location', 'analytics.perLocation': 'Completed orders per location',
     'analytics.peakHours': 'Peak Hours', 'analytics.hourlyDist': 'Order distribution by hour of day',
     'analytics.paymentMethods': 'Payment Methods', 'analytics.howPay': 'How customers pay',
-    'analytics.statusBreakdown': 'Order Status Breakdown', 'analytics.allOrders': 'All orders in this period',
+    'analytics.statusBreakdown': 'Order Status Breakdown', 'analytics.allOrders': 'All orders in this period', 'analytics.ratings': 'Customer Ratings', 'analytics.ratingsRated': 'completed orders rated', 'analytics.ratingsComments': 'Recent comments', 'analytics.ratingsNone': 'No ratings in this period yet.',
     'analytics.noData': 'No data for this period',
     'analytics.period': 'Period', 'analytics.today': 'Today',
     'analytics.week': 'Week', 'analytics.month': 'Month',
@@ -220,7 +220,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     // Live Orders
     'orders.title': 'Заказы (Live)', 'orders.noOrders': 'Нет заказов',
     'orders.tabActive': 'Активные', 'orders.tabDone': 'Завершённые', 'orders.tabAll': 'Все',
-    'orders.allLocations': 'Все локации', 'orders.search': 'Поиск по номеру заказа или телефону…',
+    'orders.allLocations': 'Все локации', 'orders.pause': 'Приостановить приём заказов', 'orders.pausedUntil': 'Приём заказов приостановлен до', 'orders.resume': 'Возобновить', 'orders.pauseMinutes': 'мин', 'orders.search': 'Поиск по номеру заказа или телефону…',
     'orders.selectOrder': 'Выберите заказ', 'orders.clickToView': 'Нажмите на заказ для просмотра',
     'orders.accept': '✓ Принять', 'orders.decline': '✕ Отклонить',
     'orders.markPreparing': 'Начать готовку', 'orders.markReady': 'Пометить готовым',
@@ -245,7 +245,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'locations.nameRu': 'Название (RU)', 'locations.nameKk': 'Название (KZ)',
 
     // Analytics
-    'analytics.title': 'Аналитика', 'analytics.exportCsv': 'Экспорт CSV',
+    'analytics.title': 'Аналитика', 'analytics.exportOrders': 'Выгрузить заказы', 'analytics.exportCsv': 'Экспорт CSV',
     'analytics.overview': 'Обзор показателей кофейни',
     'analytics.totalRevenue': 'Общая выручка', 'analytics.completedOrders': 'завершённых заказов',
     'analytics.totalOrders': 'Всего заказов', 'analytics.uniqueCustomers': 'уникальных клиентов',
@@ -256,7 +256,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.revenueByLocation': 'Выручка по локациям', 'analytics.perLocation': 'Завершённых заказов по локации',
     'analytics.peakHours': 'Пиковые часы', 'analytics.hourlyDist': 'Распределение заказов по часам',
     'analytics.paymentMethods': 'Способы оплаты', 'analytics.howPay': 'Как клиенты платят',
-    'analytics.statusBreakdown': 'Статусы заказов', 'analytics.allOrders': 'Все заказы за период',
+    'analytics.statusBreakdown': 'Статусы заказов', 'analytics.allOrders': 'Все заказы за период', 'analytics.ratings': 'Оценки клиентов', 'analytics.ratingsRated': 'выполненных заказов оценено', 'analytics.ratingsComments': 'Последние отзывы', 'analytics.ratingsNone': 'За этот период оценок пока нет.',
     'analytics.noData': 'Нет данных за период',
     'analytics.period': 'Период', 'analytics.today': 'Сегодня',
     'analytics.week': 'Эта неделя', 'analytics.month': 'Этот месяц',
@@ -391,7 +391,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     // Live Orders
     'orders.title': 'Тапсырыстар (Live)', 'orders.noOrders': 'Тапсырыстар жоқ',
     'orders.tabActive': 'Белсенді', 'orders.tabDone': 'Аяқталған', 'orders.tabAll': 'Барлық',
-    'orders.allLocations': 'Барлық мекендер', 'orders.search': 'Тапсырыс # немесе телефон бойынша іздеу…',
+    'orders.allLocations': 'Барлық мекендер', 'orders.pause': 'Тапсырыс қабылдауды тоқтату', 'orders.pausedUntil': 'Тапсырыс қабылдау тоқтатылды:', 'orders.resume': 'Жалғастыру', 'orders.pauseMinutes': 'мин', 'orders.search': 'Тапсырыс # немесе телефон бойынша іздеу…',
     'orders.selectOrder': 'Тапсырыс таңдаңыз', 'orders.clickToView': 'Мәліметтерді көру үшін тапсырысты нұқыңыз',
     'orders.accept': '✓ Қабылдау', 'orders.decline': '✕ Қабылдамау',
     'orders.markPreparing': 'Дайындауды бастау', 'orders.markReady': 'Дайын деп белгілеу',
@@ -416,7 +416,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'locations.nameRu': 'Атауы (RU)', 'locations.nameKk': 'Атауы (KZ)',
 
     // Analytics
-    'analytics.title': 'Аналитика', 'analytics.exportCsv': 'CSV экспорт',
+    'analytics.title': 'Аналитика', 'analytics.exportOrders': 'Тапсырыстарды жүктеу', 'analytics.exportCsv': 'CSV экспорт',
     'analytics.overview': 'Кофеханның жұмыс көрсеткіштері',
     'analytics.totalRevenue': 'Жалпы табыс', 'analytics.completedOrders': 'аяқталған тапсырыс',
     'analytics.totalOrders': 'Барлық тапсырыстар', 'analytics.uniqueCustomers': 'бірегей клиенттер',
@@ -427,7 +427,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     'analytics.revenueByLocation': 'Мекен бойынша табыс', 'analytics.perLocation': 'Мекен бойынша тапсырыстар',
     'analytics.peakHours': 'Шыңды сағаттар', 'analytics.hourlyDist': 'Тапсырыстардың сағаттық бөлінісі',
     'analytics.paymentMethods': 'Төлем тәсілдері', 'analytics.howPay': 'Клиенттер қалай төлейді',
-    'analytics.statusBreakdown': 'Тапсырыс күйлері', 'analytics.allOrders': 'Кезеңдегі барлық тапсырыстар',
+    'analytics.statusBreakdown': 'Тапсырыс күйлері', 'analytics.allOrders': 'Кезеңдегі барлық тапсырыстар', 'analytics.ratings': 'Клиент бағалары', 'analytics.ratingsRated': 'аяқталған тапсырыс бағаланды', 'analytics.ratingsComments': 'Соңғы пікірлер', 'analytics.ratingsNone': 'Бұл кезеңде әзірге баға жоқ.',
     'analytics.noData': 'Кезең деректері жоқ',
     'analytics.period': 'Кезең', 'analytics.today': 'Бүгін',
     'analytics.week': 'Осы апта', 'analytics.month': 'Осы ай',

@@ -10,6 +10,10 @@ public class Location : BaseEntity
     public string ContactPhone { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
 
+    // Staff can pause new orders for a while (rush, broken machine). Null or in the
+    // past = taking orders as normal.
+    public DateTime? OrdersPausedUntil { get; set; }
+
     // Link to this location in 2GIS (https://2gis.kz/… or https://go.2gis.com/…). Optional.
     public string? TwoGisUrl { get; set; }
 

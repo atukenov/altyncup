@@ -45,6 +45,16 @@
           </svg>
           {{ 'analytics.exportCsv' | t }}
         </button>
+        <button
+          (click)="exportOrders()"
+          [disabled]="exportingOrders()"
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          {{ 'analytics.exportOrders' | t }}
+        </button>
       </div>
     </div>
 
@@ -351,6 +361,53 @@
           }
         </div>
       </div>
+
+      <!-- ── Customer Ratings ──────────────────────────────────────────────── -->
+      @if (data()!.ratings; as r) {
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mt-6">
+          <h2 class="text-base font-semibold text-stone-800 mb-1">{{ 'analytics.ratings' | t }}</h2>
+          <p class="text-xs text-slate-400 mb-5">
+            {{ r.ratedCount }} / {{ r.completedCount }} {{ 'analytics.ratingsRated' | t }}
+          </p>
+
+          @if (r.ratedCount > 0) {
+            <div class="flex flex-col md:flex-row gap-8">
+              <div class="flex flex-col items-center justify-center md:w-40">
+                <span class="text-4xl font-bold text-stone-800">{{ r.averageRating?.toFixed(1) }}</span>
+                <span class="text-amber-500 text-lg" aria-hidden="true">★★★★★</span>
+              </div>
+              <div class="flex-1 flex flex-col gap-2">
+                @for (b of r.distribution; track b.stars) {
+                  <div class="flex items-center gap-3 text-sm">
+                    <span class="w-8 text-stone-600">{{ b.stars }}★</span>
+                    <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div class="h-full bg-amber-400" [style.width.%]="(b.count / r.ratedCount) * 100"></div>
+                    </div>
+                    <span class="w-8 text-right text-stone-500">{{ b.count }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            @if (r.recentComments.length > 0) {
+              <h3 class="text-sm font-semibold text-stone-700 mt-6 mb-3">{{ 'analytics.ratingsComments' | t }}</h3>
+              <ul class="flex flex-col gap-3">
+                @for (c of r.recentComments; track $index) {
+                  <li class="border border-slate-100 rounded-xl px-4 py-3">
+                    <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                      <span class="text-amber-500">{{ c.rating }}★</span>
+                      <span>{{ c.locationName }} · {{ c.createdAt | date: 'MMM d, HH:mm' }}</span>
+                    </div>
+                    <p class="text-sm text-stone-700">{{ c.comment }}</p>
+                  </li>
+                }
+              </ul>
+            }
+          } @else {
+            <p class="text-sm text-slate-400">{{ 'analytics.ratingsNone' | t }}</p>
+          }
+        </div>
+      }
     }
     <!-- end if data -->
   </div>

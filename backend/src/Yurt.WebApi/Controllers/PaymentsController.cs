@@ -44,7 +44,10 @@ public class PaymentsController : ApiControllerBase
     if (string.IsNullOrWhiteSpace(invoiceId))
       return ValidationError("InvoiceId is required.");
 
-    var result = await _paymentService.GetPaymentStatusAsync(invoiceId, ct);
+    if (_currentUser.UserId == null)
+      return Unauthorized(new ProblemDetails { Title = "Unable to resolve current user." });
+
+    var result = await _paymentService.GetPaymentStatusAsync(invoiceId, _currentUser.UserId.Value, ct);
     return ToResult(result);
   }
 

@@ -100,13 +100,15 @@ public class PaymentService
 
   public async Task<Result<PaymentStatusResponse>> GetPaymentStatusAsync(
       string invoiceId,
+      Guid customerId,
       CancellationToken cancellationToken = default)
   {
     var payment = await _db.Payments
         .Include(p => p.Order)
         .FirstOrDefaultAsync(p => p.InvoiceId == invoiceId, cancellationToken);
 
-    if (payment == null)
+    // Another customer's invoice reads as "not found" so ids can't be probed.
+    if (payment == null || payment.Order.CustomerUserId != customerId)
       return Result<PaymentStatusResponse>.NotFound("Payment not found.");
 
     return Result<PaymentStatusResponse>.Success(new PaymentStatusResponse(
@@ -121,7 +123,7 @@ public class PaymentService
         payment.QrCode,
         payment.CreatedAt,
         payment.UpdatedAt,
-        payment.RawResponse));
+        RawResponse: null)); // raw provider payload stays server-side
   }
 
   public ApplePayConfigResponse GetApplePayConfig()

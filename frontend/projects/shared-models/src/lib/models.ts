@@ -91,6 +91,7 @@ export interface Location {
   isActive: boolean;
   iikoTerminalGroupId?: string | null;
   twoGisUrl?: string | null;
+  ordersPausedUntil?: string | null;
 }
 
 // ── Menu ──────────────────────────────────────────────────────────────────────
@@ -258,6 +259,7 @@ export interface OrderItem {
   toppings: OrderItemTopping[];
   notes?: string;
   variantLabel?: string;
+  variantId?: string;
 }
 
 export interface Order {
@@ -345,6 +347,15 @@ export interface AnalyticsResponse {
   hourlyDistribution: HourlyDistributionDto[];
   paymentBreakdown: PaymentBreakdownDto[];
   statusBreakdown: OrderStatusBreakdownDto[];
+  ratings?: RatingSummary;
+}
+
+export interface RatingSummary {
+  averageRating?: number | null;
+  ratedCount: number;
+  completedCount: number;
+  distribution: { stars: number; count: number }[];
+  recentComments: { rating: number; comment: string; createdAt: string; locationName?: string }[];
 }
 
 export interface KpiSummary {

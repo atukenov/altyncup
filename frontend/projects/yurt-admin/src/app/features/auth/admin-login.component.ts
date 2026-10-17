@@ -43,9 +43,18 @@ export class AdminLoginComponent {
           this.router.navigate(['/dashboard']);
         }
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
-        this.error.set('Invalid username or password.');
+        if (err?.status === 423) {
+          const minutes = err.error?.minutesRemaining;
+          this.error.set(
+            minutes
+              ? `Too many failed attempts. Try again in ${minutes} min.`
+              : 'Too many failed attempts. Try again later.',
+          );
+        } else {
+          this.error.set('Invalid username or password.');
+        }
       },
     });
   }

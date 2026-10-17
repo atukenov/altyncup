@@ -97,6 +97,20 @@ export class YurtApiService {
     });
   }
 
+  pinResetStart(mobileNumber: string): Observable<RegistrationStartResponse> {
+    return this.http.post<RegistrationStartResponse>(`${this.api}/auth/pin-reset/start`, {
+      mobileNumber,
+    });
+  }
+
+  pinResetVerify(mobileNumber: string, code: string, newPin4: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.api}/auth/pin-reset/verify`, {
+      mobileNumber,
+      code,
+      newPin4,
+    });
+  }
+
   login(mobileNumber: string, pin4: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.api}/auth/login`, { mobileNumber, pin4 });
   }
@@ -159,6 +173,14 @@ export class YurtApiService {
 
   getAdminLocations(): Observable<Location[]> {
     return this.http.get<Location[]>(`${this.api}/admin/locations`);
+  }
+
+  pauseLocationOrders(id: string, minutes: number): Observable<Location> {
+    return this.http.post<Location>(`${this.api}/admin/locations/${id}/pause`, { minutes });
+  }
+
+  resumeLocationOrders(id: string): Observable<Location> {
+    return this.http.post<Location>(`${this.api}/admin/locations/${id}/resume`, {});
   }
 
   createLocation(data: Partial<Location>): Observable<Location> {
@@ -434,6 +456,12 @@ export class YurtApiService {
     let params = new HttpParams().set('period', period);
     if (locationId) params = params.set('locationId', locationId);
     return this.http.get<AnalyticsResponse>(`${this.api}/admin/analytics`, { params });
+  }
+
+  exportOrdersCsv(period: string, locationId?: string): Observable<Blob> {
+    let params = new HttpParams().set('period', period);
+    if (locationId) params = params.set('locationId', locationId);
+    return this.http.get(`${this.api}/admin/analytics/export`, { params, responseType: 'blob' });
   }
 
   // ── Promotions ──────────────────────────────────────────────────────────────

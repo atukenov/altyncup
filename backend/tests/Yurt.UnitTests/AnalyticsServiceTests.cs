@@ -140,4 +140,34 @@ public class AnalyticsServiceTests
 
         Assert.Null(result.Trends.RevenueChangePercent);
     }
+
+    [Fact]
+    public async Task GetAnalyticsAsync_Ratings_AveragesDistributionAndComments()
+    {
+        var now = DateTime.UtcNow;
+        var five = MakeOrder(now.AddMinutes(-3)); five.Rating = 5; five.RatingComment = "Great latte";
+        var three = MakeOrder(now.AddMinutes(-2)); three.Rating = 3;
+        var four = MakeOrder(now.AddMinutes(-1)); four.Rating = 4; four.RatingComment = "  ";
+        var unrated = MakeOrder(now);
+        var svc = Build(five, three, four, unrated);
+
+        var result = await svc.GetAnalyticsAsync("month");
+
+        Assert.Equal(4.0, result.Ratings.AverageRating);
+        Assert.Equal(3, result.Ratings.RatedCount);
+        Assert.Equal(4, result.Ratings.CompletedCount);
+        Assert.Equal([5, 4, 3, 2, 1], result.Ratings.Distribution.Select(b => b.Stars));
+        Assert.Equal(1, result.Ratings.Distribution.Single(b => b.Stars == 5).Count);
+        var comment = Assert.Single(result.Ratings.RecentComments);
+        Assert.Equal("Great latte", comment.Comment);
+    }
+
+    [Fact]
+    public async Task GetAnalyticsAsync_NoRatings_AverageIsNull()
+    {
+        var svc = Build(MakeOrder(DateTime.UtcNow));
+        var result = await svc.GetAnalyticsAsync("month");
+        Assert.Null(result.Ratings.AverageRating);
+        Assert.Equal(0, result.Ratings.RatedCount);
+    }
 }

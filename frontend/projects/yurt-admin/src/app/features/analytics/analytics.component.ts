@@ -18,6 +18,7 @@ export class AnalyticsComponent implements OnInit {
 
   data = signal<AnalyticsResponse | null>(null);
   loading = signal(true);
+  exportingOrders = signal(false);
   activePeriod = signal('month');
   locations = signal<Location[]>([]);
   selectedLocationId = signal<string | null>(null);
@@ -160,6 +161,23 @@ export class AnalyticsComponent implements OnInit {
     a.download = `analytics-${this.activePeriod()}-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  /** Every order in the period, one row each, built by the API. */
+  exportOrders(): void {
+    this.exportingOrders.set(true);
+    this.api.exportOrdersCsv(this.activePeriod(), this.selectedLocationId() ?? undefined).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `orders-${this.activePeriod()}-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.exportingOrders.set(false);
+      },
+      error: () => this.exportingOrders.set(false),
+    });
   }
 
   barHeight(value: number, max: number): string {

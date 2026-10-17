@@ -59,6 +59,10 @@ public class OrderService
         if (location == null)
             return Result<OrderDto>.Failure("Location not found or inactive.", 400);
 
+        if (location.OrdersPausedUntil > DateTime.UtcNow)
+            return Result<OrderDto>.Failure(
+                "This location has paused new orders for a few minutes. Please try again shortly.", 409);
+
         if (dto.Items == null || dto.Items.Count == 0)
             return Result<OrderDto>.Failure("Order must have at least one item.", 400);
 
@@ -475,7 +479,7 @@ public class OrderService
             o.Items.Select(i => new OrderItemDto(
                 i.Id, i.MenuItemId, i.MenuItemName, i.Quantity, i.UnitPrice, i.LineTotal,
                 i.Toppings.Select(t => new OrderItemToppingDto(t.ToppingId, t.ToppingName, t.Price)).ToList(),
-                i.Notes, i.VariantLabel
+                i.Notes, i.VariantLabel, i.VariantId
             )).ToList(),
             o.LoyaltyPointsSpent,
             o.LoyaltyPointsEarned,

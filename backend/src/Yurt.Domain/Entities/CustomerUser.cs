@@ -13,6 +13,10 @@ public class CustomerUser : BaseEntity
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }
 
+    // Engagement pushes already sent, so the daily job never repeats them.
+    public int? LastBirthdayPushYear { get; set; }
+    public DateTime? LastWinBackPushAt { get; set; }
+
     // iiko loyalty link (null until the customer is first synced to iikoCloud)
     public Guid? IikoCustomerId { get; set; }
     public Guid? IikoWalletId { get; set; }
