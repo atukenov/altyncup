@@ -37,7 +37,8 @@ public class CustomerService
                 (u.FirstName + " " + u.LastName).Trim(),
                 u.CreatedAt,
                 u.Orders.Count(o => o.Status == OrderStatus.Completed),
-                u.Orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.Total)))
+                u.Orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.Total),
+                u.IsPhoneVerified))
             .ToListAsync(ct);
 
         return (total, items);
@@ -68,6 +69,7 @@ public class CustomerService
                 (c.FirstName + " " + c.LastName).Trim(),
                 c.CreatedAt,
                 c.IsActive,
+                c.IsPhoneVerified,
                 c.Orders.Count(o => !o.IsArchived),
                 c.Orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => (decimal?)o.Total) ?? 0,
                 c.Orders

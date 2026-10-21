@@ -132,7 +132,7 @@ public class AuthController : ApiControllerBase
         var userId = _currentUser.UserId!.Value;
         var user = await _db.CustomerUsers.FindAsync([userId], ct);
         if (user == null) return NotFound();
-        return Ok(new { user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth });
+        return Ok(new { user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth, user.IsPhoneVerified });
     }
 
     /// <summary>Update current customer's name.</summary>
@@ -179,6 +179,31 @@ public class AuthController : ApiControllerBase
         var userId = _currentUser.UserId!.Value;
         var result = await _authService.VerifyPhoneChangeAsync(userId, dto, ct);
         return ToResult(result);
+    }
+
+    /// <summary>
+    /// Step 1 of verifying the current customer's existing number: sends a 4-digit code
+    /// to it. Call <c>me/verify-phone/confirm</c> with the code to finish.
+    /// </summary>
+    [HttpPost("me/verify-phone/start")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> StartPhoneVerification(CancellationToken ct)
+    {
+        var userId = _currentUser.UserId!.Value;
+        return ToResult(await _authService.StartPhoneVerificationAsync(userId, ct));
+    }
+
+    /// <summary>Confirm the code and mark the current customer's number verified.</summary>
+    [HttpPost("me/verify-phone/confirm")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> ConfirmPhoneVerification(
+        [FromBody] VerifyPhoneDto dto, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Code) || dto.Code.Length != 4 || !dto.Code.All(char.IsDigit))
+            return ValidationError("Code must be exactly 4 digits.");
+
+        var userId = _currentUser.UserId!.Value;
+        return ToResult(await _authService.VerifyPhoneAsync(userId, dto.Code, ct));
     }
 
     /// <summary>Change customer's 4-digit PIN.</summary>

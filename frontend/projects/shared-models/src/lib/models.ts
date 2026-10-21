@@ -78,6 +78,7 @@ export interface CustomerProfile {
   lastName: string;
   createdAt: string;
   dateOfBirth?: string | null;
+  isPhoneVerified?: boolean;
 }
 
 // ── Location ──────────────────────────────────────────────────────────────────
@@ -434,6 +435,7 @@ export interface CustomerSummary {
   registeredAt: string;
   orderCount: number;
   totalSpent: number;
+  isPhoneVerified: boolean;
 }
 
 export interface CustomerOrderSummary {
@@ -453,6 +455,7 @@ export interface CustomerDetail {
   displayName?: string;
   registeredAt: string;
   isActive: boolean;
+  isPhoneVerified: boolean;
   totalOrders: number;
   totalSpent: number;
   recentOrders: CustomerOrderSummary[];
