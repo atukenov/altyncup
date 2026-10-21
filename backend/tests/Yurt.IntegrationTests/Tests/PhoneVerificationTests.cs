@@ -17,7 +17,7 @@ public class PhoneVerificationTests(YurtWebAppFactory factory)
     public async Task Registration_MarksPhoneVerified()
     {
         var client = factory.CreateClient();
-        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77009400001");
+        var (token, _) = await ApiHelpers.CreateCustomerAsync(client, "+77009500001");
         ApiHelpers.Authorize(client, token);
 
         var me = await client.GetFromJsonAsync<Profile>("/api/v1/auth/me", ApiHelpers.JsonOpts);
@@ -31,7 +31,7 @@ public class PhoneVerificationTests(YurtWebAppFactory factory)
     public async Task UnverifiedCustomer_ConfirmsCode_BecomesVerified()
     {
         var client = factory.CreateClient();
-        var (token, userId) = await ApiHelpers.CreateCustomerAsync(client, "+77009400002");
+        var (token, userId) = await ApiHelpers.CreateCustomerAsync(client, "+77009500002");
         await SetVerifiedAsync(userId, false);
         ApiHelpers.Authorize(client, token);
 
@@ -41,7 +41,7 @@ public class PhoneVerificationTests(YurtWebAppFactory factory)
         var start = await client.PostAsync("/api/v1/auth/me/verify-phone/start", null);
         Assert.Equal(HttpStatusCode.OK, start.StatusCode);
         var startBody = await start.Content.ReadFromJsonAsync<StartResult>(ApiHelpers.JsonOpts);
-        Assert.Equal("+77009400002", startBody!.MobileNumber);
+        Assert.Equal("+77009500002", startBody!.MobileNumber);
         Assert.NotNull(startBody.DevCode);
 
         var wrong = await client.PostAsJsonAsync("/api/v1/auth/me/verify-phone/confirm",
