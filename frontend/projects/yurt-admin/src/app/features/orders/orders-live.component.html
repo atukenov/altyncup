@@ -122,7 +122,17 @@
                 </yurt-badge>
               </div>
             </div>
-            <p class="text-amber-600 font-bold text-sm mt-1">{{ order.total | currency2 }}</p>
+            <div class="flex items-center justify-between gap-2 mt-1">
+              <p class="text-amber-600 font-bold text-sm">{{ order.total | currency2 }}</p>
+              @if (countdown(order); as cd) {
+                <span
+                  [class]="cd.overdue ? 'bg-red-100 text-red-700' : cd.urgent ? 'bg-amber-100 text-amber-800' : 'bg-teal-50 text-teal-700'"
+                  class="text-xs font-semibold tabular-nums rounded-full px-2 py-0.5"
+                >
+                  ⏱ {{ cd.overdue ? '+' : '' }}{{ cd.label }}
+                </span>
+              }
+            </div>
           </button>
         }
       }
@@ -166,6 +176,33 @@
             }
           </div>
         </div>
+
+        <!-- Prep countdown (acceptedAt + ETA picked on accept) -->
+        @if (countdown(o); as cd) {
+          <div
+            [class]="cd.overdue ? 'bg-red-50 border-red-200' : cd.urgent ? 'bg-amber-50 border-amber-200' : 'bg-teal-50 border-teal-100'"
+            class="rounded-2xl border p-4 flex items-center justify-between gap-4"
+            role="timer"
+          >
+            <div>
+              <p
+                [class]="cd.overdue ? 'text-red-600' : cd.urgent ? 'text-amber-700' : 'text-teal-700'"
+                class="text-xs font-semibold"
+              >
+                {{ (cd.overdue ? 'orders.overdue' : 'orders.timeLeft') | t }}
+              </p>
+              <p class="text-xs text-slate-500 mt-0.5">
+                {{ 'orders.dueAt' | t }} {{ dueAt(o) | date: 'HH:mm' }} · {{ o.etaMinutes }} {{ 'orders.pauseMinutes' | t }}
+              </p>
+            </div>
+            <p
+              [class]="cd.overdue ? 'text-red-600' : cd.urgent ? 'text-amber-700' : 'text-teal-700'"
+              class="text-3xl font-bold tabular-nums"
+            >
+              {{ cd.overdue ? '+' : '' }}{{ cd.label }}
+            </p>
+          </div>
+        }
 
         <!-- Decline reason -->
         @if (o.declineReason) {
