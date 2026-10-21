@@ -24,19 +24,27 @@
       @if (i.imageUrl && !imageError()) {
         <img [src]="i.imageUrl" [alt]="i.name"
           class="absolute inset-0 w-full h-full object-cover"
-          style="filter:brightness(0.5) blur(3px);transform:scale(1.08)"
+          style="transition:filter .35s ease,transform .35s ease"
+          [style.filter]="viewMode() === 'photo' ? 'none' : 'brightness(0.5) blur(3px)'"
+          [style.transform]="viewMode() === 'photo' ? 'scale(1)' : 'scale(1.08)'"
           (error)="onImageError()" />
       } @else {
         <div class="absolute inset-0" style="background:linear-gradient(135deg,#3d2b1a,#1c1008)"></div>
       }
 
-      <!-- Gradient overlay for bottom vignette + safe-area fade -->
-      <div class="absolute inset-0"
-        style="background:linear-gradient(to top,rgba(20,16,13,.92) 0%,rgba(20,16,13,.15) 55%,rgba(20,16,13,.35) 100%)"></div>
+      @if (viewMode() === 'photo') {
+        <!-- Light top fade so the back/favorite buttons stay readable over the photo -->
+        <div class="absolute inset-0 pointer-events-none"
+          style="background:linear-gradient(to bottom,rgba(20,16,13,.35) 0%,transparent 30%)"></div>
+      } @else {
+        <!-- Gradient overlay for bottom vignette + safe-area fade -->
+        <div class="absolute inset-0"
+          style="background:linear-gradient(to top,rgba(20,16,13,.92) 0%,rgba(20,16,13,.15) 55%,rgba(20,16,13,.35) 100%)"></div>
 
-      <!-- Radial amber glow behind cup -->
-      <div class="absolute" style="width:340px;height:340px;bottom:-40px;left:50%;transform:translateX(-50%);
-        background:radial-gradient(circle,rgba(255,209,25,.28),transparent 65%);border-radius:50%;pointer-events:none"></div>
+        <!-- Radial amber glow behind cup -->
+        <div class="absolute" style="width:340px;height:340px;bottom:-40px;left:50%;transform:translateX(-50%);
+          background:radial-gradient(circle,rgba(255,209,25,.28),transparent 65%);border-radius:50%;pointer-events:none"></div>
+      }
 
       <!-- Back button -->
       <button
@@ -65,23 +73,46 @@
       </button>
 
       <!-- ── 3D Cup Viewer ──────────────────────────────────────────────── -->
-      <div class="absolute"
-           style="left:50%;bottom:2px;transform-origin:50% 100%;transition:transform .45s cubic-bezier(.34,1.56,.64,1)"
-           [style.transform]="'translateX(-50%) scale(' + cupScale() + ')'">
-        <cup-viewer
-          [src]="modelSrc()"
-          [tint]="liquidColor()"
-          style="width:260px;height:280px;display:block">
-        </cup-viewer>
-      </div>
+      @if (viewMode() === '3d') {
+        <div class="absolute"
+             style="left:50%;bottom:2px;transform-origin:50% 100%;transition:transform .45s cubic-bezier(.34,1.56,.64,1)"
+             [style.transform]="'translateX(-50%) scale(' + cupScale() + ')'">
+          <cup-viewer
+            [src]="modelSrc()"
+            [tint]="liquidColor()"
+            style="width:260px;height:280px;display:block">
+          </cup-viewer>
+        </div>
 
-      <!-- 360° pill -->
-      <div class="absolute" style="bottom:10px;left:50%;transform:translateX(-50%);
-        background:rgba(0,0,0,.25);backdrop-filter:blur(6px);border-radius:999px;
-        padding:4px 12px;font-size:10px;font-weight:700;color:rgba(255,255,255,.5);
-        pointer-events:none;user-select:none">
-        360°
-      </div>
+        <!-- 360° pill -->
+        <div class="absolute" style="bottom:10px;left:50%;transform:translateX(-50%);
+          background:rgba(0,0,0,.25);backdrop-filter:blur(6px);border-radius:999px;
+          padding:4px 12px;font-size:10px;font-weight:700;color:rgba(255,255,255,.5);
+          pointer-events:none;user-select:none">
+          360°
+        </div>
+      }
+
+      <!-- Photo / 3D toggle (only when the item has a working photo) -->
+      @if (i.imageUrl && !imageError()) {
+        <div class="absolute right-4 flex" role="group" aria-label="View mode"
+          style="bottom:38px;z-index:2;background:rgba(0,0,0,.35);backdrop-filter:blur(6px);border-radius:999px;padding:3px">
+          @for (mode of viewModes; track mode.value) {
+            @let active = viewMode() === mode.value;
+            <button
+              type="button"
+              (click)="viewMode.set(mode.value)"
+              [attr.aria-pressed]="active"
+              class="active:scale-95 transition-all"
+              style="border:none;cursor:pointer;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:800;transition:all .2s"
+              [style.background]="active ? '#ffd119' : 'transparent'"
+              [style.color]="active ? '#1c1917' : 'rgba(255,255,255,.75)'"
+            >
+              {{ mode.labelKey | t }}
+            </button>
+          }
+        </div>
+      }
     </div>
 
     <!-- ── Content sheet (overlaps hero by 26px) ─────────────────────────── -->
