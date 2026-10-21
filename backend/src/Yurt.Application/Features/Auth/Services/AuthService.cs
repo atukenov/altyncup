@@ -159,7 +159,9 @@ public class AuthService
             MobileNumber = normalizedMobile,
             PinHash = pending.PinHash,
             FirstName = pending.FirstName,
-            LastName = pending.LastName
+            LastName = pending.LastName,
+            IsPhoneVerified = true,
+            PhoneVerifiedAt = DateTime.UtcNow
         };
         _db.CustomerUsers.Add(user);
         _db.PhoneVerifications.Remove(pending);
@@ -379,8 +381,7 @@ public class AuthService
         user.DateOfBirth = dto.DateOfBirth;
         await _db.SaveChangesAsync(ct);
 
-        return Result<CustomerProfileDto>.Success(
-            new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth));
+        return Result<CustomerProfileDto>.Success(ToProfileDto(user));
     }
 
     /// <summary>
@@ -514,12 +515,128 @@ public class AuthService
         }
 
         user.MobileNumber = normalizedMobile;
+        user.IsPhoneVerified = true;
+        user.PhoneVerifiedAt = DateTime.UtcNow;
         user.UpdatedAt = DateTime.UtcNow;
         _db.PhoneVerifications.Remove(pending);
         await _db.SaveChangesAsync(ct);
 
-        return Result<CustomerProfileDto>.Success(
-            new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth));
+        return Result<CustomerProfileDto>.Success(ToProfileDto(user));
+    }
+
+    /// <summary>
+    /// Step 1 of verifying an existing customer's current number (accounts created before
+    /// registration required a code). Sends a WhatsApp code to the number already on file.
+    /// </summary>
+    public async Task<Result<RegistrationStartResponseDto>> StartPhoneVerificationAsync(
+        Guid userId, CancellationToken ct = default)
+    {
+        var user = await _db.CustomerUsers.FindAsync([userId], ct);
+        if (user == null)
+            return Result<RegistrationStartResponseDto>.NotFound("User not found.");
+
+        if (user.IsPhoneVerified)
+            return Result<RegistrationStartResponseDto>.Failure("Phone number is already verified.", 409);
+
+        var mobile = user.MobileNumber;
+        var now = DateTime.UtcNow;
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == mobile
+                && v.Purpose == VerificationPurpose.PhoneVerify, ct);
+
+        if (pending != null &&
+            pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) > now)
+        {
+            var wait = (int)Math.Ceiling(
+                (pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) - now).TotalSeconds);
+            return Result<RegistrationStartResponseDto>.Failure(
+                $"Please wait {wait}s before requesting another code.", 429);
+        }
+
+        var code = TokenHasher.NumericCode();
+        var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+
+        if (pending == null)
+        {
+            pending = new PhoneVerification
+            {
+                MobileNumber = mobile,
+                Purpose = VerificationPurpose.PhoneVerify,
+            };
+            _db.PhoneVerifications.Add(pending);
+        }
+
+        pending.CodeHash = _passwordHasher.Hash(code);
+        pending.ExpiresAt = expiresAt;
+        pending.LastSentAt = now;
+        pending.Attempts = 0;
+        pending.CustomerUserId = userId;
+
+        await _db.SaveChangesAsync(ct);
+
+        if (_otpOptions.Enabled)
+        {
+            try
+            {
+                await _otpSender.SendAsync(mobile, code, ct);
+            }
+            catch (OtpSendException ex)
+            {
+                _logger.LogError(ex, "Failed to send phone-verification OTP to {Mobile}", mobile);
+                return Result<RegistrationStartResponseDto>.Failure(
+                    "Could not send the verification code. Please try again.", 502);
+            }
+        }
+        else
+        {
+            _logger.LogWarning(
+                "OTP delivery disabled — phone verification code for {Mobile} is {Code}", mobile, code);
+        }
+
+        return Result<RegistrationStartResponseDto>.Success(
+            new RegistrationStartResponseDto(
+                mobile, expiresAt, _otpOptions.Enabled ? null : code));
+    }
+
+    /// <summary>Step 2: confirm the code and mark the customer's current number verified.</summary>
+    public async Task<Result<CustomerProfileDto>> VerifyPhoneAsync(
+        Guid userId, string code, CancellationToken ct = default)
+    {
+        var user = await _db.CustomerUsers.FindAsync([userId], ct);
+        if (user == null)
+            return Result<CustomerProfileDto>.NotFound("User not found.");
+
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == user.MobileNumber
+                && v.Purpose == VerificationPurpose.PhoneVerify, ct);
+
+        if (pending == null || pending.CustomerUserId != userId)
+            return Result<CustomerProfileDto>.Failure("No pending verification. Start again.", 400);
+
+        if (pending.ExpiresAt <= DateTime.UtcNow)
+        {
+            _db.PhoneVerifications.Remove(pending);
+            await _db.SaveChangesAsync(ct);
+            return Result<CustomerProfileDto>.Failure("The code has expired. Request a new one.", 400);
+        }
+
+        if (pending.Attempts >= _otpOptions.MaxAttempts)
+            return Result<CustomerProfileDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
+
+        if (!_passwordHasher.Verify(code, pending.CodeHash))
+        {
+            pending.Attempts++;
+            await _db.SaveChangesAsync(ct);
+            return Result<CustomerProfileDto>.Failure("Incorrect code.", 400);
+        }
+
+        user.IsPhoneVerified = true;
+        user.PhoneVerifiedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
+        _db.PhoneVerifications.Remove(pending);
+        await _db.SaveChangesAsync(ct);
+
+        return Result<CustomerProfileDto>.Success(ToProfileDto(user));
     }
 
     public async Task<Result<bool>> ChangeAdminPasswordAsync(
@@ -659,6 +776,12 @@ public class AuthService
         user.PinHash = _passwordHasher.Hash(dto.NewPin4);
         user.FailedLoginAttempts = 0;
         user.LockoutEnd = null;
+        // The code went to this account's own number, so the reset doubles as phone verification.
+        if (!user.IsPhoneVerified)
+        {
+            user.IsPhoneVerified = true;
+            user.PhoneVerifiedAt = DateTime.UtcNow;
+        }
 
         var sessions = await _db.RefreshTokens
             .Where(t => t.UserId == user.Id && t.UserType == RefreshTokenUserType.Customer && !t.IsRevoked)
@@ -706,6 +829,10 @@ public class AuthService
         await _db.SaveChangesAsync(ct);
         return tokenValue;
     }
+
+    private static CustomerProfileDto ToProfileDto(CustomerUser user)
+        => new(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt,
+            user.DateOfBirth, user.IsPhoneVerified);
 
     private static string NormalizeMobile(string mobile)
         => mobile.Trim().Replace(" ", "").Replace("-", "");

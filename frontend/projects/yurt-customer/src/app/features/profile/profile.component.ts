@@ -65,6 +65,15 @@ export class ProfileComponent implements OnInit, OnDestroy {
   private pendingPhoneNumber = '';
   private phoneResendTimer: ReturnType<typeof setInterval> | null = null;
 
+  // Verify the current phone number (accounts created before signup required a code)
+  verifyOpen = signal(false);
+  verifyOtp = '';
+  verifyLoading = signal(false);
+  verifyError = signal('');
+  verifyResendIn = signal(0);
+  readonly verifyOtpBoxes = viewChild<OtpBoxesComponent>('verifyOtpBoxes');
+  private verifyResendTimer: ReturnType<typeof setInterval> | null = null;
+
   // Delete account
   showDeleteConfirm = signal(false);
   deleteLoading = signal(false);
@@ -89,6 +98,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.clearPhoneResendTimer();
+    this.clearVerifyResendTimer();
   }
 
   chooseAvatar(avatar: string): void {
@@ -258,6 +268,70 @@ export class ProfileComponent implements OnInit, OnDestroy {
     if (this.phoneResendTimer) {
       clearInterval(this.phoneResendTimer);
       this.phoneResendTimer = null;
+    }
+  }
+
+  sendVerifyCode(): void {
+    if (this.verifyLoading() || this.verifyResendIn() > 0) return;
+    this.verifyError.set('');
+    this.verifyLoading.set(true);
+    this.api.verifyPhoneStart().subscribe({
+      next: (res) => {
+        this.verifyLoading.set(false);
+        this.verifyOtp = '';
+        this.verifyOtpBoxes()?.clear();
+        this.verifyOpen.set(true);
+        this.startVerifyResendCountdown();
+        this.toast.success(res.devCode ? 'Dev code: ' + res.devCode : this.langService.t('profile.codeSent'));
+      },
+      error: (err) => {
+        this.verifyLoading.set(false);
+        if (err.status === 409) {
+          this.loadProfile();
+          return;
+        }
+        this.verifyOpen.set(true);
+        this.verifyError.set(err.error?.title ?? 'Could not send the verification code.');
+      },
+    });
+  }
+
+  confirmVerifyCode(): void {
+    this.verifyError.set('');
+    if (this.verifyOtp.length !== 4) {
+      this.verifyError.set('Enter the 4-digit code.');
+      return;
+    }
+    this.verifyLoading.set(true);
+    this.api.verifyPhoneConfirm(this.verifyOtp).subscribe({
+      next: (p) => {
+        this.profile.set(p);
+        this.clearVerifyResendTimer();
+        this.verifyOpen.set(false);
+        this.verifyLoading.set(false);
+        this.toast.success(this.langService.t('profile.phoneVerified'));
+      },
+      error: (err) => {
+        this.verifyLoading.set(false);
+        this.verifyError.set(err.error?.title ?? 'Incorrect code.');
+      },
+    });
+  }
+
+  private startVerifyResendCountdown(): void {
+    this.clearVerifyResendTimer();
+    this.verifyResendIn.set(60);
+    this.verifyResendTimer = setInterval(() => {
+      const next = this.verifyResendIn() - 1;
+      this.verifyResendIn.set(next);
+      if (next <= 0) this.clearVerifyResendTimer();
+    }, 1000);
+  }
+
+  private clearVerifyResendTimer(): void {
+    if (this.verifyResendTimer) {
+      clearInterval(this.verifyResendTimer);
+      this.verifyResendTimer = null;
     }
   }
 

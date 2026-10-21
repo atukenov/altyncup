@@ -222,6 +222,9 @@ namespace Yurt.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsPhoneVerified")
+                        .HasColumnType("boolean");
+
                     b.Property<int?>("LastBirthdayPushYear")
                         .HasColumnType("integer");
 
@@ -239,6 +242,9 @@ namespace Yurt.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("PhoneVerifiedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PinHash")
                         .IsRequired()

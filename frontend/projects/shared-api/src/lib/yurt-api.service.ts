@@ -135,6 +135,14 @@ export class YurtApiService {
     return this.http.post<CustomerProfile>(`${this.api}/auth/me/phone/verify`, { mobileNumber, code });
   }
 
+  verifyPhoneStart(): Observable<RegistrationStartResponse> {
+    return this.http.post<RegistrationStartResponse>(`${this.api}/auth/me/verify-phone/start`, {});
+  }
+
+  verifyPhoneConfirm(code: string): Observable<CustomerProfile> {
+    return this.http.post<CustomerProfile>(`${this.api}/auth/me/verify-phone/confirm`, { code });
+  }
+
   refreshToken(refreshToken: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.api}/auth/refresh`, { refreshToken });
   }

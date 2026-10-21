@@ -19,7 +19,8 @@ public record AdminLoginDto(string Username, string Password);
 public record UpdateProfileDto(string FirstName, string LastName, DateOnly? DateOfBirth = null);
 public record ChangeMobileNumberDto(string MobileNumber);
 
-public record CustomerProfileDto(Guid Id, string MobileNumber, string FirstName, string LastName, DateTime CreatedAt, DateOnly? DateOfBirth = null);
+public record CustomerProfileDto(Guid Id, string MobileNumber, string FirstName, string LastName, DateTime CreatedAt, DateOnly? DateOfBirth = null, bool IsPhoneVerified = false);
+public record VerifyPhoneDto(string Code);
 public record ChangePinDto(string CurrentPin, string NewPin);
 public record PinResetStartDto(string MobileNumber);
 public record PinResetVerifyDto(string MobileNumber, string Code, string NewPin4);

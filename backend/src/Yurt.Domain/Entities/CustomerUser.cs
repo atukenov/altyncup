@@ -13,6 +13,10 @@ public class CustomerUser : BaseEntity
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }
 
+    // True once the customer has proven they control MobileNumber with a WhatsApp code.
+    public bool IsPhoneVerified { get; set; }
+    public DateTime? PhoneVerifiedAt { get; set; }
+
     // Engagement pushes already sent, so the daily job never repeats them.
     public int? LastBirthdayPushYear { get; set; }
     public DateTime? LastWinBackPushAt { get; set; }

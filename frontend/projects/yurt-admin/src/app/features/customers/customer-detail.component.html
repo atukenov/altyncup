@@ -29,6 +29,11 @@
             } @else {
               <span class="text-xs font-semibold bg-green-100 text-green-600 px-2 py-0.5 rounded-full">{{ 'customers.active' | t }}</span>
             }
+            @if (c.isPhoneVerified) {
+              <span class="text-xs font-semibold bg-green-100 text-green-600 px-2 py-0.5 rounded-full">{{ 'customers.verified' | t }}</span>
+            } @else {
+              <span class="text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{{ 'customers.unverified' | t }}</span>
+            }
           </div>
           <p class="text-slate-500 font-mono text-sm mt-0.5">{{ c.phone }}</p>
           <p class="text-slate-400 text-xs mt-1">{{ 'customers.memberSince' | t }} {{ c.registeredAt | date: 'MMM d, y' }}</p>
