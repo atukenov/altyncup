@@ -30,9 +30,9 @@
     "@capacitor/status-bar": "^8.0.4",
     "@microsoft/signalr": "^10.0.11",
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/three": "^0.185.4",
+    "@types/three": "^0.186.0",
     "autoprefixer": "^10.6.1",
-    "postcss": "^8.5.12",
+    "postcss": "^8.5.31",
     "rxjs": "~7.8.0",
     "tailwindcss": "^4.2.4",
     "three": "^0.186.1",
@@ -44,12 +44,12 @@
     "@angular/compiler-cli": "^21.2.0",
     "@eslint/js": "^10.0.1",
     "angular-eslint": "^21.3.1",
-    "eslint": "^10.12.0",
+    "eslint": "^10.13.0",
     "jsdom": "^28.0.0",
     "ng-packagr": "^21.2.0",
     "prettier": "^3.9.10",
     "typescript": "~5.9.2",
-    "typescript-eslint": "^8.71.2",
+    "typescript-eslint": "^8.72.0",
     "vitest": "^4.0.8"
   }
 }
