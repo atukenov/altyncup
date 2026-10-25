@@ -85,6 +85,7 @@ public static class DependencyInjection
         // WhatsApp OTP for customer registration (feature-flagged via Otp:Enabled; secrets via env vars)
         services.AddSingleton(configuration.GetSection("Otp").Get<OtpOptions>() ?? new OtpOptions());
         services.AddHttpClient<IOtpSender, WhatsAppOtpSender>();
+        services.AddHttpClient<IOtpDiagnostics, WhatsAppOtpDiagnostics>();
 
         // iiko loyalty (feature-flagged via Iiko:Enabled; secrets via env vars)
         services.AddSingleton(configuration.GetSection("Iiko").Get<IikoOptions>() ?? new IikoOptions());
