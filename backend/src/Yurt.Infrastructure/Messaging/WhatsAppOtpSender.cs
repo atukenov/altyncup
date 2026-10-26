@@ -31,7 +31,7 @@ public class WhatsAppOtpSender : IOtpSender
 
     private record SendMessageRequest(string ChatId, string Message);
 
-    public async Task SendAsync(string mobileNumber, string code, CancellationToken ct = default)
+    public async Task<string?> SendAsync(string mobileNumber, string code, CancellationToken ct = default)
     {
         if (!GreenApi.HasCredentials(_options))
             throw new OtpSendException(
@@ -70,11 +70,12 @@ public class WhatsAppOtpSender : IOtpSender
             _logger.LogWarning(
                 "Green API sendMessage returned {Status} for {ChatId} without an idMessage: {Body}",
                 status, chatId, GreenApi.Truncate(body, 500));
-            return;
+            return null;
         }
 
         _logger.LogInformation(
             "Green API queued OTP for {ChatId} as message {IdMessage}", chatId, idMessage);
+        return idMessage;
     }
 
     private static string? ReadIdMessage(string body)

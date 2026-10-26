@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Yurt.Application.Common.Interfaces;
+using Yurt.Application.Common.Models;
 using Yurt.Application.Features.Auth;
 using Yurt.Application.Features.Auth.Services;
 using Yurt.Application.Features.Favorites.Services;
@@ -87,6 +88,11 @@ public static class DependencyInjection
         services.AddHttpClient<IOtpSender, WhatsAppOtpSender>();
         services.AddHttpClient<IOtpDiagnostics, WhatsAppOtpDiagnostics>();
 
+        // Admin alerts (Telegram bot; off until Alerts__TelegramBotToken and Alerts__TelegramChatId are set)
+        services.AddSingleton(configuration.GetSection("Alerts").Get<AlertOptions>() ?? new AlertOptions());
+        services.AddHttpClient(TelegramAlertSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(10));
+        services.AddSingleton<IAdminAlertSender, TelegramAlertSender>();
+
         // iiko loyalty (feature-flagged via Iiko:Enabled; secrets via env vars)
         services.AddSingleton(configuration.GetSection("Iiko").Get<IikoOptions>() ?? new IikoOptions());
         services.AddSingleton<IikoTokenStore>();
@@ -136,6 +142,7 @@ public static class DependencyInjection
         services.AddHostedService<LoyaltyRetryService>();
         services.AddHostedService<IikoOrderSyncRetryService>();
         services.AddHostedService<EngagementPushService>();
+        services.AddHostedService<OtpMonitorService>();
 
         // JWT Auth — fail-fast secret validation
         var jwtSecret = configuration["Jwt:Secret"];

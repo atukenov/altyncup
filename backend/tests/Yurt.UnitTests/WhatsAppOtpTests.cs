@@ -53,7 +53,9 @@ public class WhatsAppOtpTests
     {
         var handler = new StubHandler(new() { ["sendMessage"] = (HttpStatusCode.OK, """{"idMessage":"BAE5F4886F6F2D05"}""") });
 
-        await Sender(handler).SendAsync("+7 701 123-45-67", "4821");
+        var idMessage = await Sender(handler).SendAsync("+7 701 123-45-67", "4821");
+
+        Assert.Equal("BAE5F4886F6F2D05", idMessage);
 
         var req = Assert.Single(handler.Requests);
         Assert.Equal("POST", req.Method);
@@ -194,5 +196,15 @@ public class WhatsAppOtpTests
         Assert.False(state.Ok);
         Assert.Equal(401, state.HttpStatus);
         Assert.Contains("IdInstance/ApiTokenInstance", state.Hint);
+    }
+
+    [Fact]
+    public async Task GetInstanceState_ReturnsStateOrError()
+    {
+        var ok = new StubHandler(new() { ["getStateInstance"] = (HttpStatusCode.OK, """{"stateInstance":"notAuthorized"}""") });
+        Assert.Equal("notAuthorized", await Diagnostics(ok).GetInstanceStateAsync());
+
+        var bad = new StubHandler(new() { ["getStateInstance"] = (HttpStatusCode.Unauthorized, "") });
+        Assert.StartsWith("error: HTTP 401", await Diagnostics(bad).GetInstanceStateAsync());
     }
 }

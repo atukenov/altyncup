@@ -46,3 +46,29 @@ The response lists config warnings and each Green API call (`getStateInstance`, 
 
 Every successful send is logged as `Green API queued OTP for {ChatId} as message {IdMessage}`;
 failures are logged with the status, response body and a hint.
+
+## Alerts (Telegram)
+
+The backend can message a Telegram chat when OTP delivery breaks:
+
+- a code could not be sent (Green API error), at most once per 30 minutes;
+- the Green API instance stops being `authorized` (checked every 10 minutes), and again when it recovers;
+- 3+ codes were sent in the last hour and none were verified (messages probably queued but not delivered).
+
+Setup:
+
+1. In Telegram, message **@BotFather**, send `/newbot`, and copy the bot token.
+2. Send any message to your new bot (or add it to a group), then open
+   `https://api.telegram.org/bot<token>/getUpdates` and copy `chat.id`.
+3. Set on Railway: `Alerts__TelegramBotToken=<token>` and `Alerts__TelegramChatId=<chat id>`.
+4. Admin panel → **WhatsApp codes** → **Send test alert**.
+
+Without these variables alerts are only written to the server log.
+
+## Audit: who tried and failed
+
+Every code is recorded in the `OtpEvents` table (sent, send failed, verified, wrong code,
+expired, too many attempts). The admin panel page **WhatsApp codes** (super admin) shows the
+WhatsApp connection status, counts, a "didn't get through" list of numbers whose last code was
+never confirmed, and the full history. The same data is at
+`GET /api/v1/admin/otp/summary?hours=24` and `GET /api/v1/admin/otp/events`.

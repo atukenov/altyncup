@@ -29,6 +29,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<GroupCartMember> GroupCartMembers => Set<GroupCartMember>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<OtpEvent> OtpEvents => Set<OtpEvent>();
     public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
     public DbSet<MenuItemLocation> MenuItemLocations => Set<MenuItemLocation>();
     public DbSet<MenuItemVariant> MenuItemVariants => Set<MenuItemVariant>();

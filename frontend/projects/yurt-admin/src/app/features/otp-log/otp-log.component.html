@@ -1,0 +1,184 @@
+<div class="p-6 max-w-7xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800">{{ 'nav.otp' | t }}</h1>
+      <p class="text-slate-500 text-sm mt-0.5">{{ 'otp.subtitle' | t }}</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <select
+        [(ngModel)]="hours"
+        (change)="loadSummary()"
+        aria-label="Period"
+        class="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option [ngValue]="24">{{ 'otp.last24h' | t }}</option>
+        <option [ngValue]="168">{{ 'otp.last7d' | t }}</option>
+        <option [ngValue]="720">{{ 'otp.last30d' | t }}</option>
+      </select>
+      <button
+        (click)="sendTestAlert()"
+        [disabled]="sendingAlert()"
+        class="px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+      >
+        {{ 'otp.testAlert' | t }}
+      </button>
+    </div>
+  </div>
+
+  @if (alertMessage(); as msg) {
+    <div class="rounded-xl px-4 py-3 text-sm" [class]="msg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'">
+      {{ msg.key | t }}
+    </div>
+  }
+
+  <!-- WhatsApp status -->
+  @if (summary(); as s) {
+    <div class="rounded-2xl border px-5 py-4 flex items-center gap-3"
+         [class]="whatsappOk ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'">
+      <span class="w-3 h-3 rounded-full shrink-0" [class]="whatsappOk ? 'bg-emerald-500' : 'bg-red-500'"></span>
+      <div class="min-w-0">
+        <p class="font-semibold" [class]="whatsappOk ? 'text-emerald-800' : 'text-red-800'">
+          {{ 'otp.status' | t }}: {{ (whatsappOk ? 'otp.statusOk' : 'otp.statusDown') | t }}
+        </p>
+        @if (!whatsappOk) {
+          <p class="text-xs text-red-700 mt-0.5 break-words">{{ s.whatsappState }}</p>
+        }
+      </div>
+    </div>
+
+    <!-- Counts -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      @for (tile of tiles; track tile.type) {
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3">
+          <p class="text-xs text-slate-500">{{ tile.key | t }}</p>
+          <p class="text-2xl font-bold mt-1" [class]="tile.tone">{{ s.counts[tile.type] ?? 0 }}</p>
+        </div>
+      }
+    </div>
+
+    <!-- Didn't get through -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-100">
+        <h2 class="font-semibold text-slate-800">{{ 'otp.stuckTitle' | t }} ({{ s.notVerified.length }})</h2>
+        <p class="text-xs text-slate-500">{{ 'otp.stuckHint' | t }}</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 border-b border-slate-100">
+            <tr>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.phone' | t }}</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.purpose' | t }}</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.lastEvent' | t }}</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.when' | t }}</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.codes' | t }}</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.error' | t }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (row of s.notVerified; track row.mobileNumber + row.purpose) {
+              <tr class="hover:bg-slate-50 transition-colors cursor-pointer" (click)="showPhone(row.mobileNumber)">
+                <td class="px-4 py-3 font-medium text-slate-700 whitespace-nowrap">{{ row.mobileNumber }}</td>
+                <td class="px-4 py-3 text-slate-600">{{ ('otp.purpose.' + row.purpose) | t }}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium" [class]="typeClass(row.lastEvent)">
+                    {{ ('otp.type.' + row.lastEvent) | t }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{{ formatDate(row.lastAt) }}</td>
+                <td class="px-4 py-3 text-slate-600">
+                  {{ row.codesRequested }}
+                  @if (row.sendFailures) { <span class="text-red-600 text-xs ml-1">({{ row.sendFailures }} ✕)</span> }
+                </td>
+                <td class="px-4 py-3 text-slate-500 text-xs max-w-xs truncate" [title]="row.lastError ?? ''">{{ row.lastError ?? '—' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">{{ 'otp.nobodyStuck' | t }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else if (summaryLoading()) {
+    <div class="h-24 bg-slate-100 rounded-2xl animate-pulse"></div>
+  }
+
+  <!-- All events -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+      <h2 class="font-semibold text-slate-800">{{ 'otp.eventsTitle' | t }} ({{ total() }})</h2>
+      <div class="flex flex-wrap gap-2">
+        <input
+          [(ngModel)]="phoneFilter"
+          (keyup.enter)="applyFilter()"
+          (blur)="applyFilter()"
+          [placeholder]="'otp.searchPhone' | t"
+          class="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+        />
+        <select
+          [(ngModel)]="typeFilter"
+          (change)="applyFilter()"
+          aria-label="{{ 'otp.event' | t }}"
+          class="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+        >
+          <option value="">{{ 'auditLog.all' | t }}</option>
+          @for (type of types; track type) {
+            <option [value]="type">{{ ('otp.type.' + type) | t }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-100">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.when' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.phone' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.purpose' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.event' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.details' | t }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          @if (eventsLoading() && events().length === 0) {
+            @for (i of [1,2,3,4,5]; track i) {
+              <tr>
+                @for (j of [1,2,3,4,5]; track j) {
+                  <td class="px-4 py-3"><div class="h-4 bg-slate-100 rounded animate-pulse w-24"></div></td>
+                }
+              </tr>
+            }
+          } @else {
+            @for (e of events(); track e.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{{ formatDate(e.createdAt) }}</td>
+                <td class="px-4 py-3 font-medium text-slate-700 whitespace-nowrap">{{ e.mobileNumber }}</td>
+                <td class="px-4 py-3 text-slate-600">{{ ('otp.purpose.' + e.purpose) | t }}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium" [class]="typeClass(e.type)">
+                    {{ ('otp.type.' + e.type) | t }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-slate-500 text-xs max-w-md truncate" [title]="e.detail ?? ''">{{ e.detail ?? e.providerMessageId ?? '—' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="px-4 py-10 text-center text-slate-400">{{ 'otp.noEvents' | t }}</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (hasMore) {
+    <div class="text-center">
+      <button
+        (click)="loadMore()"
+        [disabled]="eventsLoading()"
+        class="px-6 py-2 bg-amber-500 text-stone-900 rounded-xl font-medium text-sm hover:bg-amber-600 disabled:opacity-50 transition-colors"
+      >
+        {{ eventsLoading() ? '…' : ('auditLog.loadMore' | t) }}
+      </button>
+    </div>
+  }
+</div>

@@ -7,6 +7,12 @@ namespace Yurt.Application.Common.Interfaces;
 public interface IOtpDiagnostics
 {
     Task<OtpDiagnosticsReport> RunAsync(string mobileNumber, bool sendTestMessage, CancellationToken ct = default);
+
+    /// <summary>
+    /// The WhatsApp instance state ("authorized", "notAuthorized", ...), or an
+    /// "error: ..." string when Green API could not be asked.
+    /// </summary>
+    Task<string> GetInstanceStateAsync(CancellationToken ct = default);
 }
 
 /// <param name="Ok">True when this step found nothing that would stop delivery.</param>

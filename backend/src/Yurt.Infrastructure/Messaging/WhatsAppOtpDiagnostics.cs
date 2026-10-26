@@ -59,6 +59,19 @@ public class WhatsAppOtpDiagnostics : IOtpDiagnostics
             steps);
     }
 
+    public async Task<string> GetInstanceStateAsync(CancellationToken ct = default)
+    {
+        if (!GreenApi.HasCredentials(_options))
+            return "error: Green API credentials are not configured";
+
+        var (status, body, error) = await CallAsync(HttpMethod.Get, "getStateInstance", null, ct);
+        if (error is not null)
+            return $"error: {error}";
+        if (status is not 200)
+            return $"error: HTTP {status} {GreenApi.HintForStatus(status ?? 0)}".TrimEnd();
+        return ReadString(body!, "stateInstance") ?? $"error: unexpected response {body}";
+    }
+
     private List<string> ConfigWarnings(string mobileNumber)
     {
         var warnings = new List<string>();

@@ -105,3 +105,18 @@ public enum DevicePlatform
     Ios = 0,
     Android = 1
 }
+
+/// <summary>What happened to a one-time code (see <see cref="Entities.OtpEvent"/>).</summary>
+public enum OtpEventType
+{
+    /// <summary>Green API accepted the message (queued; not proof of delivery).</summary>
+    CodeSent = 0,
+    /// <summary>Green API rejected the request or could not be reached.</summary>
+    SendFailed = 1,
+    /// <summary>Otp:Enabled is false, so no message was sent.</summary>
+    DeliveryDisabled = 2,
+    Verified = 3,
+    WrongCode = 4,
+    Expired = 5,
+    TooManyAttempts = 6
+}
