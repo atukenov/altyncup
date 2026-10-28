@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Yurt.Application.Common.Interfaces;
+using Yurt.Application.Features.Auth.Services;
 using Yurt.Domain.Enums;
 using Yurt.WebApi.Common;
 
@@ -13,6 +14,8 @@ namespace Yurt.WebApi.Controllers.Admin;
 ///  - <c>summary</c>: instance state, counts per outcome, and people who requested a code
 ///    but never got through (the "tried to register but couldn't" list);
 ///  - <c>events</c>: the raw OTP history, filterable;
+///  - <c>codes</c>: pending code requests with the current code in plain text, and
+///    <c>codes/{id}/resend</c> to send a fresh one;
 ///  - <c>test</c>: live Green API checks with every raw response;
 ///  - <c>alerts/test</c>: sends a test message to the admin Telegram chat.
 /// </summary>
@@ -25,12 +28,18 @@ public class AdminOtpController : ApiControllerBase
     private readonly IOtpDiagnostics _diagnostics;
     private readonly IApplicationDbContext _db;
     private readonly IAdminAlertSender _alerts;
+    private readonly AuthService _auth;
+    private readonly IAuditLogService _audit;
 
-    public AdminOtpController(IOtpDiagnostics diagnostics, IApplicationDbContext db, IAdminAlertSender alerts)
+    public AdminOtpController(
+        IOtpDiagnostics diagnostics, IApplicationDbContext db, IAdminAlertSender alerts,
+        AuthService auth, IAuditLogService audit)
     {
         _diagnostics = diagnostics;
         _db = db;
         _alerts = alerts;
+        _auth = auth;
+        _audit = audit;
     }
 
     public record OtpTestRequest(string MobileNumber, bool SendTestMessage = true);
@@ -149,5 +158,52 @@ public class AdminOtpController : ApiControllerBase
             .ToListAsync(ct);
 
         return Ok(new { total, page, pageSize, items });
+    }
+
+    /// <summary>
+    /// Every number with a code request still pending (not yet confirmed), newest first,
+    /// with the current code in plain text. Rows from before codes were kept in plain
+    /// text have a null code until they are resent.
+    /// </summary>
+    [HttpGet("codes")]
+    public async Task<IActionResult> Codes([FromQuery] string? mobileNumber, CancellationToken ct = default)
+    {
+        var query = _db.PhoneVerifications.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(mobileNumber))
+        {
+            var m = mobileNumber.Trim().Replace(" ", "").Replace("-", "");
+            query = query.Where(v => v.MobileNumber.Contains(m));
+        }
+
+        var now = DateTime.UtcNow;
+        var items = await query
+            .OrderByDescending(v => v.LastSentAt)
+            .Take(200)
+            .Select(v => new
+            {
+                v.Id,
+                v.MobileNumber,
+                Purpose = v.Purpose.ToString(),
+                v.Code,
+                v.Attempts,
+                v.LastSentAt,
+                v.ExpiresAt,
+                Expired = v.ExpiresAt <= now,
+                v.CreatedAt,
+            })
+            .ToListAsync(ct);
+
+        return Ok(new { items });
+    }
+
+    /// <summary>Generate a fresh code for a pending request and send it over WhatsApp again.</summary>
+    [HttpPost("codes/{id:guid}/resend")]
+    public async Task<IActionResult> Resend(Guid id, CancellationToken ct)
+    {
+        var result = await _auth.ResendCodeAsync(id, ct);
+        if (result.Succeeded)
+            await _audit.LogAsync("OtpResent", "PhoneVerification", id.ToString(),
+                result.Data!.MobileNumber, ct);
+        return ToResult(result);
     }
 }

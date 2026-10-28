@@ -2,12 +2,14 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
-import { OtpEventEntry, OtpEventType, OtpSummary } from 'shared-models';
+import { OtpEventEntry, OtpEventType, OtpPendingCode, OtpSummary } from 'shared-models';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
+import { AdminLangService } from '../../core/lang.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 
 const PAGE_SIZE = 50;
 
-/** WhatsApp OTP health: instance status, outcome counts, people who never got through, raw history. */
+/** WhatsApp OTP health: instance status, outcome counts, pending codes (with resend), people who never got through, raw history. */
 @Component({
   selector: 'app-otp-log',
   standalone: true,
@@ -16,6 +18,8 @@ const PAGE_SIZE = 50;
 })
 export class OtpLogComponent implements OnInit {
   private api = inject(YurtApiService);
+  private confirmSvc = inject(ConfirmService);
+  private lang = inject(AdminLangService);
 
   summary = signal<OtpSummary | null>(null);
   summaryLoading = signal(true);
@@ -28,7 +32,11 @@ export class OtpLogComponent implements OnInit {
   phoneFilter = '';
   typeFilter: OtpEventType | '' = '';
 
-  alertMessage = signal<{ ok: boolean; key: string } | null>(null);
+  codes = signal<OtpPendingCode[]>([]);
+  codesLoading = signal(true);
+  resendingId = signal<string | null>(null);
+
+  alertMessage = signal<{ ok: boolean; key: string; suffix?: string } | null>(null);
   sendingAlert = signal(false);
 
   readonly tiles: { type: OtpEventType; key: string; tone: string }[] = [
@@ -52,7 +60,44 @@ export class OtpLogComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSummary();
+    this.loadCodes();
     this.loadEvents();
+  }
+
+  loadCodes(): void {
+    this.codesLoading.set(true);
+    this.api.getOtpCodes().subscribe({
+      next: (res) => { this.codes.set(res.items); this.codesLoading.set(false); },
+      error: () => this.codesLoading.set(false),
+    });
+  }
+
+  async resend(row: OtpPendingCode): Promise<void> {
+    const ok = await this.confirmSvc.confirm(
+      this.lang.t('otp.resendTitle'),
+      `${this.lang.t('otp.resendMessage')} ${row.mobileNumber}`,
+      this.lang.t('otp.resend'),
+      '📲',
+    );
+    if (!ok) return;
+
+    this.resendingId.set(row.id);
+    this.api.resendOtpCode(row.id).subscribe({
+      next: () => {
+        this.alertMessage.set({ ok: true, key: 'otp.resendOk', suffix: row.mobileNumber });
+        this.resendingId.set(null);
+        this.loadCodes();
+        this.loadSummary();
+        this.loadEvents();
+      },
+      error: () => {
+        this.alertMessage.set({ ok: false, key: 'otp.resendFailed', suffix: row.mobileNumber });
+        this.resendingId.set(null);
+        // A failed send still saves the new code, so refresh to show it.
+        this.loadCodes();
+        this.loadEvents();
+      },
+    });
   }
 
   loadSummary(): void {

@@ -100,6 +100,57 @@ public class OtpAlertingTests
     }
 
     [Fact]
+    public async Task StartRegistration_StoresPlainCodeForAdmins()
+    {
+        var pending = new PhoneVerification
+        {
+            MobileNumber = "+77011234567", Purpose = VerificationPurpose.Registration,
+            LastSentAt = DateTime.UtcNow.AddHours(-1),
+        };
+        var h = new AuthHarness(false, pending);
+
+        var result = await h.Service.StartRegistrationAsync(Register);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(result.Data!.DevCode, pending.Code);
+    }
+
+    [Fact]
+    public async Task ResendCode_IssuesFreshCode_ResetsAttempts_AndSends()
+    {
+        var pending = new PhoneVerification
+        {
+            MobileNumber = "+77011234567", Purpose = VerificationPurpose.PinReset,
+            CodeHash = "old", Code = "0000", Attempts = 3,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(-1), LastSentAt = DateTime.UtcNow.AddMinutes(-10),
+        };
+        var h = new AuthHarness(true, pending);
+        h.Sender.SendAsync("+77011234567", Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns("MSG2");
+
+        var result = await h.Service.ResendCodeAsync(pending.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(pending.Code, result.Data!.DevCode);
+        Assert.Equal(0, pending.Attempts);
+        Assert.True(pending.ExpiresAt > DateTime.UtcNow);
+        await h.Sender.Received(1).SendAsync("+77011234567", pending.Code!, Arg.Any<CancellationToken>());
+        var e = Assert.Single(h.Events);
+        Assert.Equal(OtpEventType.CodeSent, e.Type);
+        Assert.Equal(VerificationPurpose.PinReset, e.Purpose);
+    }
+
+    [Fact]
+    public async Task ResendCode_UnknownId_ReturnsNotFound()
+    {
+        var h = new AuthHarness();
+
+        var result = await h.Service.ResendCodeAsync(Guid.NewGuid());
+
+        Assert.Equal(404, result.StatusCode);
+        await h.Sender.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+    }
+
+    [Fact]
     public async Task VerifyRegistration_WrongCode_RecordsWrongCode()
     {
         var pending = new PhoneVerification

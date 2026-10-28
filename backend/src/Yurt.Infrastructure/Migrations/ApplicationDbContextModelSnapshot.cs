@@ -1092,6 +1092,10 @@ namespace Yurt.Infrastructure.Migrations
                     b.Property<int>("Attempts")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Code")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
                     b.Property<string>("CodeHash")
                         .IsRequired()
                         .HasMaxLength(200)

@@ -21,7 +21,7 @@ import { ConfirmService } from './confirm.service';
           (click)="$event.stopPropagation()"
         >
           <div class="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-2xl mx-auto mb-4">
-            🗑️
+            {{ s.icon ?? '🗑️' }}
           </div>
           <h3 id="confirm-dialog-title" class="text-lg font-bold text-stone-800 text-center mb-2">{{ s.title }}</h3>
           <p id="confirm-dialog-message" class="text-stone-500 text-sm text-center mb-6">{{ s.message }}</p>
