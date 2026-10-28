@@ -32,7 +32,8 @@ public class RegisterVerifyValidator : AbstractValidator<RegisterVerifyDto>
         RuleFor(x => x.Code)
             .NotEmpty()
             .Matches(@"^\d{4}$")
-            .WithMessage("Code must be exactly 4 digits.");
+            .WithMessage("Code must be exactly 4 digits.")
+            .When(x => string.IsNullOrWhiteSpace(x.FirebaseIdToken));
     }
 }
 
@@ -92,7 +93,8 @@ public class PinResetVerifyValidator : AbstractValidator<PinResetVerifyDto>
         RuleFor(x => x.Code)
             .NotEmpty()
             .Matches(@"^\d{4}$")
-            .WithMessage("Code must be exactly 4 digits.");
+            .WithMessage("Code must be exactly 4 digits.")
+            .When(x => string.IsNullOrWhiteSpace(x.FirebaseIdToken));
 
         RuleFor(x => x.NewPin4)
             .NotEmpty()

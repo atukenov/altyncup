@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Yurt.Application.Common.Interfaces;
+using Yurt.Application.Common.Models;
 using Yurt.Application.Features.Auth;
 using Yurt.Application.Features.Auth.Services;
 using Yurt.Application.Features.Favorites.Services;
@@ -31,6 +32,7 @@ using Yurt.Application.Features.Loyalty;
 using Yurt.Application.Features.Loyalty.Services;
 using Yurt.Application.Features.Push;
 using Yurt.Application.Features.Push.Services;
+using Yurt.Infrastructure.Firebase;
 using Yurt.Infrastructure.Health;
 using Yurt.Infrastructure.Hubs;
 using Yurt.Infrastructure.Iiko;
@@ -85,6 +87,14 @@ public static class DependencyInjection
         // WhatsApp OTP for customer registration (feature-flagged via Otp:Enabled; secrets via env vars)
         services.AddSingleton(configuration.GetSection("Otp").Get<OtpOptions>() ?? new OtpOptions());
         services.AddHttpClient<IOtpSender, WhatsAppOtpSender>();
+        services.AddHttpClient<IOtpDiagnostics, WhatsAppOtpDiagnostics>();
+        services.AddSingleton<WhatsAppStateTracker>();
+        services.AddScoped<GreenApiWebhookHandler>();
+
+        // Admin alerts (Telegram bot; off until Alerts__TelegramBotToken and Alerts__TelegramChatId are set)
+        services.AddSingleton(configuration.GetSection("Alerts").Get<AlertOptions>() ?? new AlertOptions());
+        services.AddHttpClient(TelegramAlertSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(10));
+        services.AddSingleton<IAdminAlertSender, TelegramAlertSender>();
 
         // iiko loyalty (feature-flagged via Iiko:Enabled; secrets via env vars)
         services.AddSingleton(configuration.GetSection("Iiko").Get<IikoOptions>() ?? new IikoOptions());
@@ -96,7 +106,10 @@ public static class DependencyInjection
         // Remote push notifications (feature-flagged via Firebase:Enabled; secrets via env vars)
         services.AddSingleton(configuration.GetSection("Firebase").Get<FirebaseOptions>() ?? new FirebaseOptions());
         services.AddSingleton(configuration.GetSection("Engagement").Get<EngagementOptions>() ?? new EngagementOptions());
+        services.AddSingleton<FirebaseAppProvider>();
         services.AddSingleton<IPushNotificationSender, FcmPushNotificationSender>();
+        // Firebase Phone Auth (Otp__Provider=Firebase): checks the ID token the app sends after the SMS code
+        services.AddSingleton<IFirebasePhoneVerifier, FirebasePhoneVerifier>();
         services.AddScoped<PushNotificationService>();
         services.AddScoped<EngagementService>();
 
@@ -135,6 +148,7 @@ public static class DependencyInjection
         services.AddHostedService<LoyaltyRetryService>();
         services.AddHostedService<IikoOrderSyncRetryService>();
         services.AddHostedService<EngagementPushService>();
+        services.AddHostedService<OtpMonitorService>();
 
         // JWT Auth — fail-fast secret validation
         var jwtSecret = configuration["Jwt:Secret"];

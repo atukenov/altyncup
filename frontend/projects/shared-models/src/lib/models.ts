@@ -69,6 +69,16 @@ export interface RegistrationStartResponse {
   mobileNumber: string;
   expiresAt: string;
   devCode?: string | null;
+  /** 'whatsapp': the backend sent the code. 'firebase': the app sends an SMS via Firebase. */
+  provider?: 'whatsapp' | 'firebase';
+  /** Number of code boxes to show (4 for WhatsApp, 6 for Firebase). */
+  codeLength?: number;
+}
+
+/** Proof of the phone number for the verify endpoints: the WhatsApp code or a Firebase ID token. */
+export interface OtpProofDto {
+  code?: string;
+  firebaseIdToken?: string;
 }
 
 export interface CustomerProfile {
@@ -78,6 +88,7 @@ export interface CustomerProfile {
   lastName: string;
   createdAt: string;
   dateOfBirth?: string | null;
+  isPhoneVerified?: boolean;
 }
 
 // ── Location ──────────────────────────────────────────────────────────────────
@@ -434,6 +445,7 @@ export interface CustomerSummary {
   registeredAt: string;
   orderCount: number;
   totalSpent: number;
+  isPhoneVerified: boolean;
 }
 
 export interface CustomerOrderSummary {
@@ -453,6 +465,7 @@ export interface CustomerDetail {
   displayName?: string;
   registeredAt: string;
   isActive: boolean;
+  isPhoneVerified: boolean;
   totalOrders: number;
   totalSpent: number;
   recentOrders: CustomerOrderSummary[];
@@ -646,6 +659,83 @@ export interface AuditLogEntry {
   details?: string;
   ipAddress?: string;
   createdAt: string;
+}
+
+export type OtpEventType =
+  | 'CodeSent' | 'SendFailed' | 'DeliveryDisabled' | 'Verified'
+  | 'WrongCode' | 'Expired' | 'TooManyAttempts' | 'NoWhatsApp' | 'DeliveryFailed';
+
+/** WhatsApp delivery status of a sent code (Green API outgoingMessageStatus), or 'sendFailed'. */
+export type OtpDeliveryStatus =
+  | 'sent' | 'delivered' | 'read' | 'failed' | 'noAccount' | 'notInGroup' | 'sendFailed'
+  /** The customer app sent the SMS through Firebase Phone Auth; there is no code to show or resend. */
+  | 'firebase';
+
+export type OtpPurpose = 'Registration' | 'PhoneChange' | 'PinReset' | 'PhoneVerify';
+
+export interface OtpEventEntry {
+  id: string;
+  mobileNumber: string;
+  purpose: OtpPurpose;
+  type: OtpEventType;
+  detail?: string;
+  providerMessageId?: string;
+  createdAt: string;
+}
+
+export interface OtpStuckEntry {
+  mobileNumber: string;
+  purpose: OtpPurpose;
+  lastEvent: OtpEventType;
+  lastAt: string;
+  codesRequested: number;
+  sendFailures: number;
+  wrongCodes: number;
+  lastError?: string;
+}
+
+/** A code request still waiting to be confirmed. `code` is plain text (super admins only). */
+export interface OtpPendingCode {
+  id: string;
+  mobileNumber: string;
+  purpose: OtpPurpose;
+  /** Null for requests made before codes were kept in plain text; resend to get one. */
+  code?: string | null;
+  attempts: number;
+  /** Null while queued, or when the Green API webhook isn't set up. */
+  deliveryStatus?: OtpDeliveryStatus | null;
+  deliveryStatusAt?: string | null;
+  lastSentAt: string;
+  expiresAt: string;
+  expired: boolean;
+  createdAt: string;
+}
+
+export interface OtpSummary {
+  hours: number;
+  /** "authorized" when WhatsApp is connected; anything else means codes are not delivered. */
+  whatsappState: string;
+  counts: Partial<Record<OtpEventType, number>>;
+  notVerified: OtpStuckEntry[];
+}
+
+/** Green API instance as shown on the WhatsApp card (getStateInstance + getWaSettings). */
+export interface WhatsAppInstanceInfo {
+  /** "authorized", "notAuthorized", "blocked", "sleepMode", ...; null when Green API could not be asked. */
+  state?: string | null;
+  hint?: string | null;
+  /** Linked WhatsApp number, digits only. */
+  phone?: string | null;
+  avatar?: string | null;
+  idInstance: string;
+  error?: string | null;
+}
+
+export interface WhatsAppQr {
+  type: 'qrCode' | 'alreadyLogged' | 'error';
+  /** Base64 PNG when type is "qrCode". */
+  image?: string | null;
+  message?: string | null;
 }
 
 export interface UserReport {

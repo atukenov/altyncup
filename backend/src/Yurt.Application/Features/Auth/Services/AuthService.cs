@@ -16,6 +16,8 @@ public class AuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IOtpSender _otpSender;
     private readonly OtpOptions _otpOptions;
+    private readonly IAdminAlertSender _alerts;
+    private readonly IFirebasePhoneVerifier _firebase;
     private readonly ILogger<AuthService> _logger;
 
     private const int MaxFailedAttempts = 5;
@@ -27,6 +29,8 @@ public class AuthService
         IPasswordHasher passwordHasher,
         IOtpSender otpSender,
         OtpOptions otpOptions,
+        IAdminAlertSender alerts,
+        IFirebasePhoneVerifier firebase,
         ILogger<AuthService> logger)
     {
         _db = db;
@@ -34,6 +38,8 @@ public class AuthService
         _passwordHasher = passwordHasher;
         _otpSender = otpSender;
         _otpOptions = otpOptions;
+        _alerts = alerts;
+        _firebase = firebase;
         _logger = logger;
     }
 
@@ -43,7 +49,7 @@ public class AuthService
     /// The CustomerUser is not created until the code is confirmed.
     /// </summary>
     public async Task<Result<RegistrationStartResponseDto>> StartRegistrationAsync(
-        CustomerRegisterDto dto, CancellationToken ct = default)
+        CustomerRegisterDto dto, bool clientSupportsFirebase = false, CancellationToken ct = default)
     {
         var normalizedMobile = NormalizeMobile(dto.MobileNumber);
 
@@ -53,6 +59,7 @@ public class AuthService
             return Result<RegistrationStartResponseDto>.Failure("Mobile number already registered.", 409);
 
         var now = DateTime.UtcNow;
+        var firebase = UseFirebase(clientSupportsFirebase);
         var pending = await _db.PhoneVerifications
             .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile
                 && v.Purpose == VerificationPurpose.Registration, ct);
@@ -66,8 +73,9 @@ public class AuthService
                 $"Please wait {wait}s before requesting another code.", 429);
         }
 
-        var code = TokenHasher.NumericCode();
-        var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+        if (await IsKnownNotOnWhatsAppAsync(normalizedMobile, VerificationPurpose.Registration, firebase, ct))
+            return NoWhatsAppFailure();
+
 
         if (pending == null)
         {
@@ -79,38 +87,11 @@ public class AuthService
             _db.PhoneVerifications.Add(pending);
         }
 
-        pending.CodeHash = _passwordHasher.Hash(code);
-        pending.ExpiresAt = expiresAt;
-        pending.LastSentAt = now;
-        pending.Attempts = 0;
         pending.PinHash = _passwordHasher.Hash(dto.Pin4);
         pending.FirstName = dto.FirstName.Trim();
         pending.LastName = dto.LastName.Trim();
 
-        await _db.SaveChangesAsync(ct);
-
-        if (_otpOptions.Enabled)
-        {
-            try
-            {
-                await _otpSender.SendAsync(normalizedMobile, code, ct);
-            }
-            catch (OtpSendException ex)
-            {
-                _logger.LogError(ex, "Failed to send OTP to {Mobile}", normalizedMobile);
-                return Result<RegistrationStartResponseDto>.Failure(
-                    "Could not send the verification code. Please try again.", 502);
-            }
-        }
-        else
-        {
-            _logger.LogWarning(
-                "OTP delivery disabled — verification code for {Mobile} is {Code}", normalizedMobile, code);
-        }
-
-        return Result<RegistrationStartResponseDto>.Success(
-            new RegistrationStartResponseDto(
-                normalizedMobile, expiresAt, _otpOptions.Enabled ? null : code));
+        return await IssueCodeAsync(pending, firebase, now, ct);
     }
 
     /// <summary>
@@ -128,22 +109,8 @@ public class AuthService
         if (pending == null)
             return Result<AuthResponseDto>.Failure("No pending verification. Start registration again.", 400);
 
-        if (pending.ExpiresAt <= DateTime.UtcNow)
-        {
-            _db.PhoneVerifications.Remove(pending);
-            await _db.SaveChangesAsync(ct);
-            return Result<AuthResponseDto>.Failure("The code has expired. Request a new one.", 400);
-        }
-
-        if (pending.Attempts >= _otpOptions.MaxAttempts)
-            return Result<AuthResponseDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
-
-        if (!_passwordHasher.Verify(dto.Code, pending.CodeHash))
-        {
-            pending.Attempts++;
-            await _db.SaveChangesAsync(ct);
-            return Result<AuthResponseDto>.Failure("Incorrect code.", 400);
-        }
+        if (await CheckProofAsync(pending, dto.Code, dto.FirebaseIdToken, ct) is { } failure)
+            return Result<AuthResponseDto>.Failure(failure.Error, failure.Status);
 
         var alreadyRegistered = await _db.CustomerUsers
             .AnyAsync(u => u.MobileNumber == normalizedMobile, ct);
@@ -159,7 +126,9 @@ public class AuthService
             MobileNumber = normalizedMobile,
             PinHash = pending.PinHash,
             FirstName = pending.FirstName,
-            LastName = pending.LastName
+            LastName = pending.LastName,
+            IsPhoneVerified = true,
+            PhoneVerifiedAt = DateTime.UtcNow
         };
         _db.CustomerUsers.Add(user);
         _db.PhoneVerifications.Remove(pending);
@@ -379,8 +348,7 @@ public class AuthService
         user.DateOfBirth = dto.DateOfBirth;
         await _db.SaveChangesAsync(ct);
 
-        return Result<CustomerProfileDto>.Success(
-            new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth));
+        return Result<CustomerProfileDto>.Success(ToProfileDto(user));
     }
 
     /// <summary>
@@ -392,7 +360,7 @@ public class AuthService
     /// phone-change to the same destination number.
     /// </summary>
     public async Task<Result<RegistrationStartResponseDto>> StartPhoneChangeAsync(
-        Guid userId, ChangeMobileNumberDto dto, CancellationToken ct = default)
+        Guid userId, ChangeMobileNumberDto dto, bool clientSupportsFirebase = false, CancellationToken ct = default)
     {
         var user = await _db.CustomerUsers.FindAsync([userId], ct);
         if (user == null)
@@ -406,6 +374,7 @@ public class AuthService
             return Result<RegistrationStartResponseDto>.Failure("Mobile number already in use.", 409);
 
         var now = DateTime.UtcNow;
+        var firebase = UseFirebase(clientSupportsFirebase);
         var pending = await _db.PhoneVerifications
             .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile
                 && v.Purpose == VerificationPurpose.PhoneChange, ct);
@@ -419,8 +388,9 @@ public class AuthService
                 $"Please wait {wait}s before requesting another code.", 429);
         }
 
-        var code = TokenHasher.NumericCode();
-        var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+        if (await IsKnownNotOnWhatsAppAsync(normalizedMobile, VerificationPurpose.PhoneChange, firebase, ct))
+            return NoWhatsAppFailure();
+
 
         if (pending == null)
         {
@@ -432,37 +402,9 @@ public class AuthService
             _db.PhoneVerifications.Add(pending);
         }
 
-        pending.CodeHash = _passwordHasher.Hash(code);
-        pending.ExpiresAt = expiresAt;
-        pending.LastSentAt = now;
-        pending.Attempts = 0;
         pending.CustomerUserId = userId;
 
-        await _db.SaveChangesAsync(ct);
-
-        if (_otpOptions.Enabled)
-        {
-            try
-            {
-                await _otpSender.SendAsync(normalizedMobile, code, ct);
-            }
-            catch (OtpSendException ex)
-            {
-                _logger.LogError(ex, "Failed to send phone-change OTP to {Mobile}", normalizedMobile);
-                return Result<RegistrationStartResponseDto>.Failure(
-                    "Could not send the verification code. Please try again.", 502);
-            }
-        }
-        else
-        {
-            _logger.LogWarning(
-                "OTP delivery disabled — phone-change verification code for {Mobile} is {Code}",
-                normalizedMobile, code);
-        }
-
-        return Result<RegistrationStartResponseDto>.Success(
-            new RegistrationStartResponseDto(
-                normalizedMobile, expiresAt, _otpOptions.Enabled ? null : code));
+        return await IssueCodeAsync(pending, firebase, now, ct);
     }
 
     /// <summary>Step 2: confirm the code and apply the new mobile number.</summary>
@@ -478,22 +420,8 @@ public class AuthService
         if (pending == null || pending.CustomerUserId != userId)
             return Result<CustomerProfileDto>.Failure("No pending verification. Start again.", 400);
 
-        if (pending.ExpiresAt <= DateTime.UtcNow)
-        {
-            _db.PhoneVerifications.Remove(pending);
-            await _db.SaveChangesAsync(ct);
-            return Result<CustomerProfileDto>.Failure("The code has expired. Request a new one.", 400);
-        }
-
-        if (pending.Attempts >= _otpOptions.MaxAttempts)
-            return Result<CustomerProfileDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
-
-        if (!_passwordHasher.Verify(dto.Code, pending.CodeHash))
-        {
-            pending.Attempts++;
-            await _db.SaveChangesAsync(ct);
-            return Result<CustomerProfileDto>.Failure("Incorrect code.", 400);
-        }
+        if (await CheckProofAsync(pending, dto.Code, dto.FirebaseIdToken, ct) is { } failure)
+            return Result<CustomerProfileDto>.Failure(failure.Error, failure.Status);
 
         var user = await _db.CustomerUsers.FindAsync([userId], ct);
         if (user == null)
@@ -514,12 +442,89 @@ public class AuthService
         }
 
         user.MobileNumber = normalizedMobile;
+        user.IsPhoneVerified = true;
+        user.PhoneVerifiedAt = DateTime.UtcNow;
         user.UpdatedAt = DateTime.UtcNow;
         _db.PhoneVerifications.Remove(pending);
         await _db.SaveChangesAsync(ct);
 
-        return Result<CustomerProfileDto>.Success(
-            new CustomerProfileDto(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth));
+        return Result<CustomerProfileDto>.Success(ToProfileDto(user));
+    }
+
+    /// <summary>
+    /// Step 1 of verifying an existing customer's current number (accounts created before
+    /// registration required a code). Sends a WhatsApp code to the number already on file.
+    /// </summary>
+    public async Task<Result<RegistrationStartResponseDto>> StartPhoneVerificationAsync(
+        Guid userId, bool clientSupportsFirebase = false, CancellationToken ct = default)
+    {
+        var user = await _db.CustomerUsers.FindAsync([userId], ct);
+        if (user == null)
+            return Result<RegistrationStartResponseDto>.NotFound("User not found.");
+
+        if (user.IsPhoneVerified)
+            return Result<RegistrationStartResponseDto>.Failure("Phone number is already verified.", 409);
+
+        var mobile = user.MobileNumber;
+        var now = DateTime.UtcNow;
+        var firebase = UseFirebase(clientSupportsFirebase);
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == mobile
+                && v.Purpose == VerificationPurpose.PhoneVerify, ct);
+
+        if (pending != null &&
+            pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) > now)
+        {
+            var wait = (int)Math.Ceiling(
+                (pending.LastSentAt.AddSeconds(_otpOptions.ResendCooldownSeconds) - now).TotalSeconds);
+            return Result<RegistrationStartResponseDto>.Failure(
+                $"Please wait {wait}s before requesting another code.", 429);
+        }
+
+        if (await IsKnownNotOnWhatsAppAsync(mobile, VerificationPurpose.PhoneVerify, firebase, ct))
+            return NoWhatsAppFailure();
+
+
+        if (pending == null)
+        {
+            pending = new PhoneVerification
+            {
+                MobileNumber = mobile,
+                Purpose = VerificationPurpose.PhoneVerify,
+            };
+            _db.PhoneVerifications.Add(pending);
+        }
+
+        pending.CustomerUserId = userId;
+
+        return await IssueCodeAsync(pending, firebase, now, ct);
+    }
+
+    /// <summary>Step 2: confirm the code and mark the customer's current number verified.</summary>
+    public async Task<Result<CustomerProfileDto>> VerifyPhoneAsync(
+        Guid userId, string? code, string? firebaseIdToken = null, CancellationToken ct = default)
+    {
+        var user = await _db.CustomerUsers.FindAsync([userId], ct);
+        if (user == null)
+            return Result<CustomerProfileDto>.NotFound("User not found.");
+
+        var pending = await _db.PhoneVerifications
+            .FirstOrDefaultAsync(v => v.MobileNumber == user.MobileNumber
+                && v.Purpose == VerificationPurpose.PhoneVerify, ct);
+
+        if (pending == null || pending.CustomerUserId != userId)
+            return Result<CustomerProfileDto>.Failure("No pending verification. Start again.", 400);
+
+        if (await CheckProofAsync(pending, code, firebaseIdToken, ct) is { } failure)
+            return Result<CustomerProfileDto>.Failure(failure.Error, failure.Status);
+
+        user.IsPhoneVerified = true;
+        user.PhoneVerifiedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
+        _db.PhoneVerifications.Remove(pending);
+        await _db.SaveChangesAsync(ct);
+
+        return Result<CustomerProfileDto>.Success(ToProfileDto(user));
     }
 
     public async Task<Result<bool>> ChangeAdminPasswordAsync(
@@ -545,17 +550,22 @@ public class AuthService
     /// discover which numbers have accounts.
     /// </summary>
     public async Task<Result<RegistrationStartResponseDto>> StartPinResetAsync(
-        PinResetStartDto dto, CancellationToken ct = default)
+        PinResetStartDto dto, bool clientSupportsFirebase = false, CancellationToken ct = default)
     {
         var normalizedMobile = NormalizeMobile(dto.MobileNumber);
         var now = DateTime.UtcNow;
-        var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+        var firebase = UseFirebase(clientSupportsFirebase);
+
+        // Checked before the account lookup so the answer is the same for registered and
+        // unregistered numbers.
+        if (await IsKnownNotOnWhatsAppAsync(normalizedMobile, VerificationPurpose.PinReset, firebase, ct))
+            return NoWhatsAppFailure();
 
         var user = await _db.CustomerUsers
             .FirstOrDefaultAsync(u => u.MobileNumber == normalizedMobile && u.IsActive, ct);
         if (user == null)
             return Result<RegistrationStartResponseDto>.Success(
-                new RegistrationStartResponseDto(normalizedMobile, expiresAt));
+                StartResponse(normalizedMobile, now.AddMinutes(_otpOptions.CodeExpiryMinutes), firebase, devCode: null));
 
         var pending = await _db.PhoneVerifications
             .FirstOrDefaultAsync(v => v.MobileNumber == normalizedMobile
@@ -570,8 +580,6 @@ public class AuthService
                 $"Please wait {wait}s before requesting another code.", 429);
         }
 
-        var code = TokenHasher.NumericCode();
-
         if (pending == null)
         {
             pending = new PhoneVerification
@@ -582,36 +590,9 @@ public class AuthService
             _db.PhoneVerifications.Add(pending);
         }
 
-        pending.CodeHash = _passwordHasher.Hash(code);
-        pending.ExpiresAt = expiresAt;
-        pending.LastSentAt = now;
-        pending.Attempts = 0;
         pending.CustomerUserId = user.Id;
 
-        await _db.SaveChangesAsync(ct);
-
-        if (_otpOptions.Enabled)
-        {
-            try
-            {
-                await _otpSender.SendAsync(normalizedMobile, code, ct);
-            }
-            catch (OtpSendException ex)
-            {
-                _logger.LogError(ex, "Failed to send PIN-reset OTP to {Mobile}", normalizedMobile);
-                return Result<RegistrationStartResponseDto>.Failure(
-                    "Could not send the verification code. Please try again.", 502);
-            }
-        }
-        else
-        {
-            _logger.LogWarning(
-                "OTP delivery disabled — PIN-reset code for {Mobile} is {Code}", normalizedMobile, code);
-        }
-
-        return Result<RegistrationStartResponseDto>.Success(
-            new RegistrationStartResponseDto(
-                normalizedMobile, expiresAt, _otpOptions.Enabled ? null : code));
+        return await IssueCodeAsync(pending, firebase, now, ct);
     }
 
     /// <summary>
@@ -630,22 +611,8 @@ public class AuthService
         if (pending == null || pending.CustomerUserId == null)
             return Result<AuthResponseDto>.Failure("No pending verification. Start again.", 400);
 
-        if (pending.ExpiresAt <= DateTime.UtcNow)
-        {
-            _db.PhoneVerifications.Remove(pending);
-            await _db.SaveChangesAsync(ct);
-            return Result<AuthResponseDto>.Failure("The code has expired. Request a new one.", 400);
-        }
-
-        if (pending.Attempts >= _otpOptions.MaxAttempts)
-            return Result<AuthResponseDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
-
-        if (!_passwordHasher.Verify(dto.Code, pending.CodeHash))
-        {
-            pending.Attempts++;
-            await _db.SaveChangesAsync(ct);
-            return Result<AuthResponseDto>.Failure("Incorrect code.", 400);
-        }
+        if (await CheckProofAsync(pending, dto.Code, dto.FirebaseIdToken, ct) is { } failure)
+            return Result<AuthResponseDto>.Failure(failure.Error, failure.Status);
 
         var user = await _db.CustomerUsers
             .FirstOrDefaultAsync(u => u.Id == pending.CustomerUserId && u.IsActive, ct);
@@ -659,6 +626,12 @@ public class AuthService
         user.PinHash = _passwordHasher.Hash(dto.NewPin4);
         user.FailedLoginAttempts = 0;
         user.LockoutEnd = null;
+        // The code went to this account's own number, so the reset doubles as phone verification.
+        if (!user.IsPhoneVerified)
+        {
+            user.IsPhoneVerified = true;
+            user.PhoneVerifiedAt = DateTime.UtcNow;
+        }
 
         var sessions = await _db.RefreshTokens
             .Where(t => t.UserId == user.Id && t.UserType == RefreshTokenUserType.Customer && !t.IsRevoked)
@@ -706,6 +679,243 @@ public class AuthService
         await _db.SaveChangesAsync(ct);
         return tokenValue;
     }
+
+    private static CustomerProfileDto ToProfileDto(CustomerUser user)
+        => new(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt,
+            user.DateOfBirth, user.IsPhoneVerified);
+
+    /// <summary>
+    /// Super-admin "resend": issue a fresh code for a pending verification (new expiry,
+    /// attempts reset) and send it again. Skips the customer-facing resend cooldown,
+    /// since an admin is doing it deliberately.
+    /// </summary>
+    public async Task<Result<RegistrationStartResponseDto>> ResendCodeAsync(
+        Guid verificationId, CancellationToken ct = default)
+    {
+        var pending = await _db.PhoneVerifications.FirstOrDefaultAsync(v => v.Id == verificationId, ct);
+        if (pending == null)
+            return Result<RegistrationStartResponseDto>.NotFound(
+                "This code request no longer exists (it was confirmed or replaced).");
+
+        if (pending.DeliveryStatus == FirebaseDeliveryStatus)
+            return Result<RegistrationStartResponseDto>.Failure(
+                "This request uses Firebase SMS, so the customer resends it from the app.", 409);
+
+        var now = DateTime.UtcNow;
+        var code = TokenHasher.NumericCode(OtpOptions.WhatsAppCodeLength);
+        pending.CodeHash = _passwordHasher.Hash(code);
+        pending.Code = code;
+        pending.ExpiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+        pending.LastSentAt = now;
+        pending.Attempts = 0;
+
+        await _db.SaveChangesAsync(ct);
+
+        if (!await DeliverCodeAsync(pending, code, ct))
+            return Result<RegistrationStartResponseDto>.Failure(
+                "Could not send the verification code. The new code is saved; check the WhatsApp status.", 502);
+
+        return Result<RegistrationStartResponseDto>.Success(
+            new RegistrationStartResponseDto(pending.MobileNumber, pending.ExpiresAt, code));
+    }
+
+    /// <summary>
+    /// Marks a pending request whose SMS the customer app sends through Firebase Phone Auth
+    /// (stored in <see cref="PhoneVerification.DeliveryStatus"/>).
+    /// </summary>
+    public const string FirebaseDeliveryStatus = "firebase";
+
+    /// <summary>Firebase is used only when it's switched on and the app says it can do it.</summary>
+    private bool UseFirebase(bool clientSupportsFirebase)
+        => clientSupportsFirebase && _otpOptions.FirebaseEnabled;
+
+    private RegistrationStartResponseDto StartResponse(
+        string mobile, DateTime expiresAt, bool firebase, string? devCode)
+        => firebase
+            ? new(mobile, expiresAt, null, RegistrationStartResponseDto.Firebase, OtpOptions.FirebaseCodeLength)
+            : new(mobile, expiresAt, devCode, RegistrationStartResponseDto.WhatsApp, OtpOptions.WhatsAppCodeLength);
+
+    /// <summary>
+    /// Start a fresh verification window on <paramref name="pending"/> and save it. Over
+    /// WhatsApp a new 4-digit code is generated and sent here. With Firebase nothing is sent:
+    /// the app sends the SMS itself and later proves the number with a Firebase ID token.
+    /// </summary>
+    private async Task<Result<RegistrationStartResponseDto>> IssueCodeAsync(
+        PhoneVerification pending, bool firebase, DateTime now, CancellationToken ct)
+    {
+        pending.ExpiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+        pending.LastSentAt = now;
+        pending.Attempts = 0;
+
+        if (firebase)
+        {
+            // No code of ours exists, so store the hash of a random value nobody knows.
+            pending.CodeHash = _passwordHasher.Hash(TokenHasher.Hash(Guid.NewGuid().ToString()));
+            pending.Code = null;
+            pending.ProviderMessageId = null;
+            pending.DeliveryStatus = FirebaseDeliveryStatus;
+            pending.DeliveryStatusAt = now;
+            AddOtpEvent(pending.MobileNumber, pending.Purpose, OtpEventType.CodeSent,
+                detail: "Firebase SMS (sent by the app)");
+            await _db.SaveChangesAsync(ct);
+            return Result<RegistrationStartResponseDto>.Success(
+                StartResponse(pending.MobileNumber, pending.ExpiresAt, firebase: true, devCode: null));
+        }
+
+        var code = TokenHasher.NumericCode(OtpOptions.WhatsAppCodeLength);
+        pending.CodeHash = _passwordHasher.Hash(code);
+        pending.Code = code;
+        await _db.SaveChangesAsync(ct);
+
+        if (!await DeliverCodeAsync(pending, code, ct))
+            return Result<RegistrationStartResponseDto>.Failure(
+                "Could not send the verification code. Please try again.", 502);
+
+        return Result<RegistrationStartResponseDto>.Success(
+            StartResponse(pending.MobileNumber, pending.ExpiresAt, firebase: false,
+                devCode: _otpOptions.Enabled ? null : code));
+    }
+
+    /// <summary>
+    /// Check the customer's proof for a pending request: either the WhatsApp code, or a
+    /// Firebase ID token whose phone number is the pending number. Records the outcome in
+    /// OtpEvents. Returns null when the proof is good, otherwise the error to return.
+    /// </summary>
+    private async Task<(string Error, int Status)?> CheckProofAsync(
+        PhoneVerification pending, string? code, string? firebaseIdToken, CancellationToken ct)
+    {
+        if (pending.ExpiresAt <= DateTime.UtcNow)
+        {
+            RecordOtpEvent(pending, OtpEventType.Expired);
+            _db.PhoneVerifications.Remove(pending);
+            await _db.SaveChangesAsync(ct);
+            return ("The code has expired. Request a new one.", 400);
+        }
+
+        if (pending.Attempts >= _otpOptions.MaxAttempts)
+        {
+            RecordOtpEvent(pending, OtpEventType.TooManyAttempts);
+            await _db.SaveChangesAsync(ct);
+            return ("Too many incorrect attempts. Request a new code.", 429);
+        }
+
+        if (!string.IsNullOrWhiteSpace(firebaseIdToken))
+        {
+            var check = await _firebase.VerifyAsync(firebaseIdToken, ct);
+            var error = !check.Ok
+                ? check.Error
+                : SameNumber(check.PhoneNumber!, pending.MobileNumber)
+                    ? null
+                    : $"Firebase verified {check.PhoneNumber}, not {pending.MobileNumber}.";
+            if (error != null)
+            {
+                _logger.LogWarning("Firebase phone proof rejected for {Mobile}: {Error}", pending.MobileNumber, error);
+                pending.Attempts++;
+                AddOtpEvent(pending.MobileNumber, pending.Purpose, OtpEventType.WrongCode, detail: error);
+                await _db.SaveChangesAsync(ct);
+                return ("Phone verification failed. Request a new code.", 400);
+            }
+
+            AddOtpEvent(pending.MobileNumber, pending.Purpose, OtpEventType.Verified, detail: "Firebase SMS");
+            return null;
+        }
+
+        if (string.IsNullOrEmpty(code) || !_passwordHasher.Verify(code, pending.CodeHash))
+        {
+            pending.Attempts++;
+            RecordOtpEvent(pending, OtpEventType.WrongCode);
+            await _db.SaveChangesAsync(ct);
+            return ("Incorrect code.", 400);
+        }
+
+        RecordOtpEvent(pending, OtpEventType.Verified);
+        return null;
+    }
+
+    private static bool SameNumber(string a, string b)
+        => a.Where(char.IsDigit).SequenceEqual(b.Where(char.IsDigit));
+
+    /// <summary>
+    /// Send <paramref name="code"/> to the pending row's number, record the outcome and
+    /// remember the Green API message id on the row so delivery webhooks can update it.
+    /// </summary>
+    private async Task<bool> DeliverCodeAsync(PhoneVerification pending, string code, CancellationToken ct)
+    {
+        var mobile = pending.MobileNumber;
+        var purpose = pending.Purpose;
+        pending.ProviderMessageId = null;
+        pending.DeliveryStatus = null;
+        pending.DeliveryStatusAt = null;
+
+        if (!_otpOptions.Enabled)
+        {
+            _logger.LogWarning(
+                "OTP delivery disabled — {Purpose} code for {Mobile} is {Code}", purpose, mobile, code);
+            AddOtpEvent(mobile, purpose, OtpEventType.DeliveryDisabled);
+            await _db.SaveChangesAsync(ct);
+            return true;
+        }
+
+        try
+        {
+            var messageId = await _otpSender.SendAsync(mobile, code, ct);
+            pending.ProviderMessageId = messageId;
+            AddOtpEvent(mobile, purpose, OtpEventType.CodeSent, providerMessageId: messageId);
+            await _db.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (OtpSendException ex)
+        {
+            _logger.LogError(ex, "Failed to send {Purpose} OTP to {Mobile}", purpose, mobile);
+            pending.DeliveryStatus = "sendFailed";
+            pending.DeliveryStatusAt = DateTime.UtcNow;
+            AddOtpEvent(mobile, purpose, OtpEventType.SendFailed, detail: ex.Message);
+            await _db.SaveChangesAsync(ct);
+            await _alerts.SendAsync("otp-send-failed",
+                $"🚨 WhatsApp code could not be sent ({purpose}, {mobile}): {ex.Message}", ct);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Pre-check that the number has WhatsApp before a code is generated, so the customer is
+    /// told right away instead of waiting for a code that can never arrive. Fails open: when
+    /// the check errors or is inconclusive the code is sent as before.
+    /// </summary>
+    private async Task<bool> IsKnownNotOnWhatsAppAsync(
+        string mobile, VerificationPurpose purpose, bool firebase, CancellationToken ct)
+    {
+        if (firebase || !_otpOptions.Enabled || !_otpOptions.CheckWhatsAppBeforeSend)
+            return false;
+
+        if (await _otpSender.HasWhatsAppAsync(mobile, ct) != false)
+            return false;
+
+        _logger.LogInformation("Not sending {Purpose} OTP: {Mobile} has no WhatsApp", purpose, mobile);
+        AddOtpEvent(mobile, purpose, OtpEventType.NoWhatsApp);
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    /// <summary>422 is what the customer app keys its "not on WhatsApp" message on.</summary>
+    private static Result<RegistrationStartResponseDto> NoWhatsAppFailure()
+        => Result<RegistrationStartResponseDto>.Failure(
+            "This number isn't on WhatsApp. Enter a number that has WhatsApp to get the code.", 422);
+
+    private void RecordOtpEvent(PhoneVerification pending, OtpEventType type)
+        => AddOtpEvent(pending.MobileNumber, pending.Purpose, type);
+
+    private void AddOtpEvent(
+        string mobile, VerificationPurpose purpose, OtpEventType type,
+        string? detail = null, string? providerMessageId = null)
+        => _db.OtpEvents.Add(new OtpEvent
+        {
+            MobileNumber = mobile,
+            Purpose = purpose,
+            Type = type,
+            Detail = detail is { Length: > 1000 } ? detail[..1000] : detail,
+            ProviderMessageId = providerMessageId,
+        });
 
     private static string NormalizeMobile(string mobile)
         => mobile.Trim().Replace(" ", "").Replace("-", "");

@@ -6,8 +6,9 @@ import { YurtApiService, AuthStateService } from 'shared-api';
 import { ButtonComponent, OtpBoxesComponent, ToastService } from 'shared-ui';
 import { TranslatePipe } from '../../../core/translate.pipe';
 import { LangService } from '../../../core/lang.service';
+import { OtpProof, PhoneOtpService, firebaseOtpError } from '../../../core/phone-otp.service';
 
-/** "Forgot PIN": phone → WhatsApp code + new PIN → signed in. */
+/** "Forgot PIN": phone → WhatsApp code or Firebase SMS code + new PIN → signed in. */
 @Component({
   selector: 'app-forgot-pin',
   standalone: true,
@@ -21,6 +22,10 @@ export class ForgotPinComponent implements OnDestroy {
   private router = inject(Router);
   private toast = inject(ToastService);
   private lang = inject(LangService);
+  /** WhatsApp (4 digits) or Firebase SMS (6 digits), whichever the backend picked. */
+  readonly otpSession = inject(PhoneOtpService).session();
+  /** Set when Firebase verified the number on its own (Android), so no code is needed. */
+  readonly verifiedProof = signal<OtpProof | null>(null);
 
   readonly pinInputs = viewChildren<ElementRef>('pinInput');
   readonly otpBoxes = viewChild<OtpBoxesComponent>('otpBoxes');
@@ -96,30 +101,41 @@ export class ForgotPinComponent implements OnDestroy {
 
   onResend(): void {
     if (this.resendIn() > 0) return;
-    this.requestCode(this.pendingPhone, () => this.otpBoxes()?.clear());
+    this.requestCode(this.pendingPhone, () => this.otpBoxes()?.clear(), true);
   }
 
-  private requestCode(phone: string, onSent: () => void): void {
+  private requestCode(phone: string, onSent: () => void, resend = false): void {
     this.loading.set(true);
     this.api.pinResetStart(phone).subscribe({
       next: (res) => {
-        this.loading.set(false);
         this.pendingPhone = res.mobileNumber || phone;
-        onSent();
-        this.startResendCountdown();
-        if (res.devCode) this.toast.success('Dev code: ' + res.devCode);
+        this.verifiedProof.set(null);
+        this.otpSession.begin(res, resend).then(
+          (instant) => {
+            this.loading.set(false);
+            this.verifiedProof.set(instant);
+            onSent();
+            this.startResendCountdown();
+            if (res.devCode) this.toast.success('Dev code: ' + res.devCode);
+          },
+          (err) => {
+            this.loading.set(false);
+            this.error.set(firebaseOtpError(err, 'Could not send the SMS. Try again.'));
+          },
+        );
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err.error?.title ?? 'Could not send the code.');
+        this.error.set(err.status === 422 ? this.lang.t('auth.noWhatsApp') : (err.error?.title ?? 'Could not send the code.'));
       },
     });
   }
 
   onSubmit(): void {
     this.error.set('');
-    if (this.otp.length !== 4) {
-      this.error.set('Enter the 4-digit code.');
+    const verified = this.verifiedProof();
+    if (!verified && !this.otpSession.isComplete(this.otp)) {
+      this.error.set(`Enter the ${this.otpSession.codeLength()}-digit code.`);
       return;
     }
     if (this.pin4.length !== 4) {
@@ -128,7 +144,17 @@ export class ForgotPinComponent implements OnDestroy {
     }
 
     this.loading.set(true);
-    this.api.pinResetVerify(this.pendingPhone, this.otp, this.pin4).subscribe({
+    (verified ? Promise.resolve(verified) : this.otpSession.proof(this.otp)).then(
+      (proof) => this.submitProof(proof),
+      (err) => {
+        this.loading.set(false);
+        this.error.set(firebaseOtpError(err, 'Incorrect code.'));
+      },
+    );
+  }
+
+  private submitProof(proof: OtpProof): void {
+    this.api.pinResetVerify(this.pendingPhone, proof, this.pin4).subscribe({
       next: (res) => {
         this.auth.setUser({
           accessToken: res.accessToken,

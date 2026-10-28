@@ -10,7 +10,8 @@ public record CustomerSummaryDto(
     string DisplayName,
     DateTime RegisteredAt,
     int OrderCount,
-    decimal TotalSpent);
+    decimal TotalSpent,
+    bool IsPhoneVerified);
 
 public record CustomerDetailDto(
     Guid Id,
@@ -18,6 +19,7 @@ public record CustomerDetailDto(
     string? DisplayName,
     DateTime RegisteredAt,
     bool IsActive,
+    bool IsPhoneVerified,
     int TotalOrders,
     decimal TotalSpent,
     List<CustomerOrderSummaryDto> RecentOrders);

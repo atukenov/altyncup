@@ -135,6 +135,49 @@
     </div>
   }
 
+  <!-- ── Unverified phone note ─────────────────────────────────────────────── -->
+  @if (profile(); as p) {
+    @if (p.isPhoneVerified === false) {
+      <div style="margin:14px 16px 0;background:#fffbeb;border:1px solid #fde68a;border-radius:18px;overflow:hidden">
+        <button type="button" (click)="sendVerifyCode()" [disabled]="verifyLoading() || verifyResendIn() > 0"
+          class="active:scale-[0.99] transition-transform"
+          style="display:flex;align-items:center;gap:10px;padding:12px 14px;width:100%;text-align:left;
+            background:transparent;border:none;cursor:pointer">
+          <svg width="18" height="18" fill="none" stroke="#b45309" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+          <span style="flex:1;min-width:0">
+            <span style="display:block;font-size:13px;font-weight:800;color:#92400e">{{ 'profile.phoneNotVerified' | t }}</span>
+            <span style="display:block;font-size:11.5px;font-weight:600;color:#b45309;margin-top:2px">
+              {{ verifyOpen() ? (('profile.enterCodeSentTo' | t) + ' ' + p.mobileNumber) : ('profile.tapToVerify' | t) }}
+            </span>
+          </span>
+        </button>
+        @if (verifyOpen()) {
+          <div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:10px">
+            <yurt-otp-boxes #verifyOtpBoxes [length]="verifyOtpSession.codeLength()" (codeChange)="verifyOtp = $event"></yurt-otp-boxes>
+            @if (verifyError()) {
+              <p style="font-size:12.5px;font-weight:600;color:#ef4444;margin:-2px 2px 0">
+                {{ verifyError() }}
+              </p>
+            }
+            <button (click)="confirmVerifyCode()" [disabled]="verifyLoading()"
+              class="active:scale-[0.98] transition-transform"
+              style="width:100%;padding:12px;background:#ffd119;border:none;border-radius:12px;
+                font-size:14px;font-weight:700;color:#1c1917;cursor:pointer">
+              {{ verifyLoading() ? '…' : ('profile.verifyPhone' | t) }}
+            </button>
+            <button type="button" [disabled]="verifyResendIn() > 0" (click)="sendVerifyCode()"
+              style="align-self:flex-end;background:transparent;border:none;font-size:12.5px;font-weight:700;cursor:pointer;padding:4px"
+              [style.color]="verifyResendIn() > 0 ? '#d6d3d1' : '#b45309'">
+              {{ verifyResendIn() > 0 ? ('auth.resendIn' | t).replace('{seconds}', verifyResendIn().toString()) : ('auth.resendCode' | t) }}
+            </button>
+          </div>
+        }
+      </div>
+    }
+  }
+
   <!-- ── Action tiles grid ────────────────────────────────────────────────────── -->
   <div style="margin:14px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px">
     <a routerLink="/achievements"
@@ -260,7 +303,7 @@
           <p style="font-size:12.5px;font-weight:600;color:#78716c;margin:0">
             {{ 'profile.enterCodeSentTo' | t }} {{ phoneFormatted }}
           </p>
-          <yurt-otp-boxes #phoneOtpBoxes (codeChange)="phoneOtp = $event"></yurt-otp-boxes>
+          <yurt-otp-boxes #phoneOtpBoxes [length]="phoneOtpSession.codeLength()" (codeChange)="phoneOtp = $event"></yurt-otp-boxes>
           @if (phoneError()) {
             <p style="font-size:12.5px;font-weight:600;color:#ef4444;margin:-2px 2px 0">
               {{ phoneError() }}

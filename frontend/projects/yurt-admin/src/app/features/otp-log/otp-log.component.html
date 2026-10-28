@@ -1,0 +1,454 @@
+<div class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800">{{ 'nav.otp' | t }}</h1>
+      <p class="text-slate-500 text-sm mt-0.5">{{ 'otp.subtitle' | t }}</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <select
+        [(ngModel)]="hours"
+        (change)="loadSummary()"
+        aria-label="Period"
+        class="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option [ngValue]="24">{{ 'otp.last24h' | t }}</option>
+        <option [ngValue]="168">{{ 'otp.last7d' | t }}</option>
+        <option [ngValue]="720">{{ 'otp.last30d' | t }}</option>
+      </select>
+      <button
+        (click)="sendTestAlert()"
+        [disabled]="sendingAlert()"
+        class="px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+      >
+        {{ 'otp.testAlert' | t }}
+      </button>
+    </div>
+  </div>
+
+  @if (alertMessage(); as msg) {
+    <div class="rounded-xl px-4 py-3 text-sm" [class]="msg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'">
+      {{ msg.key | t }}@if (msg.suffix) { {{ msg.suffix }} }
+    </div>
+  }
+
+  <!-- WhatsApp instance -->
+  <div class="bg-white rounded-2xl shadow-sm border overflow-hidden"
+       [class]="instance() && !whatsappOk ? 'border-red-200' : 'border-slate-100'">
+    <div class="px-4 py-4 flex flex-wrap items-center gap-4">
+      <!-- Avatar -->
+      <div class="relative shrink-0">
+        @if (instance()?.avatar; as avatar) {
+          <img [src]="avatar" alt="" referrerpolicy="no-referrer"
+               class="w-14 h-14 rounded-full object-cover bg-slate-100" />
+        } @else {
+          <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-2xl">💬</div>
+        }
+        @if (instance()) {
+          <span class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white"
+                [class]="whatsappOk ? 'bg-emerald-500' : 'bg-red-500'"></span>
+        }
+      </div>
+
+      <!-- State and number -->
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="font-semibold text-slate-800">{{ 'otp.status' | t }}</h2>
+          @if (instance()) {
+            <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium"
+                  [class]="whatsappOk ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'">
+              {{ stateKey | t }}
+            </span>
+          } @else if (instanceLoading()) {
+            <span class="h-5 w-20 bg-slate-100 rounded-full animate-pulse"></span>
+          }
+        </div>
+        @if (instance(); as info) {
+          <p class="text-sm text-slate-700 mt-1">
+            <span class="text-slate-500 mr-1 whitespace-nowrap">{{ 'wa.linkedNumber' | t }}:</span>
+            @if (info.phone) {
+              <span class="font-medium whitespace-nowrap">{{ formatPhone(info.phone) }}</span>
+            } @else {
+              <span class="text-slate-400">{{ 'wa.noNumber' | t }}</span>
+            }
+          </p>
+          @if (info.idInstance) {
+            <p class="text-xs text-slate-400 mt-0.5">{{ 'wa.instance' | t }} {{ info.idInstance }}</p>
+          }
+        }
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-2" [class]="canRelink && !relinkMode() ? 'w-full sm:w-auto' : 'ml-auto'">
+        @if (canRelink && !relinkMode()) {
+          <button
+            (click)="startRelink()"
+            class="flex-1 sm:flex-none px-4 py-2 bg-amber-500 text-stone-900 rounded-xl font-medium text-sm hover:bg-amber-600 transition-colors whitespace-nowrap"
+          >
+            {{ 'wa.relink' | t }}
+          </button>
+        }
+        <button
+          (click)="loadInstance()"
+          [disabled]="instanceLoading()"
+          [attr.aria-label]="'wa.refresh' | t"
+          class="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+        >
+          ↻
+        </button>
+      </div>
+    </div>
+
+    @if (instance(); as info) {
+      @if (!whatsappOk && (info.hint || info.error)) {
+        <div class="px-4 py-3 bg-red-50 border-t border-red-100 text-sm text-red-700 break-words">
+          <p class="font-medium">{{ 'wa.downHint' | t }}</p>
+          <p class="text-xs mt-0.5">{{ info.hint ?? info.error }}</p>
+        </div>
+      }
+    }
+
+    <!-- Re-link panel -->
+    @if (relinkMode(); as mode) {
+      <div class="border-t border-slate-100 px-4 py-5">
+        @if (relinkTimedOut()) {
+          <div class="text-center space-y-3">
+            <p class="text-sm text-slate-600">{{ 'wa.qrTimeout' | t }}</p>
+            <button (click)="startRelink(mode)"
+                    class="px-4 py-2 bg-amber-500 text-stone-900 rounded-xl font-medium text-sm hover:bg-amber-600 transition-colors">
+              {{ 'wa.tryAgain' | t }}
+            </button>
+          </div>
+        } @else if (mode === 'qr') {
+          <div class="flex flex-col md:flex-row md:items-start gap-5">
+            <div class="mx-auto md:mx-0 shrink-0 w-64 max-w-full aspect-square rounded-xl border border-slate-200 bg-white flex items-center justify-center overflow-hidden">
+              @if (qrImage(); as img) {
+                <img [src]="'data:image/png;base64,' + img" alt="WhatsApp QR" class="w-full h-full object-contain" />
+              } @else if (qrError(); as err) {
+                <p class="p-4 text-xs text-red-600 text-center break-words">{{ err }}</p>
+              } @else {
+                <p class="text-sm text-slate-400 animate-pulse">{{ 'wa.qrLoading' | t }}</p>
+              }
+            </div>
+            <div class="space-y-3 text-sm text-slate-700 min-w-0">
+              <p>{{ 'wa.scanSteps' | t }}</p>
+              <p class="text-xs text-slate-500">{{ 'wa.qrAuto' | t }}</p>
+              <div class="flex flex-wrap gap-2 pt-1">
+                <button (click)="startRelink('phone')"
+                        class="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                  {{ 'wa.usePhone' | t }}
+                </button>
+                <button (click)="cancelRelink()"
+                        class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+                  {{ 'wa.cancel' | t }}
+                </button>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="space-y-4 max-w-md">
+            <div>
+              <label for="relink-phone" class="text-sm text-slate-600">{{ 'wa.phoneLabel' | t }}</label>
+              <div class="flex gap-2 mt-1">
+                <input
+                  id="relink-phone"
+                  [(ngModel)]="relinkPhone"
+                  (keyup.enter)="requestAuthCode()"
+                  type="tel"
+                  inputmode="tel"
+                  placeholder="+7 701 123 45 67"
+                  class="flex-1 min-w-0 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+                <button
+                  (click)="requestAuthCode()"
+                  [disabled]="authCodeLoading() || !relinkPhone.trim()"
+                  class="px-4 py-2 bg-amber-500 text-stone-900 rounded-xl font-medium text-sm hover:bg-amber-600 disabled:opacity-50 transition-colors whitespace-nowrap"
+                >
+                  {{ authCodeLoading() ? '…' : ('wa.getCode' | t) }}
+                </button>
+              </div>
+            </div>
+            @if (authCode(); as code) {
+              <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-4 text-center">
+                <p class="font-mono text-3xl font-bold tracking-[0.3em] text-slate-800 break-all">{{ code }}</p>
+                <p class="text-xs text-slate-500 mt-2">{{ 'wa.codeSteps' | t }}</p>
+                <p class="text-xs text-slate-400 mt-1 animate-pulse">{{ 'wa.waiting' | t }}</p>
+              </div>
+            }
+            @if (authCodeError() !== null) {
+              <p class="text-sm text-red-600 break-words">{{ 'wa.codeFailed' | t }} {{ authCodeError() }}</p>
+            }
+            <div class="flex flex-wrap gap-2">
+              <button (click)="startRelink('qr')"
+                      class="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                {{ 'wa.useQr' | t }}
+              </button>
+              <button (click)="cancelRelink()"
+                      class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+                {{ 'wa.cancel' | t }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Requested codes (plain text, super admin only) -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h2 class="font-semibold text-slate-800">{{ 'otp.codesTitle' | t }} ({{ codes().length }})</h2>
+        <p class="text-xs text-slate-500">{{ 'otp.codesHint' | t }}</p>
+      </div>
+      <button
+        (click)="loadCodes()"
+        [disabled]="codesLoading()"
+        aria-label="Refresh"
+        class="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+      >
+        ↻
+      </button>
+    </div>
+    <!-- Mobile cards -->
+    <div class="md:hidden divide-y divide-slate-50">
+      @if (codesLoading() && codes().length === 0) {
+        <div class="px-4 py-3"><div class="h-12 bg-slate-100 rounded animate-pulse"></div></div>
+      } @else {
+        @for (row of codes(); track row.id) {
+          <div class="px-4 py-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-medium text-slate-700">{{ row.mobileNumber }}</p>
+                <p class="text-xs text-slate-500 mt-0.5">{{ ('otp.purpose.' + row.purpose) | t }} · {{ 'otp.attempts' | t }}: {{ row.attempts }}</p>
+                <p class="mt-1"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" [class]="deliveryClass(row.deliveryStatus)" [title]="row.deliveryStatusAt ? formatDate(row.deliveryStatusAt) : ''">{{ deliveryKey(row.deliveryStatus) | t }}</span></p>
+              </div>
+              @if (row.code) {
+                <span class="font-mono text-lg font-bold tracking-widest text-slate-800 shrink-0">{{ row.code }}</span>
+              } @else if (row.deliveryStatus === 'firebase') {
+                <span class="text-xs text-slate-400 shrink-0">— ({{ 'otp.firebaseCode' | t }})</span>
+              } @else {
+                <span class="text-xs text-slate-400 shrink-0">— ({{ 'otp.noCode' | t }})</span>
+              }
+            </div>
+            <div class="flex items-end justify-between gap-3 mt-2">
+              <div class="text-xs text-slate-500 space-y-0.5">
+                <p>{{ 'otp.when' | t }}: {{ formatDate(row.lastSentAt) }}</p>
+                <p [class]="row.expired ? 'text-red-600' : ''">
+                  {{ 'otp.expires' | t }}: {{ formatDate(row.expiresAt) }}
+                  @if (row.expired) { <span class="ml-1">({{ 'otp.expiredBadge' | t }})</span> }
+                </p>
+              </div>
+              @if (row.deliveryStatus !== 'firebase') {
+              <button
+                (click)="resend(row)"
+                [disabled]="resendingId() === row.id"
+                class="px-3 py-1.5 bg-amber-500 text-stone-900 rounded-xl font-medium text-xs hover:bg-amber-600 disabled:opacity-50 transition-colors whitespace-nowrap shrink-0"
+              >
+                {{ resendingId() === row.id ? '…' : ('otp.resend' | t) }}
+              </button>
+              }
+            </div>
+          </div>
+        } @empty {
+          <p class="px-4 py-8 text-center text-slate-400">{{ 'otp.noCodes' | t }}</p>
+        }
+      }
+    </div>
+    <!-- Desktop table -->
+    <div class="hidden md:block overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-100">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.phone' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.code' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.delivery' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.purpose' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.when' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.expires' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.attempts' | t }}</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          @if (codesLoading() && codes().length === 0) {
+            <tr><td colspan="8" class="px-4 py-3"><div class="h-4 bg-slate-100 rounded animate-pulse"></div></td></tr>
+          } @else {
+            @for (row of codes(); track row.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3 font-medium text-slate-700 whitespace-nowrap">{{ row.mobileNumber }}</td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  @if (row.code) {
+                    <span class="font-mono text-base font-bold tracking-widest text-slate-800">{{ row.code }}</span>
+                  } @else if (row.deliveryStatus === 'firebase') {
+                    <span class="text-xs text-slate-400">— ({{ 'otp.firebaseCode' | t }})</span>
+                  } @else {
+                    <span class="text-xs text-slate-400">— ({{ 'otp.noCode' | t }})</span>
+                  }
+                </td>
+                <td class="px-4 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" [class]="deliveryClass(row.deliveryStatus)" [title]="row.deliveryStatusAt ? formatDate(row.deliveryStatusAt) : ''">{{ deliveryKey(row.deliveryStatus) | t }}</span></td>
+                <td class="px-4 py-3 text-slate-600">{{ ('otp.purpose.' + row.purpose) | t }}</td>
+                <td class="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{{ formatDate(row.lastSentAt) }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-xs" [class]="row.expired ? 'text-red-600' : 'text-slate-500'">
+                  {{ formatDate(row.expiresAt) }}
+                  @if (row.expired) { <span class="ml-1">({{ 'otp.expiredBadge' | t }})</span> }
+                </td>
+                <td class="px-4 py-3 text-slate-600">{{ row.attempts }}</td>
+                <td class="px-4 py-3 text-right">
+                  @if (row.deliveryStatus !== 'firebase') {
+                  <button
+                    (click)="resend(row)"
+                    [disabled]="resendingId() === row.id"
+                    class="px-3 py-1.5 bg-amber-500 text-stone-900 rounded-xl font-medium text-xs hover:bg-amber-600 disabled:opacity-50 transition-colors whitespace-nowrap"
+                  >
+                    {{ resendingId() === row.id ? '…' : ('otp.resend' | t) }}
+                  </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">{{ 'otp.noCodes' | t }}</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  @if (summary(); as s) {
+    <!-- Counts -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      @for (tile of tiles; track tile.type) {
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3">
+          <p class="text-xs text-slate-500">{{ tile.key | t }}</p>
+          <p class="text-2xl font-bold mt-1" [class]="tile.tone">{{ s.counts[tile.type] ?? 0 }}</p>
+        </div>
+      }
+    </div>
+
+    <!-- Didn't get through -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-100">
+        <h2 class="font-semibold text-slate-800">{{ 'otp.stuckTitle' | t }} ({{ s.notVerified.length }})</h2>
+        <p class="text-xs text-slate-500">{{ 'otp.stuckHint' | t }}</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 border-b border-slate-100">
+            <tr>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.phone' | t }}</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.purpose' | t }}</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.lastEvent' | t }}</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.when' | t }}</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.codes' | t }}</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.error' | t }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (row of s.notVerified; track row.mobileNumber + row.purpose) {
+              <tr class="hover:bg-slate-50 transition-colors cursor-pointer" (click)="showPhone(row.mobileNumber)">
+                <td class="px-4 py-3 font-medium text-slate-700 whitespace-nowrap">{{ row.mobileNumber }}</td>
+                <td class="px-4 py-3 text-slate-600">{{ ('otp.purpose.' + row.purpose) | t }}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium" [class]="typeClass(row.lastEvent)">
+                    {{ ('otp.type.' + row.lastEvent) | t }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{{ formatDate(row.lastAt) }}</td>
+                <td class="px-4 py-3 text-slate-600">
+                  {{ row.codesRequested }}
+                  @if (row.sendFailures) { <span class="text-red-600 text-xs ml-1">({{ row.sendFailures }} ✕)</span> }
+                </td>
+                <td class="px-4 py-3 text-slate-500 text-xs max-w-xs truncate" [title]="row.lastError ?? ''">{{ row.lastError ?? '—' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">{{ 'otp.nobodyStuck' | t }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else if (summaryLoading()) {
+    <div class="h-24 bg-slate-100 rounded-2xl animate-pulse"></div>
+  }
+
+  <!-- All events -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+      <h2 class="font-semibold text-slate-800">{{ 'otp.eventsTitle' | t }} ({{ total() }})</h2>
+      <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+        <input
+          [(ngModel)]="phoneFilter"
+          (keyup.enter)="applyFilter()"
+          (blur)="applyFilter()"
+          [placeholder]="'otp.searchPhone' | t"
+          class="flex-1 min-w-0 sm:flex-none border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+        />
+        <select
+          [(ngModel)]="typeFilter"
+          (change)="applyFilter()"
+          aria-label="{{ 'otp.event' | t }}"
+          class="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+        >
+          <option value="">{{ 'auditLog.all' | t }}</option>
+          @for (type of types; track type) {
+            <option [value]="type">{{ ('otp.type.' + type) | t }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-100">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.when' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.phone' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.purpose' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.event' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.details' | t }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          @if (eventsLoading() && events().length === 0) {
+            @for (i of [1,2,3,4,5]; track i) {
+              <tr>
+                @for (j of [1,2,3,4,5]; track j) {
+                  <td class="px-4 py-3"><div class="h-4 bg-slate-100 rounded animate-pulse w-24"></div></td>
+                }
+              </tr>
+            }
+          } @else {
+            @for (e of events(); track e.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{{ formatDate(e.createdAt) }}</td>
+                <td class="px-4 py-3 font-medium text-slate-700 whitespace-nowrap">{{ e.mobileNumber }}</td>
+                <td class="px-4 py-3 text-slate-600">{{ ('otp.purpose.' + e.purpose) | t }}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium" [class]="typeClass(e.type)">
+                    {{ ('otp.type.' + e.type) | t }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-slate-500 text-xs max-w-md truncate" [title]="e.detail ?? ''">{{ e.detail ?? e.providerMessageId ?? '—' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="px-4 py-10 text-center text-slate-400">{{ 'otp.noEvents' | t }}</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (hasMore) {
+    <div class="text-center">
+      <button
+        (click)="loadMore()"
+        [disabled]="eventsLoading()"
+        class="px-6 py-2 bg-amber-500 text-stone-900 rounded-xl font-medium text-sm hover:bg-amber-600 disabled:opacity-50 transition-colors"
+      >
+        {{ eventsLoading() ? '…' : ('auditLog.loadMore' | t) }}
+      </button>
+    </div>
+  }
+</div>

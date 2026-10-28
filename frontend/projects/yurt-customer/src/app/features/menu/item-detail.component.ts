@@ -39,6 +39,12 @@ export class ItemDetailComponent implements OnInit {
   selectedToppingIds = signal<Set<string>>(new Set());
   selectedVariant = signal<MenuItemVariant | null>(null);
   imageError = signal(false);
+  // Hero shows the 3D model by default; customers can flip to the real photo
+  viewMode = signal<'3d' | 'photo'>('3d');
+  readonly viewModes = [
+    { value: 'photo', labelKey: 'item.viewPhoto' },
+    { value: '3d', labelKey: 'item.view3d' },
+  ] as const;
 
   readonly effectivePrice = computed(() =>
     this.selectedVariant()?.price ?? this.item()?.price ?? 0
@@ -221,7 +227,10 @@ export class ItemDetailComponent implements OnInit {
   }
 
   // ── Existing methods (unchanged) ─────────────────────────────────────────────
-  onImageError(): void { this.imageError.set(true); }
+  onImageError(): void {
+    this.imageError.set(true);
+    this.viewMode.set('3d');
+  }
 
   reload(): void { this.loadItem(this.langService.lang()); }
 

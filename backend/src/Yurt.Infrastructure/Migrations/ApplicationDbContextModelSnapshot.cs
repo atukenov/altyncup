@@ -17,7 +17,7 @@ namespace Yurt.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.15")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -222,6 +222,9 @@ namespace Yurt.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsPhoneVerified")
+                        .HasColumnType("boolean");
+
                     b.Property<int?>("LastBirthdayPushYear")
                         .HasColumnType("integer");
 
@@ -239,6 +242,9 @@ namespace Yurt.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("PhoneVerifiedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PinHash")
                         .IsRequired()
@@ -939,6 +945,48 @@ namespace Yurt.Infrastructure.Migrations
                     b.ToTable("OrderItemToppings");
                 });
 
+            modelBuilder.Entity("Yurt.Domain.Entities.OtpEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("MobileNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("ProviderMessageId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("ProviderMessageId");
+
+                    b.HasIndex("MobileNumber", "CreatedAt");
+
+                    b.ToTable("OtpEvents");
+                });
+
             modelBuilder.Entity("Yurt.Domain.Entities.Payment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1046,6 +1094,10 @@ namespace Yurt.Infrastructure.Migrations
                     b.Property<int>("Attempts")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Code")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
                     b.Property<string>("CodeHash")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1056,6 +1108,13 @@ namespace Yurt.Infrastructure.Migrations
 
                     b.Property<Guid?>("CustomerUserId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("DeliveryStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("DeliveryStatusAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
@@ -1083,6 +1142,10 @@ namespace Yurt.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("ProviderMessageId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<int>("Purpose")
                         .HasColumnType("integer");
 
@@ -1090,6 +1153,8 @@ namespace Yurt.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProviderMessageId");
 
                     b.HasIndex("MobileNumber", "Purpose")
                         .IsUnique();

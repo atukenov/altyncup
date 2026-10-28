@@ -34,6 +34,7 @@
           <tr class="border-b border-slate-100 text-slate-400 text-xs uppercase tracking-wide">
             <th class="text-left px-5 py-3">{{ 'customers.phone' | t }}</th>
             <th class="text-left px-5 py-3">{{ 'customers.name' | t }}</th>
+            <th class="text-left px-5 py-3">{{ 'customers.verification' | t }}</th>
             <th class="text-left px-5 py-3">{{ 'customers.registered' | t }}</th>
             <th class="text-right px-5 py-3">{{ 'customers.orders' | t }}</th>
             <th class="text-right px-5 py-3">{{ 'customers.spent' | t }}</th>
@@ -49,6 +50,13 @@
             >
               <td class="px-5 py-3 font-mono text-slate-700">{{ c.phone }}</td>
               <td class="px-5 py-3 text-slate-800">{{ c.displayName || '—' }}</td>
+              <td class="px-5 py-3">
+                @if (c.isPhoneVerified) {
+                  <span class="text-xs font-semibold bg-green-100 text-green-600 px-2 py-0.5 rounded-full">{{ 'customers.verified' | t }}</span>
+                } @else {
+                  <span class="text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{{ 'customers.unverified' | t }}</span>
+                }
+              </td>
               <td class="px-5 py-3 text-slate-400">{{ c.registeredAt | date: 'MMM d, y' }}</td>
               <td class="px-5 py-3 text-right font-semibold text-slate-700">{{ c.orderCount }}</td>
               <td class="px-5 py-3 text-right font-semibold text-amber-600">{{ c.totalSpent | currency2 }}</td>
@@ -71,6 +79,13 @@
             <div>
               <p class="font-semibold text-slate-800">{{ c.displayName || '—' }}</p>
               <p class="font-mono text-xs text-slate-500 mt-0.5">{{ c.phone }}</p>
+              <p class="mt-1">
+                @if (c.isPhoneVerified) {
+                  <span class="text-xs font-semibold bg-green-100 text-green-600 px-2 py-0.5 rounded-full">{{ 'customers.verified' | t }}</span>
+                } @else {
+                  <span class="text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{{ 'customers.unverified' | t }}</span>
+                }
+              </p>
             </div>
             <p class="text-xs text-slate-400">{{ c.registeredAt | date: 'MMM d, y' }}</p>
           </div>

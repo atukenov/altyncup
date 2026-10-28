@@ -126,11 +126,11 @@
     </a>
     } @else {
     <h2 class="text-2xl font-bold text-stone-800 mb-1">{{ 'auth.verifyTitle' | t }}</h2>
-    <p class="text-stone-500 text-sm mb-7">{{ 'auth.verifyDesc' | t }}</p>
+    <p class="text-stone-500 text-sm mb-7">{{ (otpSession.isFirebase ? 'auth.verifyDescSms' : 'auth.verifyDesc') | t }}</p>
 
     <div class="mb-7">
       <label class="block text-sm font-semibold text-stone-600 mb-2">{{ 'auth.enterCode' | t }}</label>
-      <yurt-otp-boxes #otpBoxes (codeChange)="otp = $event"></yurt-otp-boxes>
+      <yurt-otp-boxes #otpBoxes [length]="otpSession.codeLength()" (codeChange)="otp = $event"></yurt-otp-boxes>
     </div>
 
     @if (error()) {

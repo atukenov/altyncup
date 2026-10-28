@@ -1,4 +1,4 @@
-<div class="p-6 max-w-4xl mx-auto">
+<div class="p-4 md:p-6 max-w-4xl mx-auto">
   <!-- Back -->
   <a routerLink="/customers" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6 transition-colors">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -28,6 +28,11 @@
               <span class="text-xs font-semibold bg-red-100 text-red-600 px-2 py-0.5 rounded-full">{{ 'customers.deactivated' | t }}</span>
             } @else {
               <span class="text-xs font-semibold bg-green-100 text-green-600 px-2 py-0.5 rounded-full">{{ 'customers.active' | t }}</span>
+            }
+            @if (c.isPhoneVerified) {
+              <span class="text-xs font-semibold bg-green-100 text-green-600 px-2 py-0.5 rounded-full">{{ 'customers.verified' | t }}</span>
+            } @else {
+              <span class="text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{{ 'customers.unverified' | t }}</span>
             }
           </div>
           <p class="text-slate-500 font-mono text-sm mt-0.5">{{ c.phone }}</p>
@@ -96,6 +101,7 @@
       @if (!c.recentOrders.length) {
         <div class="text-center py-12 text-slate-400 text-sm">{{ 'customers.noOrders' | t }}</div>
       } @else {
+        <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b border-slate-100 text-slate-400 text-xs uppercase tracking-wide">
@@ -144,6 +150,7 @@
             }
           </tbody>
         </table>
+        </div>
       }
     </div>
   }

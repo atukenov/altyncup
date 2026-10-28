@@ -64,6 +64,10 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   paymentLoading = signal(false);
   showDecline = signal(false);
 
+  /** Ticks every second so the prep countdown on accepted orders stays live. */
+  private now = signal(Date.now());
+  private clock: ReturnType<typeof setInterval> | null = null;
+
   constructor() {
     effect(() => {
       const o = this.selectedOrder();
@@ -116,7 +120,30 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
 
   private subs: Subscription[] = [];
 
+  /** Statuses where the kitchen is still working against the ETA picked on accept. */
+  private countdownStatuses = [OrderStatus.Accepted, OrderStatus.Preparing];
+
+  /**
+   * Time left until acceptedAt + etaMinutes, for orders still being made.
+   * Null when the order isn't in progress or has no ETA. Negative once overdue.
+   */
+  countdown(order: Order): { label: string; overdue: boolean; urgent: boolean } | null {
+    if (!this.countdownStatuses.includes(order.status) || !order.acceptedAt || !order.etaMinutes)
+      return null;
+    const due = new Date(order.acceptedAt).getTime() + order.etaMinutes * 60_000;
+    const secs = Math.round((due - this.now()) / 1000);
+    const abs = Math.abs(secs);
+    const label = `${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, '0')}`;
+    return { label, overdue: secs < 0, urgent: secs >= 0 && secs <= 120 };
+  }
+
+  dueAt(order: Order): Date | null {
+    if (!order.acceptedAt || !order.etaMinutes) return null;
+    return new Date(new Date(order.acceptedAt).getTime() + order.etaMinutes * 60_000);
+  }
+
   ngOnInit(): void {
+    this.clock = setInterval(() => this.now.set(Date.now()), 1000);
     this.api.getAdminLocations().subscribe((locs) => {
       this.locations.set(locs);
       const saved = localStorage.getItem(this.LOC_KEY) ?? '';
@@ -142,6 +169,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.clock) clearInterval(this.clock);
     this.subs.forEach((s) => s.unsubscribe());
     this.signalr.stopConnection();
   }
@@ -166,7 +194,9 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
     this.pauseLoading.set(true);
     request.subscribe({
       next: (updated) => {
-        this.locations.update((list) => list.map((l) => (l.id === updated.id ? { ...l, ...updated } : l)));
+        // Replace, don't merge: the API omits null fields, so on resume `ordersPausedUntil`
+        // is absent and a spread would keep the old pause time.
+        this.locations.update((list) => list.map((l) => (l.id === updated.id ? updated : l)));
         this.pauseLoading.set(false);
       },
       error: () => {

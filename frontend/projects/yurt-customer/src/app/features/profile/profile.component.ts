@@ -6,6 +6,7 @@ import { YurtApiService, AuthStateService, NotificationService } from 'shared-ap
 import { CustomerProfile, CustomerStats, LoyaltyBalance } from 'shared-models';
 import { Currency2Pipe, OtpBoxesComponent, ToastService } from 'shared-ui';
 import { LangService, Lang } from '../../core/lang.service';
+import { OtpProof, PhoneOtpService, firebaseOtpError } from '../../core/phone-otp.service';
 import { TranslatePipe } from '../../core/translate.pipe';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 
@@ -62,8 +63,20 @@ export class ProfileComponent implements OnInit, OnDestroy {
   phoneError = signal('');
   phoneResendIn = signal(0);
   readonly phoneOtpBoxes = viewChild<OtpBoxesComponent>('phoneOtpBoxes');
+  /** WhatsApp (4 digits) or Firebase SMS (6 digits), whichever the backend picked. */
+  readonly phoneOtpSession = inject(PhoneOtpService).session();
   private pendingPhoneNumber = '';
   private phoneResendTimer: ReturnType<typeof setInterval> | null = null;
+
+  // Verify the current phone number (accounts created before signup required a code)
+  verifyOpen = signal(false);
+  verifyOtp = '';
+  verifyLoading = signal(false);
+  verifyError = signal('');
+  verifyResendIn = signal(0);
+  readonly verifyOtpBoxes = viewChild<OtpBoxesComponent>('verifyOtpBoxes');
+  readonly verifyOtpSession = inject(PhoneOtpService).session();
+  private verifyResendTimer: ReturnType<typeof setInterval> | null = null;
 
   // Delete account
   showDeleteConfirm = signal(false);
@@ -89,6 +102,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.clearPhoneResendTimer();
+    this.clearVerifyResendTimer();
   }
 
   chooseAvatar(avatar: string): void {
@@ -177,17 +191,28 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.phoneLoading.set(true);
     this.api.changeMobileNumberStart(newNumber).subscribe({
       next: (res) => {
-        this.phoneLoading.set(false);
         this.pendingPhoneNumber = res.mobileNumber || newNumber;
-        this.phoneOtp = '';
-        this.phoneStep.set('otp');
-        this.startPhoneResendCountdown();
-        if (res.devCode) this.toast.success('Dev code: ' + res.devCode);
+        this.phoneOtpSession.begin(res).then(
+          (instant) => {
+            this.phoneLoading.set(false);
+            this.phoneOtp = '';
+            this.phoneStep.set('otp');
+            this.startPhoneResendCountdown();
+            if (res.devCode) this.toast.success('Dev code: ' + res.devCode);
+            if (instant) this.submitPhoneChangeProof(instant);
+          },
+          (err) => {
+            this.phoneLoading.set(false);
+            this.phoneError.set(firebaseOtpError(err, 'Could not send the SMS. Try again.'));
+          },
+        );
       },
       error: (err) => {
         this.phoneLoading.set(false);
         this.phoneError.set(
-          err.status === 409 ? this.langService.t('profile.phoneInUse') : 'Could not send the verification code.',
+          err.status === 409 ? this.langService.t('profile.phoneInUse')
+            : err.status === 422 ? this.langService.t('auth.noWhatsApp')
+            : 'Could not send the verification code.',
         );
       },
     });
@@ -195,12 +220,23 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   verifyPhoneChange(): void {
     this.phoneError.set('');
-    if (this.phoneOtp.length !== 4) {
-      this.phoneError.set('Enter the 4-digit code.');
+    if (!this.phoneOtpSession.isComplete(this.phoneOtp)) {
+      this.phoneError.set(`Enter the ${this.phoneOtpSession.codeLength()}-digit code.`);
       return;
     }
     this.phoneLoading.set(true);
-    this.api.changeMobileNumberVerify(this.pendingPhoneNumber, this.phoneOtp).subscribe({
+    this.phoneOtpSession.proof(this.phoneOtp).then(
+      (proof) => this.submitPhoneChangeProof(proof),
+      (err) => {
+        this.phoneLoading.set(false);
+        this.phoneError.set(firebaseOtpError(err, 'Incorrect code.'));
+      },
+    );
+  }
+
+  private submitPhoneChangeProof(proof: OtpProof): void {
+    this.phoneLoading.set(true);
+    this.api.changeMobileNumberVerify(this.pendingPhoneNumber, proof).subscribe({
       next: (p) => {
         this.profile.set(p);
         this.clearPhoneResendTimer();
@@ -225,14 +261,23 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.phoneLoading.set(true);
     this.api.changeMobileNumberStart(this.pendingPhoneNumber).subscribe({
       next: (res) => {
-        this.phoneLoading.set(false);
-        this.phoneOtpBoxes()?.clear();
-        this.startPhoneResendCountdown();
-        this.toast.success(res.devCode ? 'Dev code: ' + res.devCode : 'Code sent.');
+        this.phoneOtpSession.begin(res, true).then(
+          (instant) => {
+            this.phoneLoading.set(false);
+            this.phoneOtpBoxes()?.clear();
+            this.startPhoneResendCountdown();
+            this.toast.success(res.devCode ? 'Dev code: ' + res.devCode : 'Code sent.');
+            if (instant) this.submitPhoneChangeProof(instant);
+          },
+          (err) => {
+            this.phoneLoading.set(false);
+            this.phoneError.set(firebaseOtpError(err, 'Could not resend the code.'));
+          },
+        );
       },
       error: (err) => {
         this.phoneLoading.set(false);
-        this.phoneError.set(err.error?.title ?? 'Could not resend the code.');
+        this.phoneError.set(err.status === 422 ? this.langService.t('auth.noWhatsApp') : (err.error?.title ?? 'Could not resend the code.'));
       },
     });
   }
@@ -258,6 +303,91 @@ export class ProfileComponent implements OnInit, OnDestroy {
     if (this.phoneResendTimer) {
       clearInterval(this.phoneResendTimer);
       this.phoneResendTimer = null;
+    }
+  }
+
+  sendVerifyCode(): void {
+    if (this.verifyLoading() || this.verifyResendIn() > 0) return;
+    this.verifyError.set('');
+    this.verifyLoading.set(true);
+    this.api.verifyPhoneStart().subscribe({
+      next: (res) => {
+        this.verifyOtpSession.begin(res, this.verifyOpen()).then(
+          (instant) => {
+            this.verifyLoading.set(false);
+            this.verifyOtp = '';
+            this.verifyOtpBoxes()?.clear();
+            this.verifyOpen.set(true);
+            this.startVerifyResendCountdown();
+            this.toast.success(res.devCode ? 'Dev code: ' + res.devCode : this.langService.t('profile.codeSent'));
+            if (instant) this.submitVerifyProof(instant);
+          },
+          (err) => {
+            this.verifyLoading.set(false);
+            this.verifyOpen.set(true);
+            this.verifyError.set(firebaseOtpError(err, 'Could not send the SMS. Try again.'));
+          },
+        );
+      },
+      error: (err) => {
+        this.verifyLoading.set(false);
+        if (err.status === 409) {
+          this.loadProfile();
+          return;
+        }
+        this.verifyOpen.set(true);
+        this.verifyError.set(err.status === 422 ? this.langService.t('auth.noWhatsApp') : (err.error?.title ?? 'Could not send the verification code.'));
+      },
+    });
+  }
+
+  confirmVerifyCode(): void {
+    this.verifyError.set('');
+    if (!this.verifyOtpSession.isComplete(this.verifyOtp)) {
+      this.verifyError.set(`Enter the ${this.verifyOtpSession.codeLength()}-digit code.`);
+      return;
+    }
+    this.verifyLoading.set(true);
+    this.verifyOtpSession.proof(this.verifyOtp).then(
+      (proof) => this.submitVerifyProof(proof),
+      (err) => {
+        this.verifyLoading.set(false);
+        this.verifyError.set(firebaseOtpError(err, 'Incorrect code.'));
+      },
+    );
+  }
+
+  private submitVerifyProof(proof: OtpProof): void {
+    this.verifyLoading.set(true);
+    this.api.verifyPhoneConfirm(proof).subscribe({
+      next: (p) => {
+        this.profile.set(p);
+        this.clearVerifyResendTimer();
+        this.verifyOpen.set(false);
+        this.verifyLoading.set(false);
+        this.toast.success(this.langService.t('profile.phoneVerified'));
+      },
+      error: (err) => {
+        this.verifyLoading.set(false);
+        this.verifyError.set(err.error?.title ?? 'Incorrect code.');
+      },
+    });
+  }
+
+  private startVerifyResendCountdown(): void {
+    this.clearVerifyResendTimer();
+    this.verifyResendIn.set(60);
+    this.verifyResendTimer = setInterval(() => {
+      const next = this.verifyResendIn() - 1;
+      this.verifyResendIn.set(next);
+      if (next <= 0) this.clearVerifyResendTimer();
+    }, 1000);
+  }
+
+  private clearVerifyResendTimer(): void {
+    if (this.verifyResendTimer) {
+      clearInterval(this.verifyResendTimer);
+      this.verifyResendTimer = null;
     }
   }
 

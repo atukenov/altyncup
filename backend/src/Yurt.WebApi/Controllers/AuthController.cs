@@ -35,8 +35,19 @@ public class AuthController : ApiControllerBase
     }
 
     /// <summary>
+    /// App builds that can send the code themselves through Firebase Phone Auth say so with
+    /// <c>X-Otp-Providers: firebase</c> on the "start" calls. When Otp__Provider is Firebase
+    /// those clients get <c>provider: "firebase"</c> back; everyone else keeps getting WhatsApp.
+    /// </summary>
+    private bool ClientSupportsFirebase
+        => Request.Headers["X-Otp-Providers"].ToString()
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Contains("firebase", StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Start registration: sends a 4-digit verification code to the customer's mobile
-    /// number over WhatsApp. Call <c>register/verify</c> with the code to finish.
+    /// number over WhatsApp, or tells the app to send a 6-digit SMS through Firebase
+    /// (see <see cref="ClientSupportsFirebase"/>). Call <c>register/verify</c> to finish.
     /// </summary>
     [HttpPost("register/start")]
     public async Task<IActionResult> RegisterStart(
@@ -47,7 +58,7 @@ public class AuthController : ApiControllerBase
         if (!validation.IsValid)
             return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
 
-        var result = await _authService.StartRegistrationAsync(dto, ct);
+        var result = await _authService.StartRegistrationAsync(dto, ClientSupportsFirebase, ct);
         return ToResult(result);
     }
 
@@ -75,7 +86,7 @@ public class AuthController : ApiControllerBase
         if (!validation.IsValid)
             return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
 
-        return ToResult(await _authService.StartPinResetAsync(dto, ct));
+        return ToResult(await _authService.StartPinResetAsync(dto, ClientSupportsFirebase, ct));
     }
 
     /// <summary>Forgot PIN, step 2: confirm the code, set a new PIN and log in.</summary>
@@ -132,7 +143,7 @@ public class AuthController : ApiControllerBase
         var userId = _currentUser.UserId!.Value;
         var user = await _db.CustomerUsers.FindAsync([userId], ct);
         if (user == null) return NotFound();
-        return Ok(new { user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth });
+        return Ok(new { user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt, user.DateOfBirth, user.IsPhoneVerified });
     }
 
     /// <summary>Update current customer's name.</summary>
@@ -161,7 +172,7 @@ public class AuthController : ApiControllerBase
             return ValidationError(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
 
         var userId = _currentUser.UserId!.Value;
-        var result = await _authService.StartPhoneChangeAsync(userId, dto, ct);
+        var result = await _authService.StartPhoneChangeAsync(userId, dto, ClientSupportsFirebase, ct);
         return ToResult(result);
     }
 
@@ -179,6 +190,32 @@ public class AuthController : ApiControllerBase
         var userId = _currentUser.UserId!.Value;
         var result = await _authService.VerifyPhoneChangeAsync(userId, dto, ct);
         return ToResult(result);
+    }
+
+    /// <summary>
+    /// Step 1 of verifying the current customer's existing number: sends a 4-digit code
+    /// to it. Call <c>me/verify-phone/confirm</c> with the code to finish.
+    /// </summary>
+    [HttpPost("me/verify-phone/start")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> StartPhoneVerification(CancellationToken ct)
+    {
+        var userId = _currentUser.UserId!.Value;
+        return ToResult(await _authService.StartPhoneVerificationAsync(userId, ClientSupportsFirebase, ct));
+    }
+
+    /// <summary>Confirm the code and mark the current customer's number verified.</summary>
+    [HttpPost("me/verify-phone/confirm")]
+    [Authorize(Policy = "CustomerOnly")]
+    public async Task<IActionResult> ConfirmPhoneVerification(
+        [FromBody] VerifyPhoneDto dto, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(dto.FirebaseIdToken)
+            && (string.IsNullOrWhiteSpace(dto.Code) || dto.Code.Length != 4 || !dto.Code.All(char.IsDigit)))
+            return ValidationError("Code must be exactly 4 digits.");
+
+        var userId = _currentUser.UserId!.Value;
+        return ToResult(await _authService.VerifyPhoneAsync(userId, dto.Code, dto.FirebaseIdToken, ct));
     }
 
     /// <summary>Change customer's 4-digit PIN.</summary>

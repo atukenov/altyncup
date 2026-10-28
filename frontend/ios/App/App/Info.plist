@@ -53,5 +53,20 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>firebase-phone-auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- Encoded App ID (GOOGLE_APP_ID in GoogleService-Info.plist): lets Firebase Phone Auth
+				     return from its reCAPTCHA fallback when silent APNs verification isn't available. -->
+				<string>app-1-862081190989-ios-6c1e9d234cf28b677fe004</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

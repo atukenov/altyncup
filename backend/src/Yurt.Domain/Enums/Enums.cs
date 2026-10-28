@@ -77,7 +77,8 @@ public enum VerificationPurpose
 {
     Registration = 0,
     PhoneChange = 1,
-    PinReset = 2
+    PinReset = 2,
+    PhoneVerify = 3
 }
 
 /// <summary>Whether an order has been pushed to iiko as a real delivery order (reporting/kitchen-routing side-channel; never drives customer-facing OrderStatus).</summary>
@@ -103,4 +104,23 @@ public enum DevicePlatform
 {
     Ios = 0,
     Android = 1
+}
+
+/// <summary>What happened to a one-time code (see <see cref="Entities.OtpEvent"/>).</summary>
+public enum OtpEventType
+{
+    /// <summary>Green API accepted the message (queued; not proof of delivery).</summary>
+    CodeSent = 0,
+    /// <summary>Green API rejected the request or could not be reached.</summary>
+    SendFailed = 1,
+    /// <summary>Otp:Enabled is false, so no message was sent.</summary>
+    DeliveryDisabled = 2,
+    Verified = 3,
+    WrongCode = 4,
+    Expired = 5,
+    TooManyAttempts = 6,
+    /// <summary>checkWhatsapp said the number has no WhatsApp account, so no code was sent.</summary>
+    NoWhatsApp = 7,
+    /// <summary>Green API accepted the message but WhatsApp later reported it failed or the number has no WhatsApp.</summary>
+    DeliveryFailed = 8
 }

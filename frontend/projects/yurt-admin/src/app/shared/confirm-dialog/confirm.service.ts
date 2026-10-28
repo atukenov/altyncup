@@ -4,6 +4,7 @@ export interface ConfirmState {
   title: string;
   message: string;
   confirmLabel?: string;
+  icon?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -12,8 +13,8 @@ export class ConfirmService {
 
   private resolver: ((value: boolean) => void) | null = null;
 
-  confirm(title: string, message: string, confirmLabel = 'Delete'): Promise<boolean> {
-    this.state.set({ title, message, confirmLabel });
+  confirm(title: string, message: string, confirmLabel = 'Delete', icon = '🗑️'): Promise<boolean> {
+    this.state.set({ title, message, confirmLabel, icon });
     return new Promise((resolve) => {
       this.resolver = resolve;
     });

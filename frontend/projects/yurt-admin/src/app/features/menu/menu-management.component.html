@@ -1,4 +1,5 @@
-<div class="flex h-screen overflow-hidden">
+<!-- 3.5rem = the shell's mobile top bar -->
+<div class="flex h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden">
   <!-- Mobile category drawer overlay -->
   @if (mobileCatOpen()) {
     <div class="fixed inset-0 bg-black/40 z-40 md:hidden" (click)="mobileCatOpen.set(false)"></div>
@@ -7,7 +8,7 @@
   <!-- Category sidebar (desktop: static, mobile: drawer) -->
   <div
     [class]="mobileCatOpen() ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
-    class="fixed md:relative z-50 md:z-auto w-56 h-full bg-white border-r border-slate-100 flex flex-col shrink-0 transition-transform duration-200 ease-in-out md:flex"
+    class="fixed inset-y-0 left-0 md:inset-auto md:relative z-50 md:z-auto w-56 md:h-full bg-white border-r border-slate-100 flex flex-col shrink-0 transition-transform duration-200 ease-in-out md:flex"
   >
     <div class="px-4 py-4 border-b border-slate-100">
       <h3 class="font-semibold text-slate-700 text-sm">{{ 'menu.categories' | t }}</h3>
@@ -42,10 +43,10 @@
             class="w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between group cursor-pointer"
           >
             <div class="flex items-center gap-1.5 min-w-0">
-              <span cdkDragHandle aria-hidden="true" class="cursor-grab text-slate-300 opacity-0 group-hover:opacity-100 transition-all shrink-0">⠿</span>
+              <span cdkDragHandle aria-hidden="true" class="cursor-grab text-slate-300 md:opacity-0 md:group-hover:opacity-100 transition-all shrink-0">⠿</span>
               <span class="truncate">{{ localizedCatName(cat) }}</span>
             </div>
-            <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+            <div class="flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-all shrink-0">
               <button
                 type="button"
                 [attr.aria-label]="'Move up: ' + localizedCatName(cat)"
@@ -95,7 +96,7 @@
   <div class="flex-1 overflow-y-auto flex flex-col min-w-0">
     <!-- Tab bar + action button -->
     <div
-      class="px-4 md:px-6 py-4 sticky top-0 bg-white border-b border-slate-100 flex items-center justify-between z-10 gap-2"
+      class="px-4 md:px-6 py-4 sticky top-0 bg-white border-b border-slate-100 flex flex-wrap items-center justify-between z-10 gap-2"
     >
       <button
         (click)="mobileCatOpen.set(true)"
@@ -106,7 +107,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
-      <div class="flex gap-1 bg-slate-100 rounded-xl p-1">
+      <div class="flex gap-1 bg-slate-100 rounded-xl p-1 mr-auto md:mr-0">
         <button
           (click)="activeTab.set('items')"
           [class]="
@@ -114,7 +115,7 @@
               ? 'bg-white text-slate-800 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
           "
-          class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+          class="px-3 md:px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
         >
           {{ 'menu.items' | t }}
         </button>
@@ -125,7 +126,7 @@
               ? 'bg-white text-slate-800 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
           "
-          class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+          class="px-3 md:px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
         >
           {{ 'menu.toppings' | t }}
         </button>
@@ -134,14 +135,14 @@
       @if (activeTab() === 'items') {
         <button
           (click)="openItemDialog()"
-          class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-900 font-semibold text-sm px-4 py-2 rounded-xl transition-colors shadow-sm"
+          class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-900 font-semibold text-sm px-3 md:px-4 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
         >
           {{ 'menu.addItem' | t }}
         </button>
       } @else {
         <button
           (click)="openToppingDialog()"
-          class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-900 font-semibold text-sm px-4 py-2 rounded-xl transition-colors shadow-sm"
+          class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-900 font-semibold text-sm px-3 md:px-4 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
         >
           {{ 'menu.addTopping' | t }}
         </button>
@@ -150,7 +151,7 @@
 
     <!-- Search bar -->
     @if (activeTab() === 'items') {
-      <div class="px-6 pt-4 pb-0">
+      <div class="px-4 md:px-6 pt-4 pb-0">
         <div class="relative">
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
@@ -166,7 +167,7 @@
         </div>
       </div>
     } @else {
-      <div class="px-6 pt-4 pb-0">
+      <div class="px-4 md:px-6 pt-4 pb-0">
         <div class="relative">
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
@@ -189,19 +190,20 @@
         <div class="p-8 text-center text-slate-400 animate-pulse">{{ 'label.loading' | t }}</div>
       } @else {
         @if (!itemsReorderable() && selectedCategoryId()) {
-          <p class="px-6 pt-3 text-xs text-slate-400">Clear the search to reorder items.</p>
+          <p class="px-4 md:px-6 pt-3 text-xs text-slate-400">Clear the search to reorder items.</p>
         } @else if (!selectedCategoryId()) {
-          <p class="px-6 pt-3 text-xs text-slate-400">Select a category from the sidebar to reorder its items.</p>
+          <p class="px-4 md:px-6 pt-3 text-xs text-slate-400">Select a category from the sidebar to reorder its items.</p>
         }
+        <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
             <tr>
               <th class="w-10 px-2 py-3"></th>
-              <th class="text-left px-6 py-3">{{ 'label.name' | t }}</th>
-              <th class="text-left px-6 py-3">{{ 'label.category' | t }}</th>
-              <th class="text-right px-6 py-3">{{ 'label.price' | t }}</th>
-              <th class="text-center px-6 py-3">{{ 'label.available' | t }}</th>
-              <th class="px-6 py-3"></th>
+              <th class="text-left px-3 md:px-6 py-3">{{ 'label.name' | t }}</th>
+              <th class="hidden sm:table-cell text-left px-3 md:px-6 py-3">{{ 'label.category' | t }}</th>
+              <th class="text-right px-3 md:px-6 py-3">{{ 'label.price' | t }}</th>
+              <th class="text-center px-3 md:px-6 py-3">{{ 'label.available' | t }}</th>
+              <th class="px-3 md:px-6 py-3"></th>
             </tr>
           </thead>
           <tbody
@@ -234,16 +236,16 @@
                     </div>
                   }
                 </td>
-                <td class="px-6 py-3 font-medium text-slate-800">{{ localizedItemName(item) }}</td>
-                <td class="px-6 py-3 text-slate-500">{{ categoryName(item.categoryId) }}</td>
-                <td class="px-6 py-3 text-right font-semibold text-amber-600">
+                <td class="px-3 md:px-6 py-3 font-medium text-slate-800">{{ localizedItemName(item) }}</td>
+                <td class="hidden sm:table-cell px-3 md:px-6 py-3 text-slate-500">{{ categoryName(item.categoryId) }}</td>
+                <td class="px-3 md:px-6 py-3 text-right font-semibold text-amber-600 whitespace-nowrap">
                   @if (item.variants && item.variants.length > 0) {
                     from {{ (item.variants | slice:0:1)[0].price | currency2 }}
                   } @else {
                     {{ item.price | currency2 }}
                   }
                 </td>
-                <td class="px-6 py-3 text-center">
+                <td class="px-3 md:px-6 py-3 text-center">
                   <span
                     [class]="
                       item.isAvailable ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
@@ -252,7 +254,7 @@
                     >{{ item.isAvailable ? ('label.yes' | t) : ('label.no' | t) }}</span
                   >
                 </td>
-                <td class="px-6 py-3 text-right">
+                <td class="px-3 md:px-6 py-3 text-right">
                   <div class="flex justify-end gap-2">
                     <button
                       (click)="openItemDialog(item)"
@@ -272,6 +274,7 @@
             }
           </tbody>
         </table>
+        </div>
         @if (!filteredItems().length) {
           <div class="py-12 text-center text-slate-400 text-sm">{{ 'menu.noItems' | t }}</div>
         }
@@ -280,35 +283,36 @@
 
     <!-- Toppings table -->
     @if (activeTab() === 'toppings') {
+      <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
           <tr>
-            <th class="text-left px-6 py-3">{{ 'label.name' | t }}</th>
-            <th class="text-left px-6 py-3">{{ 'label.group' | t }}</th>
-            <th class="text-left px-6 py-3">{{ 'label.categories' | t }}</th>
-            <th class="text-right px-6 py-3">{{ 'label.price' | t }}</th>
-            <th class="text-center px-6 py-3">{{ 'label.available' | t }}</th>
-            <th class="px-6 py-3"></th>
+            <th class="text-left px-3 md:px-6 py-3">{{ 'label.name' | t }}</th>
+            <th class="text-left px-3 md:px-6 py-3">{{ 'label.group' | t }}</th>
+            <th class="hidden sm:table-cell text-left px-3 md:px-6 py-3">{{ 'label.categories' | t }}</th>
+            <th class="text-right px-3 md:px-6 py-3">{{ 'label.price' | t }}</th>
+            <th class="text-center px-3 md:px-6 py-3">{{ 'label.available' | t }}</th>
+            <th class="px-3 md:px-6 py-3"></th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-slate-50">
           @for (topping of filteredToppings(); track topping.id) {
             <tr class="hover:bg-slate-50 transition-colors">
-              <td class="px-6 py-3 font-medium text-slate-800">{{ localizedToppingName(topping) }}</td>
-              <td class="px-6 py-3 text-slate-500 text-xs">
+              <td class="px-3 md:px-6 py-3 font-medium text-slate-800">{{ localizedToppingName(topping) }}</td>
+              <td class="px-3 md:px-6 py-3 text-slate-500 text-xs">
                 @if (topping.group) {
                   <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{{ ('topping.' + topping.group) | t }}</span>
                 } @else {
                   <span class="text-slate-300">—</span>
                 }
               </td>
-              <td class="px-6 py-3 text-slate-500 text-xs">
+              <td class="hidden sm:table-cell px-3 md:px-6 py-3 text-slate-500 text-xs">
                 {{ toppingCategoryNames(topping.categoryIds) }}
               </td>
-              <td class="px-6 py-3 text-right font-semibold text-amber-600">
+              <td class="px-3 md:px-6 py-3 text-right font-semibold text-amber-600 whitespace-nowrap">
                 {{ topping.price === 0 ? ('label.free' | t) : (topping.price | currency2) }}
               </td>
-              <td class="px-6 py-3 text-center">
+              <td class="px-3 md:px-6 py-3 text-center">
                 <span
                   [class]="
                     topping.isAvailable
@@ -319,7 +323,7 @@
                   >{{ topping.isAvailable ? ('label.yes' | t) : ('label.no' | t) }}</span
                 >
               </td>
-              <td class="px-6 py-3 text-right">
+              <td class="px-3 md:px-6 py-3 text-right">
                 <div class="flex justify-end gap-2">
                   <button
                     (click)="openToppingDialog(topping)"
@@ -339,6 +343,7 @@
           }
         </tbody>
       </table>
+      </div>
       @if (!filteredToppings().length) {
         <div class="py-12 text-center text-slate-400 text-sm">{{ 'menu.noToppings' | t }}</div>
       }
@@ -479,26 +484,26 @@
             <div class="space-y-2 border border-slate-100 rounded-xl p-3 max-h-56 overflow-y-auto">
               @for (v of itemForm().variants; track $index) {
                 <div class="space-y-1">
-                  <div class="grid grid-cols-[1fr_1fr_1fr_auto_auto_auto] gap-1.5 items-center">
+                  <div class="grid grid-cols-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-1.5 items-center">
                     <input type="text" [ngModel]="v.label" (ngModelChange)="patchVariantRow($index, 'label', $event)"
                       placeholder="EN label (e.g. 250ml)"
                       aria-label="Variant label (English)"
-                      class="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 outline-none" />
+                      class="min-w-0 border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 outline-none" />
                     <input type="text" [ngModel]="v.labelRu" (ngModelChange)="patchVariantRow($index, 'labelRu', $event)"
                       placeholder="RU label"
                       aria-label="Variant label (Russian)"
-                      class="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 outline-none" />
+                      class="min-w-0 border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 outline-none" />
                     <input type="number" [ngModel]="v.price" (ngModelChange)="patchVariantRow($index, 'price', +$event)"
                       placeholder="Price ₸" min="0"
                       aria-label="Variant price"
-                      class="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 outline-none" />
+                      class="min-w-0 border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 outline-none" />
                     <label class="flex items-center gap-1 text-xs text-slate-500 whitespace-nowrap cursor-pointer">
                       <input type="radio" name="variantDefault" [checked]="v.isDefault" (change)="setVariantDefault($index)"
                         class="text-amber-500 focus:ring-amber-400" />
                       Default
                     </label>
                     <button type="button" aria-label="Remove size" (click)="removeVariantRow($index)"
-                      class="text-red-400 hover:text-red-600 text-sm font-bold px-1">×</button>
+                      class="justify-self-end sm:justify-self-auto text-red-400 hover:text-red-600 text-sm font-bold px-1">×</button>
                   </div>
                   @if (selectedIikoProduct()?.sizes?.length) {
                     <select [ngModel]="v.iikoProductSizeId" (ngModelChange)="patchVariantRow($index, 'iikoProductSizeId', $event)"
@@ -583,7 +588,7 @@
 <!-- Category dialog -->
 @if (showCatDialog()) {
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (keydown.escape)="showCatDialog.set(false)">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" role="dialog" aria-modal="true" aria-labelledby="cat-dialog-title">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="cat-dialog-title">
       <h3 id="cat-dialog-title" class="text-lg font-bold text-slate-800 mb-4">
         {{ catInput().id ? ('menu.editCategoryTitle' | t) : ('menu.addCategoryTitle' | t) }}
       </h3>

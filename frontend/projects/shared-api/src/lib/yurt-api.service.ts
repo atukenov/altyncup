@@ -9,6 +9,12 @@ import {
   AppRelease,
   AppUpdateInfo,
   AuditLogEntry,
+  OtpEventEntry,
+  OtpEventType,
+  OtpPendingCode,
+  OtpSummary,
+  WhatsAppInstanceInfo,
+  WhatsAppQr,
   AuthResponse,
   ConfirmApplePayRequest,
   CreateOrderRequest,
@@ -36,6 +42,7 @@ import {
   PaymentStatusResponse,
   Promotion,
   RegistrationStartResponse,
+  OtpProofDto,
   UpdatePaymentRequest,
   UpdateStatusRequest,
   UserReport,
@@ -90,10 +97,10 @@ export class YurtApiService {
     });
   }
 
-  registerVerify(mobileNumber: string, code: string): Observable<AuthResponse> {
+  registerVerify(mobileNumber: string, proof: OtpProofDto): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.api}/auth/register/verify`, {
       mobileNumber,
-      code,
+      ...proof,
     });
   }
 
@@ -103,10 +110,10 @@ export class YurtApiService {
     });
   }
 
-  pinResetVerify(mobileNumber: string, code: string, newPin4: string): Observable<AuthResponse> {
+  pinResetVerify(mobileNumber: string, proof: OtpProofDto, newPin4: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.api}/auth/pin-reset/verify`, {
       mobileNumber,
-      code,
+      ...proof,
       newPin4,
     });
   }
@@ -131,8 +138,16 @@ export class YurtApiService {
     return this.http.post<RegistrationStartResponse>(`${this.api}/auth/me/phone/start`, { mobileNumber });
   }
 
-  changeMobileNumberVerify(mobileNumber: string, code: string): Observable<CustomerProfile> {
-    return this.http.post<CustomerProfile>(`${this.api}/auth/me/phone/verify`, { mobileNumber, code });
+  changeMobileNumberVerify(mobileNumber: string, proof: OtpProofDto): Observable<CustomerProfile> {
+    return this.http.post<CustomerProfile>(`${this.api}/auth/me/phone/verify`, { mobileNumber, ...proof });
+  }
+
+  verifyPhoneStart(): Observable<RegistrationStartResponse> {
+    return this.http.post<RegistrationStartResponse>(`${this.api}/auth/me/verify-phone/start`, {});
+  }
+
+  verifyPhoneConfirm(proof: OtpProofDto): Observable<CustomerProfile> {
+    return this.http.post<CustomerProfile>(`${this.api}/auth/me/verify-phone/confirm`, proof);
   }
 
   refreshToken(refreshToken: string): Observable<AuthResponse> {
@@ -524,6 +539,56 @@ export class YurtApiService {
     if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize);
     return this.http.get<{ total: number; page: number; pageSize: number; items: AuditLogEntry[] }>(
       `${this.api}/admin/audit-log`, { params: httpParams });
+  }
+
+  // ── WhatsApp OTP ────────────────────────────────────────────────────────────
+  getOtpSummary(hours: number): Observable<OtpSummary> {
+    return this.http.get<OtpSummary>(`${this.api}/admin/otp/summary`, {
+      params: new HttpParams().set('hours', hours),
+    });
+  }
+
+  getOtpEvents(params: {
+    mobileNumber?: string;
+    type?: OtpEventType;
+    page?: number;
+    pageSize?: number;
+  }): Observable<{ total: number; page: number; pageSize: number; items: OtpEventEntry[] }> {
+    let httpParams = new HttpParams();
+    if (params.mobileNumber) httpParams = httpParams.set('mobileNumber', params.mobileNumber);
+    if (params.type) httpParams = httpParams.set('type', params.type);
+    if (params.page) httpParams = httpParams.set('page', params.page);
+    if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize);
+    return this.http.get<{ total: number; page: number; pageSize: number; items: OtpEventEntry[] }>(
+      `${this.api}/admin/otp/events`, { params: httpParams });
+  }
+
+  getOtpCodes(mobileNumber?: string): Observable<{ items: OtpPendingCode[] }> {
+    let httpParams = new HttpParams();
+    if (mobileNumber) httpParams = httpParams.set('mobileNumber', mobileNumber);
+    return this.http.get<{ items: OtpPendingCode[] }>(`${this.api}/admin/otp/codes`, { params: httpParams });
+  }
+
+  resendOtpCode(id: string): Observable<{ mobileNumber: string; expiresAt: string; devCode?: string }> {
+    return this.http.post<{ mobileNumber: string; expiresAt: string; devCode?: string }>(
+      `${this.api}/admin/otp/codes/${id}/resend`, {});
+  }
+
+  sendOtpTestAlert(): Observable<{ sent: boolean }> {
+    return this.http.post<{ sent: boolean }>(`${this.api}/admin/otp/alerts/test`, {});
+  }
+
+  getWhatsAppInstance(): Observable<WhatsAppInstanceInfo> {
+    return this.http.get<WhatsAppInstanceInfo>(`${this.api}/admin/otp/instance`);
+  }
+
+  getWhatsAppQr(): Observable<WhatsAppQr> {
+    return this.http.get<WhatsAppQr>(`${this.api}/admin/otp/instance/qr`);
+  }
+
+  getWhatsAppAuthorizationCode(phoneNumber: string): Observable<{ ok: boolean; code: string }> {
+    return this.http.post<{ ok: boolean; code: string }>(
+      `${this.api}/admin/otp/instance/authorization-code`, { phoneNumber });
   }
 
   // ── Group Orders ────────────────────────────────────────────────────────────

@@ -80,6 +80,12 @@ export const routes: Routes = [
           import('./features/audit-log/audit-log.component').then((m) => m.AuditLogComponent),
       },
       {
+        path: 'otp-log',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/otp-log/otp-log.component').then((m) => m.OtpLogComponent),
+      },
+      {
         path: 'app-releases',
         canActivate: [superAdminGuard],
         loadComponent: () =>

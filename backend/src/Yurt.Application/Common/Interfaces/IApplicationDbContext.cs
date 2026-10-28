@@ -25,6 +25,7 @@ public interface IApplicationDbContext
     DbSet<GroupCartMember> GroupCartMembers { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<AuditLog> AuditLogs { get; }
+    DbSet<OtpEvent> OtpEvents { get; }
     DbSet<DiscountCode> DiscountCodes { get; }
     DbSet<MenuItemLocation> MenuItemLocations { get; }
     DbSet<MenuItemVariant> MenuItemVariants { get; }
