@@ -72,6 +72,67 @@ public class WhatsAppOtpDiagnostics : IOtpDiagnostics
         return ReadString(body!, "stateInstance") ?? $"error: unexpected response {body}";
     }
 
+    public async Task<WhatsAppInstanceInfo> GetInstanceInfoAsync(CancellationToken ct = default)
+    {
+        var id = _options.IdInstance.Trim();
+        if (!GreenApi.HasCredentials(_options))
+            return new(null, null, null, null, id, "Green API credentials are not configured (Otp__IdInstance, Otp__ApiTokenInstance).");
+
+        var (status, body, error) = await CallAsync(HttpMethod.Get, "getStateInstance", null, ct);
+        if (error is not null || status is not 200)
+            return new(null, null, null, null, id, error ?? $"HTTP {status} {GreenApi.HintForStatus(status ?? 0)}".TrimEnd());
+
+        var state = ReadString(body!, "stateInstance");
+        string? phone = null, avatar = null;
+        // Settings are a nice-to-have: the card still shows the state if this call fails.
+        var (sStatus, sBody, _) = await CallAsync(HttpMethod.Get, "getWaSettings", null, ct);
+        if (sStatus is 200 && sBody is not null)
+        {
+            phone = NullIfEmpty(ReadString(sBody, "phone"));
+            avatar = NullIfEmpty(ReadString(sBody, "avatar"));
+        }
+
+        return new(state, GreenApi.HintForState(state), phone, avatar, id, null);
+    }
+
+    public async Task<WhatsAppQr> GetQrAsync(CancellationToken ct = default)
+    {
+        if (!GreenApi.HasCredentials(_options))
+            return new("error", null, "Green API credentials are not configured.");
+
+        var (status, body, error) = await CallAsync(HttpMethod.Get, "qr", null, ct, truncate: false);
+        if (error is not null)
+            return new("error", null, error);
+        if (status is not 200)
+            return new("error", null, $"HTTP {status} {GreenApi.HintForStatus(status ?? 0)}".TrimEnd());
+
+        var type = ReadString(body!, "type") ?? "error";
+        var message = ReadString(body!, "message");
+        return type == "qrCode"
+            ? new WhatsAppQr(type, message, null)
+            : new WhatsAppQr(type, null, type == "error" ? message ?? GreenApi.Truncate(body!) : null);
+    }
+
+    public async Task<WhatsAppAuthorizationCode> GetAuthorizationCodeAsync(string phoneNumber, CancellationToken ct = default)
+    {
+        if (!GreenApi.HasCredentials(_options))
+            return new(false, null, "Green API credentials are not configured.");
+        if (!long.TryParse(GreenApi.Digits(phoneNumber), out var digits))
+            return new(false, null, "Phone number has no digits.");
+
+        var (status, body, error) = await CallAsync(
+            HttpMethod.Post, "getAuthorizationCode", new { phoneNumber = digits }, ct);
+        if (error is not null)
+            return new(false, null, error);
+        if (status is not 200)
+            return new(false, null, $"HTTP {status} {GreenApi.HintForStatus(status ?? 0)}".TrimEnd());
+
+        var code = ReadString(body!, "code");
+        return ReadBool(body!, "status") == true && !string.IsNullOrEmpty(code)
+            ? new WhatsAppAuthorizationCode(true, code, null)
+            : new WhatsAppAuthorizationCode(false, null, $"Green API did not return a code: {body}");
+    }
+
     private List<string> ConfigWarnings(string mobileNumber)
     {
         var warnings = new List<string>();
@@ -149,7 +210,7 @@ public class WhatsAppOtpDiagnostics : IOtpDiagnostics
     }
 
     private async Task<(int? Status, string? Body, string? Error)> CallAsync(
-        HttpMethod method, string apiMethod, object? payload, CancellationToken ct)
+        HttpMethod method, string apiMethod, object? payload, CancellationToken ct, bool truncate = true)
     {
         try
         {
@@ -158,7 +219,7 @@ public class WhatsAppOtpDiagnostics : IOtpDiagnostics
                 request.Content = JsonContent.Create(payload);
             using var resp = await _http.SendAsync(request, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
-            return ((int)resp.StatusCode, GreenApi.Truncate(body), null);
+            return ((int)resp.StatusCode, truncate ? GreenApi.Truncate(body) : body, null);
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
@@ -166,6 +227,8 @@ public class WhatsAppOtpDiagnostics : IOtpDiagnostics
             return (null, null, $"{ex.GetType().Name}: {ex.Message}");
         }
     }
+
+    private static string? NullIfEmpty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
     private static OtpDiagnosticsStep Failed(string name, int? status, string? response)
         => new(name, false, status, response,

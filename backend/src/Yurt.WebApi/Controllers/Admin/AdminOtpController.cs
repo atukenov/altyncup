@@ -16,6 +16,8 @@ namespace Yurt.WebApi.Controllers.Admin;
 ///  - <c>events</c>: the raw OTP history, filterable;
 ///  - <c>codes</c>: pending code requests with the current code in plain text, and
 ///    <c>codes/{id}/resend</c> to send a fresh one;
+///  - <c>instance</c>: WhatsApp state and linked account, plus <c>instance/qr</c> and
+///    <c>instance/authorization-code</c> to re-link a logged-out instance;
 ///  - <c>test</c>: live Green API checks with every raw response;
 ///  - <c>alerts/test</c>: sends a test message to the admin Telegram chat.
 /// </summary>
@@ -56,6 +58,39 @@ public class AdminOtpController : ApiControllerBase
 
         return Ok(await _diagnostics.RunAsync(request.MobileNumber, request.SendTestMessage, ct));
     }
+
+    /// <summary>WhatsApp instance state with the linked number and avatar.</summary>
+    [HttpGet("instance")]
+    public async Task<IActionResult> Instance(CancellationToken ct)
+        => Ok(await _diagnostics.GetInstanceInfoAsync(ct));
+
+    /// <summary>
+    /// A QR code to scan from WhatsApp → Linked devices. Green API rotates it about every
+    /// 20 seconds, so the page polls this while it is shown.
+    /// </summary>
+    [HttpGet("instance/qr")]
+    public async Task<IActionResult> Qr(CancellationToken ct)
+        => Ok(await _diagnostics.GetQrAsync(ct));
+
+    public record AuthorizationCodeRequest(string PhoneNumber);
+
+    /// <summary>Pairing code to link WhatsApp by phone number instead of scanning the QR.</summary>
+    [HttpPost("instance/authorization-code")]
+    public async Task<IActionResult> AuthorizationCode([FromBody] AuthorizationCodeRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.PhoneNumber))
+            return BadRequest(new ProblemDetails { Status = 400, Title = "phoneNumber is required." });
+
+        var result = await _diagnostics.GetAuthorizationCodeAsync(request.PhoneNumber, ct);
+        if (result.Ok)
+            await _audit.LogAsync("WhatsAppAuthCodeRequested", "WhatsAppInstance", null,
+                PhoneDigits(request.PhoneNumber), ct);
+        return result.Ok
+            ? Ok(result)
+            : StatusCode(502, new ProblemDetails { Status = 502, Title = result.Error });
+    }
+
+    private static string PhoneDigits(string phone) => new(phone.Where(char.IsDigit).ToArray());
 
     /// <summary>Send a test alert to the configured Telegram chat.</summary>
     [HttpPost("alerts/test")]

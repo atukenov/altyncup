@@ -35,7 +35,7 @@ internal static class GreenApi
     public static string? HintForState(string? state) => state switch
     {
         "authorized" => null,
-        "notAuthorized" => "The WhatsApp account is logged out. Scan the QR code in the Green API console; messages sent meanwhile sit in a queue and are dropped after 24h.",
+        "notAuthorized" => "The WhatsApp account is logged out. Re-link it with the QR code on the admin WhatsApp codes page (or in the Green API console); messages sent meanwhile sit in a queue and are dropped after 24h.",
         "blocked" => "The WhatsApp account is banned. Use another number for the instance.",
         "yellowCard" => "WhatsApp flagged the account for suspected spam; sending is paused.",
         "starting" => "The instance is starting up; try again in a few minutes.",
