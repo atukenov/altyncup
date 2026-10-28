@@ -120,5 +120,6 @@ public enum OtpEventType
     Expired = 5,
     TooManyAttempts = 6,
     /// <summary>Green API accepted the message but WhatsApp later reported it failed or the number has no WhatsApp.</summary>
-    DeliveryFailed = 7
+    // 7 is NoWhatsApp (PR #94, checkWhatsapp pre-check).
+    DeliveryFailed = 8
 }
