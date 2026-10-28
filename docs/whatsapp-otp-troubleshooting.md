@@ -13,6 +13,7 @@ for those cases.
 | `Otp__GreenApiBaseUrl` | The instance's **apiUrl** from the Green API console, e.g. `https://7103.api.greenapi.com`. The old shared `https://api.green-api.com` does not work for newer instances. |
 | `Otp__IdInstance` | idInstance from the console |
 | `Otp__ApiTokenInstance` | apiTokenInstance from the console |
+| `Otp__CheckWhatsAppBeforeSend` | `true` by default: Green API `checkWhatsapp` runs before each code, and numbers without WhatsApp get a "this number isn't on WhatsApp" error (logged as `NoWhatsApp`). If the check itself fails the code is sent anyway. Set `false` to skip the check. |
 | `Otp__WebhookToken` | A long random secret for the Green API webhook (see below). Empty = webhook turned off. |
 
 ## Check it

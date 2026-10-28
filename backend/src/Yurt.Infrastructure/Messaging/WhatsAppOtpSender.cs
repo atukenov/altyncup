@@ -30,6 +30,10 @@ public class WhatsAppOtpSender : IOtpSender
     }
 
     private record SendMessageRequest(string ChatId, string Message);
+    private record CheckWhatsappRequest(long PhoneNumber);
+
+    /// <summary>The pre-check must not hold up the code for long, so it gets its own short timeout.</summary>
+    public TimeSpan CheckTimeout { get; init; } = TimeSpan.FromSeconds(5);
 
     public async Task<string?> SendAsync(string mobileNumber, string code, CancellationToken ct = default)
     {
@@ -76,6 +80,63 @@ public class WhatsAppOtpSender : IOtpSender
         _logger.LogInformation(
             "Green API queued OTP for {ChatId} as message {IdMessage}", chatId, idMessage);
         return idMessage;
+    }
+
+    public async Task<bool?> HasWhatsAppAsync(string mobileNumber, CancellationToken ct = default)
+    {
+        if (!GreenApi.HasCredentials(_options)
+            || !long.TryParse(GreenApi.Digits(mobileNumber), out var phoneNumber))
+            return null;
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(CheckTimeout);
+
+        try
+        {
+            var resp = await _http.PostAsJsonAsync(
+                GreenApi.MethodUrl(_options, "checkWhatsapp"), new CheckWhatsappRequest(phoneNumber), timeout.Token);
+            var body = await resp.Content.ReadAsStringAsync(timeout.Token);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Green API checkWhatsapp returned {Status} for {Phone}; sending the code anyway: {Body}",
+                    (int)resp.StatusCode, phoneNumber, GreenApi.Truncate(body, 500));
+                return null;
+            }
+
+            var exists = ReadExistsWhatsapp(body);
+            if (exists is null)
+                _logger.LogWarning(
+                    "Green API checkWhatsapp gave no existsWhatsapp for {Phone}; sending the code anyway: {Body}",
+                    phoneNumber, GreenApi.Truncate(body, 500));
+            return exists;
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            // Never log the URL: its last segment is the API token.
+            _logger.LogWarning(
+                "Green API checkWhatsapp failed for {Phone}; sending the code anyway: {Error}: {Message}",
+                phoneNumber, ex.GetType().Name, ex.Message);
+            return null;
+        }
+    }
+
+    private static bool? ReadExistsWhatsapp(string body)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            return doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("existsWhatsapp", out var exists)
+                && exists.ValueKind is JsonValueKind.True or JsonValueKind.False
+                ? exists.GetBoolean()
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static string? ReadIdMessage(string body)

@@ -111,7 +111,7 @@ export class ForgotPinComponent implements OnDestroy {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err.error?.title ?? 'Could not send the code.');
+        this.error.set(err.status === 422 ? this.lang.t('auth.noWhatsApp') : (err.error?.title ?? 'Could not send the code.'));
       },
     });
   }

@@ -653,7 +653,7 @@ export interface AuditLogEntry {
 
 export type OtpEventType =
   | 'CodeSent' | 'SendFailed' | 'DeliveryDisabled' | 'Verified'
-  | 'WrongCode' | 'Expired' | 'TooManyAttempts' | 'DeliveryFailed';
+  | 'WrongCode' | 'Expired' | 'TooManyAttempts' | 'NoWhatsApp' | 'DeliveryFailed';
 
 /** WhatsApp delivery status of a sent code (Green API outgoingMessageStatus), or 'sendFailed'. */
 export type OtpDeliveryStatus =

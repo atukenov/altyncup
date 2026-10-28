@@ -47,7 +47,7 @@ export class OtpLogComponent implements OnInit {
     { type: 'Expired', key: 'otp.expired', tone: 'text-slate-500' },
   ];
   readonly types: OtpEventType[] = [
-    'CodeSent', 'SendFailed', 'DeliveryFailed', 'DeliveryDisabled', 'Verified', 'WrongCode', 'Expired', 'TooManyAttempts',
+    'CodeSent', 'SendFailed', 'DeliveryFailed', 'DeliveryDisabled', 'Verified', 'WrongCode', 'Expired', 'TooManyAttempts', 'NoWhatsApp',
   ];
 
   get hasMore(): boolean {
@@ -153,7 +153,7 @@ export class OtpLogComponent implements OnInit {
     switch (type) {
       case 'Verified': return 'bg-emerald-50 text-emerald-700';
       case 'SendFailed': case 'DeliveryFailed': case 'TooManyAttempts': return 'bg-red-50 text-red-700';
-      case 'WrongCode': case 'Expired': return 'bg-amber-50 text-amber-700';
+      case 'WrongCode': case 'Expired': case 'NoWhatsApp': return 'bg-amber-50 text-amber-700';
       default: return 'bg-slate-100 text-slate-700';
     }
   }

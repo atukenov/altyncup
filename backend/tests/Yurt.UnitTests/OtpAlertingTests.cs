@@ -100,6 +100,64 @@ public class OtpAlertingTests
     }
 
     [Fact]
+    public async Task StartRegistration_NoWhatsApp_Returns422_RecordsEvent_AndDoesNotSend()
+    {
+        var h = new AuthHarness();
+        h.Sender.HasWhatsAppAsync("+77011234567", Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await h.Service.StartRegistrationAsync(Register);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(422, result.StatusCode);
+        Assert.Contains("isn't on WhatsApp", result.Error);
+        var e = Assert.Single(h.Events);
+        Assert.Equal(OtpEventType.NoWhatsApp, e.Type);
+        await h.Sender.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+        await h.Alerts.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(null)]
+    public async Task StartRegistration_WhatsAppCheckPassesOrIsInconclusive_SendsCode(bool? hasWhatsApp)
+    {
+        var h = new AuthHarness();
+        h.Sender.HasWhatsAppAsync(default!, default).ReturnsForAnyArgs(hasWhatsApp);
+        h.Sender.SendAsync(default!, default!, default).ReturnsForAnyArgs("MSG1");
+
+        var result = await h.Service.StartRegistrationAsync(Register);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(OtpEventType.CodeSent, Assert.Single(h.Events).Type);
+    }
+
+    [Fact]
+    public async Task StartRegistration_CheckDisabled_SkipsWhatsAppCheck()
+    {
+        var h = new AuthHarness();
+        var service = new AuthService(h.Db, Substitute.For<ITokenService>(), h.Hasher, h.Sender,
+            new OtpOptions { Enabled = true, CheckWhatsAppBeforeSend = false }, h.Alerts,
+            NullLogger<AuthService>.Instance);
+
+        await service.StartRegistrationAsync(Register);
+
+        await h.Sender.DidNotReceiveWithAnyArgs().HasWhatsAppAsync(default!, default);
+        await h.Sender.ReceivedWithAnyArgs(1).SendAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task StartPinReset_NoWhatsApp_Returns422_EvenForUnregisteredNumber()
+    {
+        var h = new AuthHarness();
+        h.Sender.HasWhatsAppAsync(default!, default).ReturnsForAnyArgs(false);
+
+        var result = await h.Service.StartPinResetAsync(new PinResetStartDto("+77011234567"));
+
+        Assert.Equal(422, result.StatusCode);
+        Assert.Equal(OtpEventType.NoWhatsApp, Assert.Single(h.Events).Type);
+    }
+
+    [Fact]
     public async Task StartRegistration_StoresPlainCodeForAdmins()
     {
         var pending = new PhoneVerification
