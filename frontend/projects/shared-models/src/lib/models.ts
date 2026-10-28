@@ -653,7 +653,11 @@ export interface AuditLogEntry {
 
 export type OtpEventType =
   | 'CodeSent' | 'SendFailed' | 'DeliveryDisabled' | 'Verified'
-  | 'WrongCode' | 'Expired' | 'TooManyAttempts';
+  | 'WrongCode' | 'Expired' | 'TooManyAttempts' | 'NoWhatsApp' | 'DeliveryFailed';
+
+/** WhatsApp delivery status of a sent code (Green API outgoingMessageStatus), or 'sendFailed'. */
+export type OtpDeliveryStatus =
+  | 'sent' | 'delivered' | 'read' | 'failed' | 'noAccount' | 'notInGroup' | 'sendFailed';
 
 export type OtpPurpose = 'Registration' | 'PhoneChange' | 'PinReset' | 'PhoneVerify';
 
@@ -686,6 +690,9 @@ export interface OtpPendingCode {
   /** Null for requests made before codes were kept in plain text; resend to get one. */
   code?: string | null;
   attempts: number;
+  /** Null while queued, or when the Green API webhook isn't set up. */
+  deliveryStatus?: OtpDeliveryStatus | null;
+  deliveryStatusAt?: string | null;
   lastSentAt: string;
   expiresAt: string;
   expired: boolean;

@@ -24,6 +24,9 @@ public class PhoneVerificationConfiguration : IEntityTypeConfiguration<PhoneVeri
         builder.Property(e => e.MobileNumber).HasMaxLength(20).IsRequired();
         builder.Property(e => e.CodeHash).HasMaxLength(200).IsRequired();
         builder.Property(e => e.Code).HasMaxLength(10);
+        builder.Property(e => e.ProviderMessageId).HasMaxLength(100);
+        builder.Property(e => e.DeliveryStatus).HasMaxLength(20);
+        builder.HasIndex(e => e.ProviderMessageId);
         builder.Property(e => e.PinHash).HasMaxLength(200).IsRequired();
         builder.Property(e => e.FirstName).HasMaxLength(100);
         builder.Property(e => e.LastName).HasMaxLength(100);
@@ -337,5 +340,6 @@ public class OtpEventConfiguration : IEntityTypeConfiguration<OtpEvent>
         builder.Property(e => e.ProviderMessageId).HasMaxLength(100);
         builder.HasIndex(e => e.CreatedAt);
         builder.HasIndex(e => new { e.MobileNumber, e.CreatedAt });
+        builder.HasIndex(e => e.ProviderMessageId);
     }
 }

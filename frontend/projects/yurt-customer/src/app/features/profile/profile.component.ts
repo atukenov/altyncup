@@ -197,7 +197,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.phoneLoading.set(false);
         this.phoneError.set(
-          err.status === 409 ? this.langService.t('profile.phoneInUse') : 'Could not send the verification code.',
+          err.status === 409 ? this.langService.t('profile.phoneInUse')
+            : err.status === 422 ? this.langService.t('auth.noWhatsApp')
+            : 'Could not send the verification code.',
         );
       },
     });
@@ -242,7 +244,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.phoneLoading.set(false);
-        this.phoneError.set(err.error?.title ?? 'Could not resend the code.');
+        this.phoneError.set(err.status === 422 ? this.langService.t('auth.noWhatsApp') : (err.error?.title ?? 'Could not resend the code.'));
       },
     });
   }
@@ -291,7 +293,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
           return;
         }
         this.verifyOpen.set(true);
-        this.verifyError.set(err.error?.title ?? 'Could not send the verification code.');
+        this.verifyError.set(err.status === 422 ? this.langService.t('auth.noWhatsApp') : (err.error?.title ?? 'Could not send the verification code.'));
       },
     });
   }

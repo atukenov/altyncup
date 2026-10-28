@@ -8,6 +8,13 @@ public interface IOtpSender
     /// Throws <see cref="OtpSendException"/> when delivery fails.
     /// </summary>
     Task<string?> SendAsync(string mobileNumber, string code, CancellationToken ct = default);
+
+    /// <summary>
+    /// Ask the provider whether the number has a WhatsApp account. Returns null when that
+    /// can't be determined (provider error, timeout), so callers can still try to send.
+    /// Never throws for provider failures.
+    /// </summary>
+    Task<bool?> HasWhatsAppAsync(string mobileNumber, CancellationToken ct = default);
 }
 
 public class OtpSendException : Exception

@@ -197,7 +197,8 @@ public class AdminOtpController : ApiControllerBase
 
     /// <summary>
     /// Every number with a code request still pending (not yet confirmed), newest first,
-    /// with the current code in plain text. Rows from before codes were kept in plain
+    /// with the current code in plain text and the WhatsApp delivery status of the latest
+    /// send (from the Green API webhook). Rows from before codes were kept in plain
     /// text have a null code until they are resent.
     /// </summary>
     [HttpGet("codes")]
@@ -221,6 +222,8 @@ public class AdminOtpController : ApiControllerBase
                 Purpose = v.Purpose.ToString(),
                 v.Code,
                 v.Attempts,
+                v.DeliveryStatus,
+                v.DeliveryStatusAt,
                 v.LastSentAt,
                 v.ExpiresAt,
                 Expired = v.ExpiresAt <= now,

@@ -21,6 +21,12 @@ public class OtpOptions
     /// <summary>Green API instance API token (the last path segment of the send URL).</summary>
     public string ApiTokenInstance { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Call Green API checkWhatsapp before sending a code and refuse numbers that have no
+    /// WhatsApp account. If the check itself fails the code is sent anyway.
+    /// </summary>
+    public bool CheckWhatsAppBeforeSend { get; set; } = true;
+
     /// <summary>How long a code stays valid, in minutes.</summary>
     public int CodeExpiryMinutes { get; set; } = 15;
 
@@ -29,6 +35,13 @@ public class OtpOptions
 
     /// <summary>Maximum wrong-code attempts before the code is rejected outright.</summary>
     public int MaxAttempts { get; set; } = 5;
+
+    /// <summary>
+    /// Shared secret for the Green API webhook endpoint (Otp__WebhookToken). Set the same
+    /// value as "webhookUrlToken" in the Green API instance settings. While it is empty the
+    /// webhook endpoint rejects every call.
+    /// </summary>
+    public string WebhookToken { get; set; } = string.Empty;
 
     /// <summary><c>{code}</c> is replaced with the generated code.</summary>
     public string MessageTemplate { get; set; } = "Your Altyncup verification code: {code}";

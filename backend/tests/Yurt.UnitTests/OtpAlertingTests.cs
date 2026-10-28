@@ -100,6 +100,64 @@ public class OtpAlertingTests
     }
 
     [Fact]
+    public async Task StartRegistration_NoWhatsApp_Returns422_RecordsEvent_AndDoesNotSend()
+    {
+        var h = new AuthHarness();
+        h.Sender.HasWhatsAppAsync("+77011234567", Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await h.Service.StartRegistrationAsync(Register);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(422, result.StatusCode);
+        Assert.Contains("isn't on WhatsApp", result.Error);
+        var e = Assert.Single(h.Events);
+        Assert.Equal(OtpEventType.NoWhatsApp, e.Type);
+        await h.Sender.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+        await h.Alerts.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(null)]
+    public async Task StartRegistration_WhatsAppCheckPassesOrIsInconclusive_SendsCode(bool? hasWhatsApp)
+    {
+        var h = new AuthHarness();
+        h.Sender.HasWhatsAppAsync(default!, default).ReturnsForAnyArgs(hasWhatsApp);
+        h.Sender.SendAsync(default!, default!, default).ReturnsForAnyArgs("MSG1");
+
+        var result = await h.Service.StartRegistrationAsync(Register);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(OtpEventType.CodeSent, Assert.Single(h.Events).Type);
+    }
+
+    [Fact]
+    public async Task StartRegistration_CheckDisabled_SkipsWhatsAppCheck()
+    {
+        var h = new AuthHarness();
+        var service = new AuthService(h.Db, Substitute.For<ITokenService>(), h.Hasher, h.Sender,
+            new OtpOptions { Enabled = true, CheckWhatsAppBeforeSend = false }, h.Alerts,
+            NullLogger<AuthService>.Instance);
+
+        await service.StartRegistrationAsync(Register);
+
+        await h.Sender.DidNotReceiveWithAnyArgs().HasWhatsAppAsync(default!, default);
+        await h.Sender.ReceivedWithAnyArgs(1).SendAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task StartPinReset_NoWhatsApp_Returns422_EvenForUnregisteredNumber()
+    {
+        var h = new AuthHarness();
+        h.Sender.HasWhatsAppAsync(default!, default).ReturnsForAnyArgs(false);
+
+        var result = await h.Service.StartPinResetAsync(new PinResetStartDto("+77011234567"));
+
+        Assert.Equal(422, result.StatusCode);
+        Assert.Equal(OtpEventType.NoWhatsApp, Assert.Single(h.Events).Type);
+    }
+
+    [Fact]
     public async Task StartRegistration_StoresPlainCodeForAdmins()
     {
         var pending = new PhoneVerification
@@ -137,6 +195,40 @@ public class OtpAlertingTests
         var e = Assert.Single(h.Events);
         Assert.Equal(OtpEventType.CodeSent, e.Type);
         Assert.Equal(VerificationPurpose.PinReset, e.Purpose);
+    }
+
+    [Fact]
+    public async Task ResendCode_StoresNewMessageId_AndClearsOldDeliveryStatus()
+    {
+        var pending = new PhoneVerification
+        {
+            MobileNumber = "+77011234567", Purpose = VerificationPurpose.Registration,
+            ProviderMessageId = "OLD", DeliveryStatus = "noAccount", DeliveryStatusAt = DateTime.UtcNow,
+        };
+        var h = new AuthHarness(true, pending);
+        h.Sender.SendAsync("+77011234567", Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns("NEW");
+
+        await h.Service.ResendCodeAsync(pending.Id);
+
+        Assert.Equal("NEW", pending.ProviderMessageId);
+        Assert.Null(pending.DeliveryStatus);
+        Assert.Null(pending.DeliveryStatusAt);
+    }
+
+    [Fact]
+    public async Task ResendCode_SendFails_MarksRowSendFailed()
+    {
+        var pending = new PhoneVerification
+        {
+            MobileNumber = "+77011234567", Purpose = VerificationPurpose.Registration, ProviderMessageId = "OLD",
+        };
+        var h = new AuthHarness(true, pending);
+        h.Sender.SendAsync(default!, default!, default).ThrowsAsyncForAnyArgs(new OtpSendException("boom"));
+
+        await h.Service.ResendCodeAsync(pending.Id);
+
+        Assert.Null(pending.ProviderMessageId);
+        Assert.Equal("sendFailed", pending.DeliveryStatus);
     }
 
     [Fact]
@@ -264,7 +356,8 @@ public class OtpAlertingTests
             .BuildServiceProvider();
         var alerts = Substitute.For<IAdminAlertSender>();
         var monitor = new OtpMonitorService(services, new OtpOptions { Enabled = true },
-            new AlertOptions { UnverifiedCodesThreshold = 3 }, alerts, NullLogger<OtpMonitorService>.Instance);
+            new AlertOptions { UnverifiedCodesThreshold = 3 }, alerts, new WhatsAppStateTracker(alerts),
+            NullLogger<OtpMonitorService>.Instance);
         return (monitor, alerts, diagnostics);
     }
 

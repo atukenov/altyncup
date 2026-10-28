@@ -64,6 +64,51 @@ public class WhatsAppOtpTests
         Assert.Contains("4821", req.Body);
     }
 
+    [Theory]
+    [InlineData("""{"existsWhatsapp":true}""", true)]
+    [InlineData("""{"existsWhatsapp":false}""", false)]
+    public async Task HasWhatsAppAsync_PostsNumericPhone_AndReadsExistsWhatsapp(string json, bool expected)
+    {
+        var handler = new StubHandler(new() { ["checkWhatsapp"] = (HttpStatusCode.OK, json) });
+
+        var exists = await Sender(handler).HasWhatsAppAsync("+7 701 123-45-67");
+
+        Assert.Equal(expected, exists);
+        var req = Assert.Single(handler.Requests);
+        Assert.Equal("/waInstance7103000001/checkWhatsapp/secret-token", req.Path);
+        Assert.Contains("\"phoneNumber\":77011234567", req.Body);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest, """{"message":"instance not authorized"}""")]
+    [InlineData((HttpStatusCode)466, """{"message":"quota exceeded"}""")]
+    [InlineData(HttpStatusCode.OK, "not json")]
+    [InlineData(HttpStatusCode.OK, "{}")]
+    public async Task HasWhatsAppAsync_ProviderErrorOrOddBody_ReturnsNull(HttpStatusCode status, string body)
+    {
+        var handler = new StubHandler(new() { ["checkWhatsapp"] = (status, body) });
+
+        Assert.Null(await Sender(handler).HasWhatsAppAsync("+77011234567"));
+    }
+
+    [Fact]
+    public async Task HasWhatsAppAsync_Timeout_ReturnsNull()
+    {
+        var sender = new WhatsAppOtpSender(new HttpClient(new HangingHandler()), Options(),
+            NullLogger<WhatsAppOtpSender>.Instance) { CheckTimeout = TimeSpan.FromMilliseconds(50) };
+
+        Assert.Null(await sender.HasWhatsAppAsync("+77011234567"));
+    }
+
+    private sealed class HangingHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            await Task.Delay(Timeout.Infinite, ct);
+            throw new InvalidOperationException();
+        }
+    }
+
     [Fact]
     public async Task SendAsync_QuotaExceeded_ThrowsWithStatusBodyAndHint()
     {

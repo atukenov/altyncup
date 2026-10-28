@@ -87,6 +87,8 @@ public static class DependencyInjection
         services.AddSingleton(configuration.GetSection("Otp").Get<OtpOptions>() ?? new OtpOptions());
         services.AddHttpClient<IOtpSender, WhatsAppOtpSender>();
         services.AddHttpClient<IOtpDiagnostics, WhatsAppOtpDiagnostics>();
+        services.AddSingleton<WhatsAppStateTracker>();
+        services.AddScoped<GreenApiWebhookHandler>();
 
         // Admin alerts (Telegram bot; off until Alerts__TelegramBotToken and Alerts__TelegramChatId are set)
         services.AddSingleton(configuration.GetSection("Alerts").Get<AlertOptions>() ?? new AlertOptions());
