@@ -93,7 +93,7 @@ public class AuthService
 
         await _db.SaveChangesAsync(ct);
 
-        if (!await DeliverCodeAsync(normalizedMobile, VerificationPurpose.Registration, code, ct))
+        if (!await DeliverCodeAsync(pending, code, ct))
             return Result<RegistrationStartResponseDto>.Failure(
                 "Could not send the verification code. Please try again.", 502);
 
@@ -439,7 +439,7 @@ public class AuthService
 
         await _db.SaveChangesAsync(ct);
 
-        if (!await DeliverCodeAsync(normalizedMobile, VerificationPurpose.PhoneChange, code, ct))
+        if (!await DeliverCodeAsync(pending, code, ct))
             return Result<RegistrationStartResponseDto>.Failure(
                 "Could not send the verification code. Please try again.", 502);
 
@@ -565,7 +565,7 @@ public class AuthService
 
         await _db.SaveChangesAsync(ct);
 
-        if (!await DeliverCodeAsync(mobile, VerificationPurpose.PhoneVerify, code, ct))
+        if (!await DeliverCodeAsync(pending, code, ct))
             return Result<RegistrationStartResponseDto>.Failure(
                 "Could not send the verification code. Please try again.", 502);
 
@@ -692,7 +692,7 @@ public class AuthService
 
         await _db.SaveChangesAsync(ct);
 
-        if (!await DeliverCodeAsync(normalizedMobile, VerificationPurpose.PinReset, code, ct))
+        if (!await DeliverCodeAsync(pending, code, ct))
             return Result<RegistrationStartResponseDto>.Failure(
                 "Could not send the verification code. Please try again.", 502);
 
@@ -839,7 +839,7 @@ public class AuthService
 
         await _db.SaveChangesAsync(ct);
 
-        if (!await DeliverCodeAsync(pending.MobileNumber, pending.Purpose, code, ct))
+        if (!await DeliverCodeAsync(pending, code, ct))
             return Result<RegistrationStartResponseDto>.Failure(
                 "Could not send the verification code. The new code is saved; check the WhatsApp status.", 502);
 
@@ -847,9 +847,18 @@ public class AuthService
             new RegistrationStartResponseDto(pending.MobileNumber, pending.ExpiresAt, code));
     }
 
-    private async Task<bool> DeliverCodeAsync(
-        string mobile, VerificationPurpose purpose, string code, CancellationToken ct)
+    /// <summary>
+    /// Send <paramref name="code"/> to the pending row's number, record the outcome and
+    /// remember the Green API message id on the row so delivery webhooks can update it.
+    /// </summary>
+    private async Task<bool> DeliverCodeAsync(PhoneVerification pending, string code, CancellationToken ct)
     {
+        var mobile = pending.MobileNumber;
+        var purpose = pending.Purpose;
+        pending.ProviderMessageId = null;
+        pending.DeliveryStatus = null;
+        pending.DeliveryStatusAt = null;
+
         if (!_otpOptions.Enabled)
         {
             _logger.LogWarning(
@@ -862,6 +871,7 @@ public class AuthService
         try
         {
             var messageId = await _otpSender.SendAsync(mobile, code, ct);
+            pending.ProviderMessageId = messageId;
             AddOtpEvent(mobile, purpose, OtpEventType.CodeSent, providerMessageId: messageId);
             await _db.SaveChangesAsync(ct);
             return true;
@@ -869,6 +879,8 @@ public class AuthService
         catch (OtpSendException ex)
         {
             _logger.LogError(ex, "Failed to send {Purpose} OTP to {Mobile}", purpose, mobile);
+            pending.DeliveryStatus = "sendFailed";
+            pending.DeliveryStatusAt = DateTime.UtcNow;
             AddOtpEvent(mobile, purpose, OtpEventType.SendFailed, detail: ex.Message);
             await _db.SaveChangesAsync(ct);
             await _alerts.SendAsync("otp-send-failed",

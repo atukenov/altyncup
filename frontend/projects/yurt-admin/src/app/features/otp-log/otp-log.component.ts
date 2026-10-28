@@ -2,7 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
-import { OtpEventEntry, OtpEventType, OtpPendingCode, OtpSummary } from 'shared-models';
+import { OtpDeliveryStatus, OtpEventEntry, OtpEventType, OtpPendingCode, OtpSummary } from 'shared-models';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
 import { AdminLangService } from '../../core/lang.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
@@ -47,7 +47,7 @@ export class OtpLogComponent implements OnInit {
     { type: 'Expired', key: 'otp.expired', tone: 'text-slate-500' },
   ];
   readonly types: OtpEventType[] = [
-    'CodeSent', 'SendFailed', 'DeliveryDisabled', 'Verified', 'WrongCode', 'Expired', 'TooManyAttempts',
+    'CodeSent', 'SendFailed', 'DeliveryFailed', 'DeliveryDisabled', 'Verified', 'WrongCode', 'Expired', 'TooManyAttempts',
   ];
 
   get hasMore(): boolean {
@@ -152,9 +152,23 @@ export class OtpLogComponent implements OnInit {
   typeClass(type: OtpEventType): string {
     switch (type) {
       case 'Verified': return 'bg-emerald-50 text-emerald-700';
-      case 'SendFailed': case 'TooManyAttempts': return 'bg-red-50 text-red-700';
+      case 'SendFailed': case 'DeliveryFailed': case 'TooManyAttempts': return 'bg-red-50 text-red-700';
       case 'WrongCode': case 'Expired': return 'bg-amber-50 text-amber-700';
       default: return 'bg-slate-100 text-slate-700';
+    }
+  }
+
+  /** Translation key for a code's delivery status; no status yet means queued. */
+  deliveryKey(status?: OtpDeliveryStatus | null): string {
+    return 'otp.delivery.' + (status ?? 'queued');
+  }
+
+  deliveryClass(status?: OtpDeliveryStatus | null): string {
+    switch (status) {
+      case 'delivered': case 'read': return 'bg-emerald-50 text-emerald-700';
+      case 'sent': return 'bg-sky-50 text-sky-700';
+      case 'failed': case 'noAccount': case 'notInGroup': case 'sendFailed': return 'bg-red-50 text-red-700';
+      default: return 'bg-slate-100 text-slate-600';
     }
   }
 

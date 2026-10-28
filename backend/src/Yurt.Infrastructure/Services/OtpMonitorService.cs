@@ -11,7 +11,9 @@ namespace Yurt.Infrastructure.Services;
 
 /// <summary>
 /// Watches WhatsApp OTP delivery and alerts admins when it breaks silently:
-///  - the Green API instance stops being "authorized" (and again when it recovers);
+///  - the Green API instance stops being "authorized" (and again when it recovers).
+///    The stateInstanceChanged webhook usually reports this first; this poll is the
+///    fallback for when webhooks aren't configured or don't arrive;
 ///  - codes were sent in the last hour but nobody verified any of them, which is what
 ///    users see when messages are queued but never delivered.
 /// Send failures themselves are alerted immediately by AuthService.
@@ -22,19 +24,18 @@ public class OtpMonitorService : BackgroundService
     private readonly OtpOptions _otpOptions;
     private readonly AlertOptions _alertOptions;
     private readonly IAdminAlertSender _alerts;
+    private readonly WhatsAppStateTracker _state;
     private readonly ILogger<OtpMonitorService> _logger;
-
-    // Last state we alerted about; starts as "authorized" so a bad state at startup alerts.
-    private string _lastState = "authorized";
 
     public OtpMonitorService(
         IServiceProvider services, OtpOptions otpOptions, AlertOptions alertOptions,
-        IAdminAlertSender alerts, ILogger<OtpMonitorService> logger)
+        IAdminAlertSender alerts, WhatsAppStateTracker state, ILogger<OtpMonitorService> logger)
     {
         _services = services;
         _otpOptions = otpOptions;
         _alertOptions = alertOptions;
         _alerts = alerts;
+        _state = state;
         _logger = logger;
     }
 
@@ -70,18 +71,7 @@ public class OtpMonitorService : BackgroundService
         var diagnostics = scope.ServiceProvider.GetRequiredService<IOtpDiagnostics>();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
 
-        var state = await diagnostics.GetInstanceStateAsync(ct);
-        if (state != _lastState)
-        {
-            if (state == "authorized")
-                await _alerts.SendNowAsync("✅ WhatsApp OTP is back: Green API instance is authorized again.", ct);
-            else
-                await _alerts.SendNowAsync(
-                    $"🚨 WhatsApp OTP is DOWN: Green API instance state is '{state}'. " +
-                    "Customers cannot receive verification codes. " +
-                    "If it says notAuthorized, scan the QR code in the Green API console.", ct);
-            _lastState = state;
-        }
+        await _state.ReportAsync(await diagnostics.GetInstanceStateAsync(ct), fromWebhook: false, ct);
 
         var since = nowUtc.AddHours(-1);
         var recent = await db.OtpEvents
