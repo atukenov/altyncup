@@ -118,5 +118,7 @@ public enum OtpEventType
     Verified = 3,
     WrongCode = 4,
     Expired = 5,
-    TooManyAttempts = 6
+    TooManyAttempts = 6,
+    /// <summary>checkWhatsapp said the number has no WhatsApp account, so no code was sent.</summary>
+    NoWhatsApp = 7
 }

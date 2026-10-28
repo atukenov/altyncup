@@ -69,6 +69,9 @@ public class AuthService
                 $"Please wait {wait}s before requesting another code.", 429);
         }
 
+        if (await IsKnownNotOnWhatsAppAsync(normalizedMobile, VerificationPurpose.Registration, ct))
+            return NoWhatsAppFailure();
+
         var code = TokenHasher.NumericCode();
         var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
 
@@ -417,6 +420,9 @@ public class AuthService
                 $"Please wait {wait}s before requesting another code.", 429);
         }
 
+        if (await IsKnownNotOnWhatsAppAsync(normalizedMobile, VerificationPurpose.PhoneChange, ct))
+            return NoWhatsAppFailure();
+
         var code = TokenHasher.NumericCode();
         var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
 
@@ -543,6 +549,9 @@ public class AuthService
                 $"Please wait {wait}s before requesting another code.", 429);
         }
 
+        if (await IsKnownNotOnWhatsAppAsync(mobile, VerificationPurpose.PhoneVerify, ct))
+            return NoWhatsAppFailure();
+
         var code = TokenHasher.NumericCode();
         var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
 
@@ -651,6 +660,11 @@ public class AuthService
         var normalizedMobile = NormalizeMobile(dto.MobileNumber);
         var now = DateTime.UtcNow;
         var expiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+
+        // Checked before the account lookup so the answer is the same for registered and
+        // unregistered numbers.
+        if (await IsKnownNotOnWhatsAppAsync(normalizedMobile, VerificationPurpose.PinReset, ct))
+            return NoWhatsAppFailure();
 
         var user = await _db.CustomerUsers
             .FirstOrDefaultAsync(u => u.MobileNumber == normalizedMobile && u.IsActive, ct);
@@ -876,6 +890,31 @@ public class AuthService
             return false;
         }
     }
+
+    /// <summary>
+    /// Pre-check that the number has WhatsApp before a code is generated, so the customer is
+    /// told right away instead of waiting for a code that can never arrive. Fails open: when
+    /// the check errors or is inconclusive the code is sent as before.
+    /// </summary>
+    private async Task<bool> IsKnownNotOnWhatsAppAsync(
+        string mobile, VerificationPurpose purpose, CancellationToken ct)
+    {
+        if (!_otpOptions.Enabled || !_otpOptions.CheckWhatsAppBeforeSend)
+            return false;
+
+        if (await _otpSender.HasWhatsAppAsync(mobile, ct) != false)
+            return false;
+
+        _logger.LogInformation("Not sending {Purpose} OTP: {Mobile} has no WhatsApp", purpose, mobile);
+        AddOtpEvent(mobile, purpose, OtpEventType.NoWhatsApp);
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    /// <summary>422 is what the customer app keys its "not on WhatsApp" message on.</summary>
+    private static Result<RegistrationStartResponseDto> NoWhatsAppFailure()
+        => Result<RegistrationStartResponseDto>.Failure(
+            "This number isn't on WhatsApp. Enter a number that has WhatsApp to get the code.", 422);
 
     private void RecordOtpEvent(PhoneVerification pending, OtpEventType type)
         => AddOtpEvent(pending.MobileNumber, pending.Purpose, type);

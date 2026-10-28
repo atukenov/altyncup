@@ -653,7 +653,7 @@ export interface AuditLogEntry {
 
 export type OtpEventType =
   | 'CodeSent' | 'SendFailed' | 'DeliveryDisabled' | 'Verified'
-  | 'WrongCode' | 'Expired' | 'TooManyAttempts';
+  | 'WrongCode' | 'Expired' | 'TooManyAttempts' | 'NoWhatsApp';
 
 export type OtpPurpose = 'Registration' | 'PhoneChange' | 'PinReset' | 'PhoneVerify';
 
