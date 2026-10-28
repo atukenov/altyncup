@@ -1,11 +1,33 @@
 namespace Yurt.Application.Features.Auth;
 
 /// <summary>
-/// Configuration for the WhatsApp one-time-password used during customer registration ("Otp" section).
-/// Secrets (IdInstance, ApiTokenInstance) must come from environment variables, never committed config.
+/// Configuration for the one-time-password used to prove a customer owns their phone number
+/// ("Otp" section). Secrets (IdInstance, ApiTokenInstance) must come from environment
+/// variables, never committed config.
 /// </summary>
 public class OtpOptions
 {
+    public const string WhatsAppProvider = "WhatsApp";
+    public const string FirebaseProvider = "Firebase";
+
+    /// <summary>Length of the codes this backend generates and sends over WhatsApp.</summary>
+    public const int WhatsAppCodeLength = 4;
+
+    /// <summary>Length of the SMS codes Firebase Phone Auth sends.</summary>
+    public const int FirebaseCodeLength = 6;
+
+    /// <summary>
+    /// Who delivers the code (Otp__Provider): <c>WhatsApp</c> (default) sends a 4-digit code
+    /// through Green API; <c>Firebase</c> lets the customer app send a 6-digit SMS through
+    /// Firebase Phone Auth and the backend only checks the resulting Firebase ID token.
+    /// App versions (and the web app) that can't do Firebase keep getting WhatsApp codes,
+    /// so switching back to <c>WhatsApp</c> is always safe.
+    /// </summary>
+    public string Provider { get; set; } = WhatsAppProvider;
+
+    public bool FirebaseEnabled
+        => string.Equals(Provider?.Trim(), FirebaseProvider, StringComparison.OrdinalIgnoreCase);
+
     /// <summary>
     /// When false no WhatsApp message is sent — the generated code is logged and returned
     /// in the start response as <c>devCode</c> so local/dev registration still works.

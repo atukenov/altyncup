@@ -225,6 +225,8 @@
               </div>
               @if (row.code) {
                 <span class="font-mono text-lg font-bold tracking-widest text-slate-800 shrink-0">{{ row.code }}</span>
+              } @else if (row.deliveryStatus === 'firebase') {
+                <span class="text-xs text-slate-400 shrink-0">— ({{ 'otp.firebaseCode' | t }})</span>
               } @else {
                 <span class="text-xs text-slate-400 shrink-0">— ({{ 'otp.noCode' | t }})</span>
               }
@@ -237,6 +239,7 @@
                   @if (row.expired) { <span class="ml-1">({{ 'otp.expiredBadge' | t }})</span> }
                 </p>
               </div>
+              @if (row.deliveryStatus !== 'firebase') {
               <button
                 (click)="resend(row)"
                 [disabled]="resendingId() === row.id"
@@ -244,6 +247,7 @@
               >
                 {{ resendingId() === row.id ? '…' : ('otp.resend' | t) }}
               </button>
+              }
             </div>
           </div>
         } @empty {
@@ -276,6 +280,8 @@
                 <td class="px-4 py-3 whitespace-nowrap">
                   @if (row.code) {
                     <span class="font-mono text-base font-bold tracking-widest text-slate-800">{{ row.code }}</span>
+                  } @else if (row.deliveryStatus === 'firebase') {
+                    <span class="text-xs text-slate-400">— ({{ 'otp.firebaseCode' | t }})</span>
                   } @else {
                     <span class="text-xs text-slate-400">— ({{ 'otp.noCode' | t }})</span>
                   }
@@ -289,6 +295,7 @@
                 </td>
                 <td class="px-4 py-3 text-slate-600">{{ row.attempts }}</td>
                 <td class="px-4 py-3 text-right">
+                  @if (row.deliveryStatus !== 'firebase') {
                   <button
                     (click)="resend(row)"
                     [disabled]="resendingId() === row.id"
@@ -296,6 +303,7 @@
                   >
                     {{ resendingId() === row.id ? '…' : ('otp.resend' | t) }}
                   </button>
+                  }
                 </td>
               </tr>
             } @empty {

@@ -1,28 +1,27 @@
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
-using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Logging;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.Push;
+using Yurt.Infrastructure.Firebase;
 
 namespace Yurt.Infrastructure.Push;
 
-/// <summary>FCM/APNs sender backed by the Firebase Admin SDK. Registered as a singleton
-/// so the lazily-built <see cref="FirebaseApp"/> (and its credential handshake) happens
-/// at most once per process. Disabled (<see cref="FirebaseOptions.Enabled"/> = false) or
+/// <summary>FCM/APNs sender backed by the Firebase Admin SDK. The <see cref="FirebaseApp"/>
+/// is shared through <see cref="FirebaseAppProvider"/> and built at most once per process. Disabled (<see cref="FirebaseOptions.Enabled"/> = false) or
 /// missing credentials degrade to a no-op rather than throwing — this feature ships
 /// before real Firebase credentials exist.</summary>
 public class FcmPushNotificationSender : IPushNotificationSender
 {
     private readonly FirebaseOptions _options;
+    private readonly FirebaseAppProvider _apps;
     private readonly ILogger<FcmPushNotificationSender> _logger;
-    private readonly object _initLock = new();
-    private FirebaseApp? _app;
-    private bool _initFailed;
 
-    public FcmPushNotificationSender(FirebaseOptions options, ILogger<FcmPushNotificationSender> logger)
+    public FcmPushNotificationSender(
+        FirebaseOptions options, FirebaseAppProvider apps, ILogger<FcmPushNotificationSender> logger)
     {
         _options = options;
+        _apps = apps;
         _logger = logger;
     }
 
@@ -79,33 +78,11 @@ public class FcmPushNotificationSender : IPushNotificationSender
 
     private FirebaseApp? GetOrCreateApp()
     {
-        if (_app != null) return _app;
-        if (_initFailed) return null;
-        if (!_options.Enabled || string.IsNullOrWhiteSpace(_options.ServiceAccountJson))
+        if (!_options.Enabled)
         {
-            _logger.LogInformation("Push notifications disabled or not configured — skipping FCM send.");
-            _initFailed = true;
+            _logger.LogInformation("Push notifications disabled — skipping FCM send.");
             return null;
         }
-
-        lock (_initLock)
-        {
-            if (_app != null) return _app;
-            if (_initFailed) return null;
-            try
-            {
-                _app = FirebaseApp.Create(new AppOptions
-                {
-                    Credential = GoogleCredential.FromJson(_options.ServiceAccountJson),
-                    ProjectId = _options.ProjectId,
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to initialize FirebaseApp for push notifications.");
-                _initFailed = true;
-            }
-            return _app;
-        }
+        return _apps.Get();
     }
 }

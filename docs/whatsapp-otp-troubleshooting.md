@@ -5,6 +5,9 @@ A `200` from Green API only means the message was **queued**. It is still droppe
 instance is logged out or the number has no WhatsApp, so "no error, but no message" is normal
 for those cases.
 
+To send codes by SMS through Firebase instead, see [firebase-phone-auth.md](firebase-phone-auth.md)
+(`Otp__Provider=Firebase`).
+
 ## Settings (env vars)
 
 | Variable | Value |
