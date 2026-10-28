@@ -1,13 +1,35 @@
-<div class="h-screen flex overflow-hidden bg-slate-50">
-  <!-- Sidebar -->
+<div class="h-dvh flex flex-col md:flex-row overflow-hidden bg-slate-50">
+  <!-- Mobile top bar -->
+  <header class="md:hidden h-14 flex items-center gap-3 px-3 bg-white border-b border-slate-200 shrink-0">
+    <button
+      (click)="mobileNavOpen.set(true)"
+      class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors"
+      aria-label="Open menu"
+      [attr.aria-expanded]="mobileNavOpen()"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+    <img src="logo.png" alt="Altyncup" class="w-7 h-7 object-contain shrink-0" />
+    <h1 class="text-sm font-bold text-stone-800 truncate">Altyncup Admin</h1>
+  </header>
+
+  <!-- Mobile drawer backdrop -->
+  @if (mobileNavOpen()) {
+    <div class="fixed inset-0 bg-black/40 z-40 md:hidden" (click)="mobileNavOpen.set(false)" aria-hidden="true"></div>
+  }
+
+  <!-- Sidebar (desktop: static, collapsible; mobile: off-canvas drawer) -->
   <aside
-    [class]="collapsed() ? 'w-16' : 'w-64'"
-    class="bg-white border-r border-slate-200 flex flex-col shadow-sm shrink-0 transition-[width] duration-200 ease-in-out overflow-hidden"
+    [class]="(compact() ? 'w-16' : 'w-64') + (mobileNavOpen() ? ' translate-x-0' : ' -translate-x-full md:translate-x-0')"
+    class="fixed inset-y-0 left-0 z-50 md:static md:z-auto bg-white border-r border-slate-200 flex flex-col shadow-sm shrink-0 transition-[width,translate] duration-200 ease-in-out overflow-hidden"
+    (keydown.escape)="mobileNavOpen.set(false)"
   >
     <!-- Logo + toggle -->
     <div class="border-b border-slate-100 flex items-center shrink-0"
-         [class]="collapsed() ? 'px-0 py-4 justify-center' : 'px-4 py-4 justify-between'">
-      @if (!collapsed()) {
+         [class]="compact() ? 'px-0 py-4 justify-center' : 'px-4 py-4 justify-between'">
+      @if (!compact()) {
         <div class="flex items-center gap-2 min-w-0">
           <img src="logo.png" alt="Altyncup" class="w-8 h-8 object-contain shrink-0" />
           <div class="min-w-0">
@@ -20,13 +42,22 @@
       }
 
       <button
-        (click)="toggleSidebar()"
-        [class]="collapsed() ? 'absolute left-2 top-14.5' : ''"
-        class="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
-        [title]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
-        [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        (click)="mobileNavOpen.set(false)"
+        class="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
+        aria-label="Close menu"
       >
-        <svg class="w-4 h-4 transition-transform duration-200" [class.rotate-180]="collapsed()"
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <button
+        (click)="toggleSidebar()"
+        [class]="compact() ? 'absolute left-2 top-14.5' : ''"
+        class="hidden md:flex w-6 h-6 rounded-md items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
+        [title]="compact() ? 'Expand sidebar' : 'Collapse sidebar'"
+        [attr.aria-label]="compact() ? 'Expand sidebar' : 'Collapse sidebar'"
+      >
+        <svg class="w-4 h-4 transition-transform duration-200" [class.rotate-180]="compact()"
              fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
@@ -39,15 +70,15 @@
         routerLink="/orders"
         routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
         ariaCurrentWhenActive="page"
-        [title]="collapsed() ? ('nav.orders' | t) : ''"
+        [title]="compact() ? ('nav.orders' | t) : ''"
         [attr.aria-label]="'nav.orders' | t"
-        [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+        [class]="compact() ? 'justify-center px-0' : 'px-3'"
         class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
       >
         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7 4h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z" />
         </svg>
-        @if (!collapsed()) { <span class="truncate">{{ 'nav.orders' | t }}</span> }
+        @if (!compact()) { <span class="truncate">{{ 'nav.orders' | t }}</span> }
       </a>
 
       @if (auth.isAdmin) {
@@ -55,121 +86,121 @@
           routerLink="/menu"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
           ariaCurrentWhenActive="page"
-          [title]="collapsed() ? ('nav.menu' | t) : ''"
+          [title]="compact() ? ('nav.menu' | t) : ''"
           [attr.aria-label]="'nav.menu' | t"
-          [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+          [class]="compact() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-          @if (!collapsed()) { <span class="truncate">{{ 'nav.menu' | t }}</span> }
+          @if (!compact()) { <span class="truncate">{{ 'nav.menu' | t }}</span> }
         </a>
 
         <a
           routerLink="/locations"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
           ariaCurrentWhenActive="page"
-          [title]="collapsed() ? ('nav.locations' | t) : ''"
+          [title]="compact() ? ('nav.locations' | t) : ''"
           [attr.aria-label]="'nav.locations' | t"
-          [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+          [class]="compact() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          @if (!collapsed()) { <span class="truncate">{{ 'nav.locations' | t }}</span> }
+          @if (!compact()) { <span class="truncate">{{ 'nav.locations' | t }}</span> }
         </a>
 
         <a
           routerLink="/analytics"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
           ariaCurrentWhenActive="page"
-          [title]="collapsed() ? ('nav.analytics' | t) : ''"
+          [title]="compact() ? ('nav.analytics' | t) : ''"
           [attr.aria-label]="'nav.analytics' | t"
-          [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+          [class]="compact() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
-          @if (!collapsed()) { <span class="truncate">{{ 'nav.analytics' | t }}</span> }
+          @if (!compact()) { <span class="truncate">{{ 'nav.analytics' | t }}</span> }
         </a>
 
         <a
           routerLink="/promotions"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
           ariaCurrentWhenActive="page"
-          [title]="collapsed() ? ('nav.promotions' | t) : ''"
+          [title]="compact() ? ('nav.promotions' | t) : ''"
           [attr.aria-label]="'nav.promotions' | t"
-          [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+          [class]="compact() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
           </svg>
-          @if (!collapsed()) { <span class="truncate">{{ 'nav.promotions' | t }}</span> }
+          @if (!compact()) { <span class="truncate">{{ 'nav.promotions' | t }}</span> }
         </a>
 
         <a
           routerLink="/discount-codes"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
           ariaCurrentWhenActive="page"
-          [title]="collapsed() ? ('nav.discountCodes' | t) : ''"
+          [title]="compact() ? ('nav.discountCodes' | t) : ''"
           [attr.aria-label]="'nav.discountCodes' | t"
-          [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+          [class]="compact() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
           </svg>
-          @if (!collapsed()) { <span class="truncate">{{ 'nav.discountCodes' | t }}</span> }
+          @if (!compact()) { <span class="truncate">{{ 'nav.discountCodes' | t }}</span> }
         </a>
 
         <a
           routerLink="/customers"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
           ariaCurrentWhenActive="page"
-          [title]="collapsed() ? ('nav.customers' | t) : ''"
+          [title]="compact() ? ('nav.customers' | t) : ''"
           [attr.aria-label]="'nav.customers' | t"
-          [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+          [class]="compact() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          @if (!collapsed()) { <span class="truncate">{{ 'nav.customers' | t }}</span> }
+          @if (!compact()) { <span class="truncate">{{ 'nav.customers' | t }}</span> }
         </a>
 
         <a
           routerLink="/workers"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
           ariaCurrentWhenActive="page"
-          [title]="collapsed() ? ('nav.workers' | t) : ''"
+          [title]="compact() ? ('nav.workers' | t) : ''"
           [attr.aria-label]="'nav.workers' | t"
-          [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+          [class]="compact() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
-          @if (!collapsed()) { <span class="truncate">{{ 'nav.workers' | t }}</span> }
+          @if (!compact()) { <span class="truncate">{{ 'nav.workers' | t }}</span> }
         </a>
 
         <a
           routerLink="/reports"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
           ariaCurrentWhenActive="page"
-          [title]="collapsed() ? ('nav.reports' | t) : ''"
+          [title]="compact() ? ('nav.reports' | t) : ''"
           [attr.aria-label]="'nav.reports' | t"
-          [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+          [class]="compact() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          @if (!collapsed()) { <span class="truncate">{{ 'nav.reports' | t }}</span> }
+          @if (!compact()) { <span class="truncate">{{ 'nav.reports' | t }}</span> }
         </a>
       }
 
@@ -178,53 +209,53 @@
           routerLink="/audit-log"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
           ariaCurrentWhenActive="page"
-          [title]="collapsed() ? ('nav.auditLog' | t) : ''"
+          [title]="compact() ? ('nav.auditLog' | t) : ''"
           [attr.aria-label]="'nav.auditLog' | t"
-          [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+          [class]="compact() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          @if (!collapsed()) { <span class="truncate">{{ 'nav.auditLog' | t }}</span> }
+          @if (!compact()) { <span class="truncate">{{ 'nav.auditLog' | t }}</span> }
         </a>
 
         <a
           routerLink="/otp-log"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
           ariaCurrentWhenActive="page"
-          [title]="collapsed() ? ('nav.otp' | t) : ''"
+          [title]="compact() ? ('nav.otp' | t) : ''"
           [attr.aria-label]="'nav.otp' | t"
-          [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+          [class]="compact() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
           </svg>
-          @if (!collapsed()) { <span class="truncate">{{ 'nav.otp' | t }}</span> }
+          @if (!compact()) { <span class="truncate">{{ 'nav.otp' | t }}</span> }
         </a>
 
         <a
           routerLink="/app-releases"
           routerLinkActive="bg-amber-50 text-amber-700 font-semibold"
           ariaCurrentWhenActive="page"
-          [title]="collapsed() ? ('nav.appReleases' | t) : ''"
+          [title]="compact() ? ('nav.appReleases' | t) : ''"
           [attr.aria-label]="'nav.appReleases' | t"
-          [class]="collapsed() ? 'justify-center px-0' : 'px-3'"
+          [class]="compact() ? 'justify-center px-0' : 'px-3'"
           class="flex items-center gap-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v12m0-12l-4 4m4-4l4 4M5 20h14" />
           </svg>
-          @if (!collapsed()) { <span class="truncate">{{ 'nav.appReleases' | t }}</span> }
+          @if (!compact()) { <span class="truncate">{{ 'nav.appReleases' | t }}</span> }
         </a>
       }
     </nav>
 
     <!-- Footer -->
     <div class="border-t border-slate-100 flex-shrink-0"
-         [class]="collapsed() ? 'px-2 py-3 flex flex-col items-center gap-2' : 'px-4 py-4'">
-      @if (!collapsed()) {
+         [class]="compact() ? 'px-2 py-3 flex flex-col items-center gap-2' : 'px-4 py-4'">
+      @if (!compact()) {
         <!-- Language switcher -->
         <div class="flex gap-1 mb-3" role="group" aria-label="Language">
           @for (l of ['ru', 'en', 'kk']; track l) {

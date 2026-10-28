@@ -1,6 +1,11 @@
-<div class="flex h-screen overflow-hidden">
+<!-- 3.5rem = the shell's mobile top bar -->
+<div class="flex h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden">
   <!-- Orders sidebar -->
-  <div class="w-96 bg-white border-r border-slate-200 flex flex-col overflow-hidden">
+  <!-- On mobile the list and detail pane take turns: the list shows until an order is picked. -->
+  <div
+    [class]="selectedOrder() ? 'hidden md:flex' : 'flex'"
+    class="w-full md:w-96 bg-white md:border-r border-slate-200 flex-col overflow-hidden"
+  >
     <!-- Header -->
     <div class="px-4 py-4 border-b border-slate-100 flex-shrink-0">
       <div class="flex items-center justify-between mb-3">
@@ -140,7 +145,10 @@
   </div>
 
   <!-- Detail pane -->
-  <div class="flex-1 overflow-y-auto bg-slate-50 p-6">
+  <div
+    [class]="selectedOrder() ? 'block' : 'hidden md:block'"
+    class="flex-1 min-w-0 overflow-y-auto bg-slate-50 p-4 md:p-6"
+  >
     @if (!selectedOrder()) {
       <div class="h-full flex items-center justify-center">
         <div class="text-center text-slate-400">
@@ -152,8 +160,18 @@
     } @else {
       @let o = selectedOrder()!;
       <div class="max-w-2xl mx-auto space-y-4">
+        <button
+          type="button"
+          (click)="selectedOrder.set(null)"
+          class="md:hidden inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-800 -ml-1 px-1 py-1"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          {{ 'orders.backToList' | t }}
+        </button>
         <!-- Title -->
-        <div class="flex items-center justify-between">
+        <div class="flex items-start justify-between gap-3">
           <div>
             <h2 class="text-xl font-bold text-slate-800">
               Order #{{ o.id.slice(-6).toUpperCase() }}
@@ -424,7 +442,7 @@
 <!-- Decline dialog -->
 @if (showDecline()) {
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (keydown.escape)="showDecline.set(false)">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" role="dialog" aria-modal="true" aria-labelledby="decline-dialog-title">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="decline-dialog-title">
       <h3 id="decline-dialog-title" class="text-lg font-bold text-slate-800 mb-4">{{ 'orders.declineTitle' | t }}</h3>
       <textarea
         [(ngModel)]="declineReason"

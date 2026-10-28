@@ -1,4 +1,4 @@
-<div class="p-6 max-w-7xl mx-auto space-y-6">
+<div class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
   <!-- Header -->
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
@@ -48,7 +48,48 @@
         ↻
       </button>
     </div>
-    <div class="overflow-x-auto">
+    <!-- Mobile cards -->
+    <div class="md:hidden divide-y divide-slate-50">
+      @if (codesLoading() && codes().length === 0) {
+        <div class="px-4 py-3"><div class="h-12 bg-slate-100 rounded animate-pulse"></div></div>
+      } @else {
+        @for (row of codes(); track row.id) {
+          <div class="px-4 py-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-medium text-slate-700">{{ row.mobileNumber }}</p>
+                <p class="text-xs text-slate-500 mt-0.5">{{ ('otp.purpose.' + row.purpose) | t }} · {{ 'otp.attempts' | t }}: {{ row.attempts }}</p>
+              </div>
+              @if (row.code) {
+                <span class="font-mono text-lg font-bold tracking-widest text-slate-800 shrink-0">{{ row.code }}</span>
+              } @else {
+                <span class="text-xs text-slate-400 shrink-0">— ({{ 'otp.noCode' | t }})</span>
+              }
+            </div>
+            <div class="flex items-end justify-between gap-3 mt-2">
+              <div class="text-xs text-slate-500 space-y-0.5">
+                <p>{{ 'otp.when' | t }}: {{ formatDate(row.lastSentAt) }}</p>
+                <p [class]="row.expired ? 'text-red-600' : ''">
+                  {{ 'otp.expires' | t }}: {{ formatDate(row.expiresAt) }}
+                  @if (row.expired) { <span class="ml-1">({{ 'otp.expiredBadge' | t }})</span> }
+                </p>
+              </div>
+              <button
+                (click)="resend(row)"
+                [disabled]="resendingId() === row.id"
+                class="px-3 py-1.5 bg-amber-500 text-stone-900 rounded-xl font-medium text-xs hover:bg-amber-600 disabled:opacity-50 transition-colors whitespace-nowrap shrink-0"
+              >
+                {{ resendingId() === row.id ? '…' : ('otp.resend' | t) }}
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <p class="px-4 py-8 text-center text-slate-400">{{ 'otp.noCodes' | t }}</p>
+        }
+      }
+    </div>
+    <!-- Desktop table -->
+    <div class="hidden md:block overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="bg-slate-50 border-b border-slate-100">
           <tr>
@@ -176,13 +217,13 @@
   <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
     <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
       <h2 class="font-semibold text-slate-800">{{ 'otp.eventsTitle' | t }} ({{ total() }})</h2>
-      <div class="flex flex-wrap gap-2">
+      <div class="flex flex-wrap gap-2 w-full sm:w-auto">
         <input
           [(ngModel)]="phoneFilter"
           (keyup.enter)="applyFilter()"
           (blur)="applyFilter()"
           [placeholder]="'otp.searchPhone' | t"
-          class="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          class="flex-1 min-w-0 sm:flex-none border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
         />
         <select
           [(ngModel)]="typeFilter"
