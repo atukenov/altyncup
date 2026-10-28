@@ -1,17 +1,17 @@
 PODS:
-  - Capacitor (8.3.4):
+  - Capacitor (8.5.3):
     - CapacitorCordova
-  - CapacitorApp (8.1.1):
+  - CapacitorApp (8.1.2):
     - Capacitor
   - CapacitorCommunityFcm (8.2.2):
     - Capacitor
     - FirebaseMessaging
-  - CapacitorCordova (8.3.4)
-  - CapacitorLocalNotifications (8.2.0):
+  - CapacitorCordova (8.5.3)
+  - CapacitorLocalNotifications (8.3.1):
     - Capacitor
   - CapacitorPushNotifications (8.1.3):
     - Capacitor
-  - CapacitorStatusBar (8.0.2):
+  - CapacitorStatusBar (8.0.4):
     - Capacitor
   - FirebaseCore (12.19.0):
     - FirebaseCoreInternal (~> 12.19.0)
@@ -104,13 +104,13 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/status-bar"
 
 SPEC CHECKSUMS:
-  Capacitor: d13cad5fa09155679672808cc4ca9fbc2997e1b4
-  CapacitorApp: 305bd13c44f6f9d164e2ee66a4faa956ed8c0e06
+  Capacitor: 2f67eaeb8ed79909cd35b5e7439a5c2a9ca58e0f
+  CapacitorApp: 7b7e43debe505bc61beedb83796aa1368c86078b
   CapacitorCommunityFcm: b2edbbff15db964eb8200502ca1b969078f07433
-  CapacitorCordova: c07921bdcfec6f691bae22274446b4d606ebf6a4
-  CapacitorLocalNotifications: 2615aa008f608b95d3921a778ee1988abf1e6148
+  CapacitorCordova: 0b7326439c7a09fc5d20eced5e0dab986327a493
+  CapacitorLocalNotifications: e0747a329ddde3074d52dc74a003688af90e42be
   CapacitorPushNotifications: a31b62e18764ab855537dfcdade1e6ecf5aba29f
-  CapacitorStatusBar: 01d5763b4ed720de5ce2edbc938de6a98f4c8f32
+  CapacitorStatusBar: ff844df1f126da6c4fbc4028272425fa3a91e7e3
   FirebaseCore: c990214798d7c568ad436a15ba7da25c7a278c9a
   FirebaseCoreInternal: 656b1c2fd5a1c5976183dc54b73deda78fb26ee3
   FirebaseInstallations: f70a49eed611f5602f373e40974b3b01556ac217
