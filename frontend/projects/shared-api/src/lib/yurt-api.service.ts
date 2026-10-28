@@ -9,6 +9,9 @@ import {
   AppRelease,
   AppUpdateInfo,
   AuditLogEntry,
+  OtpEventEntry,
+  OtpEventType,
+  OtpSummary,
   AuthResponse,
   ConfirmApplePayRequest,
   CreateOrderRequest,
@@ -532,6 +535,32 @@ export class YurtApiService {
     if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize);
     return this.http.get<{ total: number; page: number; pageSize: number; items: AuditLogEntry[] }>(
       `${this.api}/admin/audit-log`, { params: httpParams });
+  }
+
+  // ── WhatsApp OTP ────────────────────────────────────────────────────────────
+  getOtpSummary(hours: number): Observable<OtpSummary> {
+    return this.http.get<OtpSummary>(`${this.api}/admin/otp/summary`, {
+      params: new HttpParams().set('hours', hours),
+    });
+  }
+
+  getOtpEvents(params: {
+    mobileNumber?: string;
+    type?: OtpEventType;
+    page?: number;
+    pageSize?: number;
+  }): Observable<{ total: number; page: number; pageSize: number; items: OtpEventEntry[] }> {
+    let httpParams = new HttpParams();
+    if (params.mobileNumber) httpParams = httpParams.set('mobileNumber', params.mobileNumber);
+    if (params.type) httpParams = httpParams.set('type', params.type);
+    if (params.page) httpParams = httpParams.set('page', params.page);
+    if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize);
+    return this.http.get<{ total: number; page: number; pageSize: number; items: OtpEventEntry[] }>(
+      `${this.api}/admin/otp/events`, { params: httpParams });
+  }
+
+  sendOtpTestAlert(): Observable<{ sent: boolean }> {
+    return this.http.post<{ sent: boolean }>(`${this.api}/admin/otp/alerts/test`, {});
   }
 
   // ── Group Orders ────────────────────────────────────────────────────────────

@@ -651,6 +651,41 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
+export type OtpEventType =
+  | 'CodeSent' | 'SendFailed' | 'DeliveryDisabled' | 'Verified'
+  | 'WrongCode' | 'Expired' | 'TooManyAttempts';
+
+export type OtpPurpose = 'Registration' | 'PhoneChange' | 'PinReset' | 'PhoneVerify';
+
+export interface OtpEventEntry {
+  id: string;
+  mobileNumber: string;
+  purpose: OtpPurpose;
+  type: OtpEventType;
+  detail?: string;
+  providerMessageId?: string;
+  createdAt: string;
+}
+
+export interface OtpStuckEntry {
+  mobileNumber: string;
+  purpose: OtpPurpose;
+  lastEvent: OtpEventType;
+  lastAt: string;
+  codesRequested: number;
+  sendFailures: number;
+  wrongCodes: number;
+  lastError?: string;
+}
+
+export interface OtpSummary {
+  hours: number;
+  /** "authorized" when WhatsApp is connected; anything else means codes are not delivered. */
+  whatsappState: string;
+  counts: Partial<Record<OtpEventType, number>>;
+  notVerified: OtpStuckEntry[];
+}
+
 export interface UserReport {
   id: string;
   customerId: string;

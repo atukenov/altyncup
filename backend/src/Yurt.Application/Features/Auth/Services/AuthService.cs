@@ -16,6 +16,7 @@ public class AuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IOtpSender _otpSender;
     private readonly OtpOptions _otpOptions;
+    private readonly IAdminAlertSender _alerts;
     private readonly ILogger<AuthService> _logger;
 
     private const int MaxFailedAttempts = 5;
@@ -27,6 +28,7 @@ public class AuthService
         IPasswordHasher passwordHasher,
         IOtpSender otpSender,
         OtpOptions otpOptions,
+        IAdminAlertSender alerts,
         ILogger<AuthService> logger)
     {
         _db = db;
@@ -34,6 +36,7 @@ public class AuthService
         _passwordHasher = passwordHasher;
         _otpSender = otpSender;
         _otpOptions = otpOptions;
+        _alerts = alerts;
         _logger = logger;
     }
 
@@ -89,24 +92,9 @@ public class AuthService
 
         await _db.SaveChangesAsync(ct);
 
-        if (_otpOptions.Enabled)
-        {
-            try
-            {
-                await _otpSender.SendAsync(normalizedMobile, code, ct);
-            }
-            catch (OtpSendException ex)
-            {
-                _logger.LogError(ex, "Failed to send OTP to {Mobile}", normalizedMobile);
-                return Result<RegistrationStartResponseDto>.Failure(
-                    "Could not send the verification code. Please try again.", 502);
-            }
-        }
-        else
-        {
-            _logger.LogWarning(
-                "OTP delivery disabled — verification code for {Mobile} is {Code}", normalizedMobile, code);
-        }
+        if (!await DeliverCodeAsync(normalizedMobile, VerificationPurpose.Registration, code, ct))
+            return Result<RegistrationStartResponseDto>.Failure(
+                "Could not send the verification code. Please try again.", 502);
 
         return Result<RegistrationStartResponseDto>.Success(
             new RegistrationStartResponseDto(
@@ -130,20 +118,28 @@ public class AuthService
 
         if (pending.ExpiresAt <= DateTime.UtcNow)
         {
+            RecordOtpEvent(pending, OtpEventType.Expired);
             _db.PhoneVerifications.Remove(pending);
             await _db.SaveChangesAsync(ct);
             return Result<AuthResponseDto>.Failure("The code has expired. Request a new one.", 400);
         }
 
         if (pending.Attempts >= _otpOptions.MaxAttempts)
+        {
+            RecordOtpEvent(pending, OtpEventType.TooManyAttempts);
+            await _db.SaveChangesAsync(ct);
             return Result<AuthResponseDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
+        }
 
         if (!_passwordHasher.Verify(dto.Code, pending.CodeHash))
         {
             pending.Attempts++;
+            RecordOtpEvent(pending, OtpEventType.WrongCode);
             await _db.SaveChangesAsync(ct);
             return Result<AuthResponseDto>.Failure("Incorrect code.", 400);
         }
+
+        RecordOtpEvent(pending, OtpEventType.Verified);
 
         var alreadyRegistered = await _db.CustomerUsers
             .AnyAsync(u => u.MobileNumber == normalizedMobile, ct);
@@ -441,25 +437,9 @@ public class AuthService
 
         await _db.SaveChangesAsync(ct);
 
-        if (_otpOptions.Enabled)
-        {
-            try
-            {
-                await _otpSender.SendAsync(normalizedMobile, code, ct);
-            }
-            catch (OtpSendException ex)
-            {
-                _logger.LogError(ex, "Failed to send phone-change OTP to {Mobile}", normalizedMobile);
-                return Result<RegistrationStartResponseDto>.Failure(
-                    "Could not send the verification code. Please try again.", 502);
-            }
-        }
-        else
-        {
-            _logger.LogWarning(
-                "OTP delivery disabled — phone-change verification code for {Mobile} is {Code}",
-                normalizedMobile, code);
-        }
+        if (!await DeliverCodeAsync(normalizedMobile, VerificationPurpose.PhoneChange, code, ct))
+            return Result<RegistrationStartResponseDto>.Failure(
+                "Could not send the verification code. Please try again.", 502);
 
         return Result<RegistrationStartResponseDto>.Success(
             new RegistrationStartResponseDto(
@@ -481,20 +461,28 @@ public class AuthService
 
         if (pending.ExpiresAt <= DateTime.UtcNow)
         {
+            RecordOtpEvent(pending, OtpEventType.Expired);
             _db.PhoneVerifications.Remove(pending);
             await _db.SaveChangesAsync(ct);
             return Result<CustomerProfileDto>.Failure("The code has expired. Request a new one.", 400);
         }
 
         if (pending.Attempts >= _otpOptions.MaxAttempts)
+        {
+            RecordOtpEvent(pending, OtpEventType.TooManyAttempts);
+            await _db.SaveChangesAsync(ct);
             return Result<CustomerProfileDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
+        }
 
         if (!_passwordHasher.Verify(dto.Code, pending.CodeHash))
         {
             pending.Attempts++;
+            RecordOtpEvent(pending, OtpEventType.WrongCode);
             await _db.SaveChangesAsync(ct);
             return Result<CustomerProfileDto>.Failure("Incorrect code.", 400);
         }
+
+        RecordOtpEvent(pending, OtpEventType.Verified);
 
         var user = await _db.CustomerUsers.FindAsync([userId], ct);
         if (user == null)
@@ -574,24 +562,9 @@ public class AuthService
 
         await _db.SaveChangesAsync(ct);
 
-        if (_otpOptions.Enabled)
-        {
-            try
-            {
-                await _otpSender.SendAsync(mobile, code, ct);
-            }
-            catch (OtpSendException ex)
-            {
-                _logger.LogError(ex, "Failed to send phone-verification OTP to {Mobile}", mobile);
-                return Result<RegistrationStartResponseDto>.Failure(
-                    "Could not send the verification code. Please try again.", 502);
-            }
-        }
-        else
-        {
-            _logger.LogWarning(
-                "OTP delivery disabled — phone verification code for {Mobile} is {Code}", mobile, code);
-        }
+        if (!await DeliverCodeAsync(mobile, VerificationPurpose.PhoneVerify, code, ct))
+            return Result<RegistrationStartResponseDto>.Failure(
+                "Could not send the verification code. Please try again.", 502);
 
         return Result<RegistrationStartResponseDto>.Success(
             new RegistrationStartResponseDto(
@@ -615,20 +588,28 @@ public class AuthService
 
         if (pending.ExpiresAt <= DateTime.UtcNow)
         {
+            RecordOtpEvent(pending, OtpEventType.Expired);
             _db.PhoneVerifications.Remove(pending);
             await _db.SaveChangesAsync(ct);
             return Result<CustomerProfileDto>.Failure("The code has expired. Request a new one.", 400);
         }
 
         if (pending.Attempts >= _otpOptions.MaxAttempts)
+        {
+            RecordOtpEvent(pending, OtpEventType.TooManyAttempts);
+            await _db.SaveChangesAsync(ct);
             return Result<CustomerProfileDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
+        }
 
         if (!_passwordHasher.Verify(code, pending.CodeHash))
         {
             pending.Attempts++;
+            RecordOtpEvent(pending, OtpEventType.WrongCode);
             await _db.SaveChangesAsync(ct);
             return Result<CustomerProfileDto>.Failure("Incorrect code.", 400);
         }
+
+        RecordOtpEvent(pending, OtpEventType.Verified);
 
         user.IsPhoneVerified = true;
         user.PhoneVerifiedAt = DateTime.UtcNow;
@@ -707,24 +688,9 @@ public class AuthService
 
         await _db.SaveChangesAsync(ct);
 
-        if (_otpOptions.Enabled)
-        {
-            try
-            {
-                await _otpSender.SendAsync(normalizedMobile, code, ct);
-            }
-            catch (OtpSendException ex)
-            {
-                _logger.LogError(ex, "Failed to send PIN-reset OTP to {Mobile}", normalizedMobile);
-                return Result<RegistrationStartResponseDto>.Failure(
-                    "Could not send the verification code. Please try again.", 502);
-            }
-        }
-        else
-        {
-            _logger.LogWarning(
-                "OTP delivery disabled — PIN-reset code for {Mobile} is {Code}", normalizedMobile, code);
-        }
+        if (!await DeliverCodeAsync(normalizedMobile, VerificationPurpose.PinReset, code, ct))
+            return Result<RegistrationStartResponseDto>.Failure(
+                "Could not send the verification code. Please try again.", 502);
 
         return Result<RegistrationStartResponseDto>.Success(
             new RegistrationStartResponseDto(
@@ -749,20 +715,28 @@ public class AuthService
 
         if (pending.ExpiresAt <= DateTime.UtcNow)
         {
+            RecordOtpEvent(pending, OtpEventType.Expired);
             _db.PhoneVerifications.Remove(pending);
             await _db.SaveChangesAsync(ct);
             return Result<AuthResponseDto>.Failure("The code has expired. Request a new one.", 400);
         }
 
         if (pending.Attempts >= _otpOptions.MaxAttempts)
+        {
+            RecordOtpEvent(pending, OtpEventType.TooManyAttempts);
+            await _db.SaveChangesAsync(ct);
             return Result<AuthResponseDto>.Failure("Too many incorrect attempts. Request a new code.", 429);
+        }
 
         if (!_passwordHasher.Verify(dto.Code, pending.CodeHash))
         {
             pending.Attempts++;
+            RecordOtpEvent(pending, OtpEventType.WrongCode);
             await _db.SaveChangesAsync(ct);
             return Result<AuthResponseDto>.Failure("Incorrect code.", 400);
         }
+
+        RecordOtpEvent(pending, OtpEventType.Verified);
 
         var user = await _db.CustomerUsers
             .FirstOrDefaultAsync(u => u.Id == pending.CustomerUserId && u.IsActive, ct);
@@ -833,6 +807,55 @@ public class AuthService
     private static CustomerProfileDto ToProfileDto(CustomerUser user)
         => new(user.Id, user.MobileNumber, user.FirstName, user.LastName, user.CreatedAt,
             user.DateOfBirth, user.IsPhoneVerified);
+
+    /// <summary>
+    /// Send a freshly stored code (or log it when delivery is disabled), record the outcome
+    /// in OtpEvents, and alert admins on failure. Returns false when the send failed.
+    /// </summary>
+    private async Task<bool> DeliverCodeAsync(
+        string mobile, VerificationPurpose purpose, string code, CancellationToken ct)
+    {
+        if (!_otpOptions.Enabled)
+        {
+            _logger.LogWarning(
+                "OTP delivery disabled — {Purpose} code for {Mobile} is {Code}", purpose, mobile, code);
+            AddOtpEvent(mobile, purpose, OtpEventType.DeliveryDisabled);
+            await _db.SaveChangesAsync(ct);
+            return true;
+        }
+
+        try
+        {
+            var messageId = await _otpSender.SendAsync(mobile, code, ct);
+            AddOtpEvent(mobile, purpose, OtpEventType.CodeSent, providerMessageId: messageId);
+            await _db.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (OtpSendException ex)
+        {
+            _logger.LogError(ex, "Failed to send {Purpose} OTP to {Mobile}", purpose, mobile);
+            AddOtpEvent(mobile, purpose, OtpEventType.SendFailed, detail: ex.Message);
+            await _db.SaveChangesAsync(ct);
+            await _alerts.SendAsync("otp-send-failed",
+                $"🚨 WhatsApp code could not be sent ({purpose}, {mobile}): {ex.Message}", ct);
+            return false;
+        }
+    }
+
+    private void RecordOtpEvent(PhoneVerification pending, OtpEventType type)
+        => AddOtpEvent(pending.MobileNumber, pending.Purpose, type);
+
+    private void AddOtpEvent(
+        string mobile, VerificationPurpose purpose, OtpEventType type,
+        string? detail = null, string? providerMessageId = null)
+        => _db.OtpEvents.Add(new OtpEvent
+        {
+            MobileNumber = mobile,
+            Purpose = purpose,
+            Type = type,
+            Detail = detail is { Length: > 1000 } ? detail[..1000] : detail,
+            ProviderMessageId = providerMessageId,
+        });
 
     private static string NormalizeMobile(string mobile)
         => mobile.Trim().Replace(" ", "").Replace("-", "");

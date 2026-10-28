@@ -325,3 +325,16 @@ public class AppReleaseConfiguration : IEntityTypeConfiguration<AppRelease>
         builder.Property(e => e.NotesKk).HasColumnType("text").IsRequired();
     }
 }
+
+public class OtpEventConfiguration : IEntityTypeConfiguration<OtpEvent>
+{
+    public void Configure(EntityTypeBuilder<OtpEvent> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.MobileNumber).HasMaxLength(20).IsRequired();
+        builder.Property(e => e.Detail).HasMaxLength(1000);
+        builder.Property(e => e.ProviderMessageId).HasMaxLength(100);
+        builder.HasIndex(e => e.CreatedAt);
+        builder.HasIndex(e => new { e.MobileNumber, e.CreatedAt });
+    }
+}
