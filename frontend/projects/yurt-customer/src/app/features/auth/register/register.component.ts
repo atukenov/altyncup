@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { YurtApiService, AuthStateService } from 'shared-api';
 import { ButtonComponent, OtpBoxesComponent, ToastService } from 'shared-ui';
 import { TranslatePipe } from '../../../core/translate.pipe';
+import { LangService } from '../../../core/lang.service';
 
 @Component({
   selector: 'app-register',
@@ -18,6 +19,7 @@ export class RegisterComponent implements OnDestroy {
   private auth = inject(AuthStateService);
   private router = inject(Router);
   private toast = inject(ToastService);
+  private lang = inject(LangService);
 
   readonly pinInputs = viewChildren<ElementRef>('pinInput');
   readonly confirmInputs = viewChildren<ElementRef>('confirmInput');
@@ -131,7 +133,7 @@ export class RegisterComponent implements OnDestroy {
         },
         error: (err) => {
           this.loading.set(false);
-          this.error.set(err.error?.title ?? 'Registration failed.');
+          this.error.set(err.status === 422 ? this.lang.t('auth.noWhatsApp') : (err.error?.title ?? 'Registration failed.'));
         },
       });
   }
@@ -179,7 +181,7 @@ export class RegisterComponent implements OnDestroy {
         },
         error: (err) => {
           this.loading.set(false);
-          this.error.set(err.error?.title ?? 'Could not resend the code.');
+          this.error.set(err.status === 422 ? this.lang.t('auth.noWhatsApp') : (err.error?.title ?? 'Could not resend the code.'));
         },
       });
   }
