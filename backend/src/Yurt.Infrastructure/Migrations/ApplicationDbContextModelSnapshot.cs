@@ -980,6 +980,8 @@ namespace Yurt.Infrastructure.Migrations
 
                     b.HasIndex("CreatedAt");
 
+                    b.HasIndex("ProviderMessageId");
+
                     b.HasIndex("MobileNumber", "CreatedAt");
 
                     b.ToTable("OtpEvents");
@@ -1107,6 +1109,13 @@ namespace Yurt.Infrastructure.Migrations
                     b.Property<Guid?>("CustomerUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("DeliveryStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("DeliveryStatusAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1133,6 +1142,10 @@ namespace Yurt.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("ProviderMessageId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<int>("Purpose")
                         .HasColumnType("integer");
 
@@ -1140,6 +1153,8 @@ namespace Yurt.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProviderMessageId");
 
                     b.HasIndex("MobileNumber", "Purpose")
                         .IsUnique();

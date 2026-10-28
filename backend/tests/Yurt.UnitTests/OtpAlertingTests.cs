@@ -198,6 +198,40 @@ public class OtpAlertingTests
     }
 
     [Fact]
+    public async Task ResendCode_StoresNewMessageId_AndClearsOldDeliveryStatus()
+    {
+        var pending = new PhoneVerification
+        {
+            MobileNumber = "+77011234567", Purpose = VerificationPurpose.Registration,
+            ProviderMessageId = "OLD", DeliveryStatus = "noAccount", DeliveryStatusAt = DateTime.UtcNow,
+        };
+        var h = new AuthHarness(true, pending);
+        h.Sender.SendAsync("+77011234567", Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns("NEW");
+
+        await h.Service.ResendCodeAsync(pending.Id);
+
+        Assert.Equal("NEW", pending.ProviderMessageId);
+        Assert.Null(pending.DeliveryStatus);
+        Assert.Null(pending.DeliveryStatusAt);
+    }
+
+    [Fact]
+    public async Task ResendCode_SendFails_MarksRowSendFailed()
+    {
+        var pending = new PhoneVerification
+        {
+            MobileNumber = "+77011234567", Purpose = VerificationPurpose.Registration, ProviderMessageId = "OLD",
+        };
+        var h = new AuthHarness(true, pending);
+        h.Sender.SendAsync(default!, default!, default).ThrowsAsyncForAnyArgs(new OtpSendException("boom"));
+
+        await h.Service.ResendCodeAsync(pending.Id);
+
+        Assert.Null(pending.ProviderMessageId);
+        Assert.Equal("sendFailed", pending.DeliveryStatus);
+    }
+
+    [Fact]
     public async Task ResendCode_UnknownId_ReturnsNotFound()
     {
         var h = new AuthHarness();
@@ -322,7 +356,8 @@ public class OtpAlertingTests
             .BuildServiceProvider();
         var alerts = Substitute.For<IAdminAlertSender>();
         var monitor = new OtpMonitorService(services, new OtpOptions { Enabled = true },
-            new AlertOptions { UnverifiedCodesThreshold = 3 }, alerts, NullLogger<OtpMonitorService>.Instance);
+            new AlertOptions { UnverifiedCodesThreshold = 3 }, alerts, new WhatsAppStateTracker(alerts),
+            NullLogger<OtpMonitorService>.Instance);
         return (monitor, alerts, diagnostics);
     }
 

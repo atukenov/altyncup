@@ -24,6 +24,16 @@ public class PhoneVerification : BaseEntity
     public DateTime LastSentAt { get; set; }
     public int Attempts { get; set; }
 
+    /// <summary>Green API idMessage of the latest send; matches outgoingMessageStatus webhooks to this row.</summary>
+    public string? ProviderMessageId { get; set; }
+    /// <summary>
+    /// WhatsApp delivery status of the latest send, from the outgoingMessageStatus webhook:
+    /// sent, delivered, read, failed, noAccount. Null while queued (or when no webhook
+    /// has arrived); "sendFailed" when Green API refused the send outright.
+    /// </summary>
+    public string? DeliveryStatus { get; set; }
+    public DateTime? DeliveryStatusAt { get; set; }
+
     // Pending registration payload — applied when the code is confirmed. Unused for Purpose = PhoneChange.
     public string PinHash { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;

@@ -36,6 +36,13 @@ public class OtpOptions
     /// <summary>Maximum wrong-code attempts before the code is rejected outright.</summary>
     public int MaxAttempts { get; set; } = 5;
 
+    /// <summary>
+    /// Shared secret for the Green API webhook endpoint (Otp__WebhookToken). Set the same
+    /// value as "webhookUrlToken" in the Green API instance settings. While it is empty the
+    /// webhook endpoint rejects every call.
+    /// </summary>
+    public string WebhookToken { get; set; } = string.Empty;
+
     /// <summary><c>{code}</c> is replaced with the generated code.</summary>
     public string MessageTemplate { get; set; } = "Your Altyncup verification code: {code}";
 }

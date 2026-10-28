@@ -59,6 +59,7 @@
               <div class="min-w-0">
                 <p class="font-medium text-slate-700">{{ row.mobileNumber }}</p>
                 <p class="text-xs text-slate-500 mt-0.5">{{ ('otp.purpose.' + row.purpose) | t }} · {{ 'otp.attempts' | t }}: {{ row.attempts }}</p>
+                <p class="mt-1"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" [class]="deliveryClass(row.deliveryStatus)" [title]="row.deliveryStatusAt ? formatDate(row.deliveryStatusAt) : ''">{{ deliveryKey(row.deliveryStatus) | t }}</span></p>
               </div>
               @if (row.code) {
                 <span class="font-mono text-lg font-bold tracking-widest text-slate-800 shrink-0">{{ row.code }}</span>
@@ -95,6 +96,7 @@
           <tr>
             <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.phone' | t }}</th>
             <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.code' | t }}</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.delivery' | t }}</th>
             <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.purpose' | t }}</th>
             <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.when' | t }}</th>
             <th class="px-4 py-3 text-left font-semibold text-slate-600">{{ 'otp.expires' | t }}</th>
@@ -104,7 +106,7 @@
         </thead>
         <tbody class="divide-y divide-slate-50">
           @if (codesLoading() && codes().length === 0) {
-            <tr><td colspan="7" class="px-4 py-3"><div class="h-4 bg-slate-100 rounded animate-pulse"></div></td></tr>
+            <tr><td colspan="8" class="px-4 py-3"><div class="h-4 bg-slate-100 rounded animate-pulse"></div></td></tr>
           } @else {
             @for (row of codes(); track row.id) {
               <tr class="hover:bg-slate-50 transition-colors">
@@ -116,6 +118,7 @@
                     <span class="text-xs text-slate-400">— ({{ 'otp.noCode' | t }})</span>
                   }
                 </td>
+                <td class="px-4 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" [class]="deliveryClass(row.deliveryStatus)" [title]="row.deliveryStatusAt ? formatDate(row.deliveryStatusAt) : ''">{{ deliveryKey(row.deliveryStatus) | t }}</span></td>
                 <td class="px-4 py-3 text-slate-600">{{ ('otp.purpose.' + row.purpose) | t }}</td>
                 <td class="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{{ formatDate(row.lastSentAt) }}</td>
                 <td class="px-4 py-3 whitespace-nowrap text-xs" [class]="row.expired ? 'text-red-600' : 'text-slate-500'">
@@ -134,7 +137,7 @@
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">{{ 'otp.noCodes' | t }}</td></tr>
+              <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">{{ 'otp.noCodes' | t }}</td></tr>
             }
           }
         </tbody>

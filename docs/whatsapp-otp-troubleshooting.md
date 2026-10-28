@@ -14,6 +14,7 @@ for those cases.
 | `Otp__IdInstance` | idInstance from the console |
 | `Otp__ApiTokenInstance` | apiTokenInstance from the console |
 | `Otp__CheckWhatsAppBeforeSend` | `true` by default: Green API `checkWhatsapp` runs before each code, and numbers without WhatsApp get a "this number isn't on WhatsApp" error (logged as `NoWhatsApp`). If the check itself fails the code is sent anyway. Set `false` to skip the check. |
+| `Otp__WebhookToken` | A long random secret for the Green API webhook (see below). Empty = webhook turned off. |
 
 ## Check it
 
@@ -48,12 +49,61 @@ The response lists config warnings and each Green API call (`getStateInstance`, 
 Every successful send is logged as `Green API queued OTP for {ChatId} as message {IdMessage}`;
 failures are logged with the status, response body and a hint.
 
+## Delivery status and instant alerts (Green API webhook)
+
+Green API can call the backend back when WhatsApp reports what happened to a message, and when
+the instance logs out or comes back. The backend uses one endpoint for both:
+
+```
+POST https://altyncup-production.up.railway.app/api/v1/webhooks/green-api
+```
+
+- `outgoingMessageStatus` updates the **Delivery** column in **WhatsApp codes → Requested codes**:
+  Queued → Sent → Delivered → Read, or Failed / No WhatsApp. A failed delivery is also recorded as a
+  "Not delivered" event, so it shows up in "Didn't get through".
+- `stateInstanceChanged` sends the Telegram alert right away (for example "instance state is
+  'notAuthorized'"), instead of waiting for the 10-minute check. The check still runs as a fallback
+  and doesn't repeat an alert the webhook already sent.
+
+Setup:
+
+1. Generate a secret, e.g. `openssl rand -hex 32`, and set it on Railway as `Otp__WebhookToken`.
+   Until it is set, the endpoint answers `401` to everything.
+2. In the Green API console, open the instance → **Settings** (or **Notifications**) and set:
+   - **Webhook URL** (`webhookUrl`): the URL above;
+   - **Webhook URL token** (`webhookUrlToken`): the same secret. Green API sends it in the
+     `Authorization` header;
+   - **Receive statuses of outgoing messages** (`outgoingWebhook`): on;
+   - **Receive instance state changes** (`stateWebhook`): on.
+
+   Or do the same through the API:
+
+   ```bash
+   curl -X POST "$GREEN_API_URL/waInstance$GREEN_API_ID_INSTANCE/setSettings/$GREEN_API_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"webhookUrl":"https://altyncup-production.up.railway.app/api/v1/webhooks/green-api",
+          "webhookUrlToken":"<Otp__WebhookToken>",
+          "outgoingWebhook":"yes","stateWebhook":"yes"}'
+   ```
+
+   Settings can take a few minutes to apply.
+3. Check: resend a code from the admin page. Within seconds its **Delivery** badge should change
+   from Queued to Sent or Delivered. If it stays Queued, look in the server log for
+   `Rejected Green API webhook` (wrong or missing token).
+
+If the webhook can't send the token in a header (some proxies strip it), you can append
+`?token=<secret>` to the webhook URL instead.
+
+Webhooks from a different `idInstance` are ignored, and statuses never go backwards (a late
+`sent` won't overwrite `delivered`).
+
 ## Alerts (Telegram)
 
 The backend can message a Telegram chat when OTP delivery breaks:
 
 - a code could not be sent (Green API error), at most once per 30 minutes;
-- the Green API instance stops being `authorized` (checked every 10 minutes), and again when it recovers;
+- the Green API instance stops being `authorized`, and again when it recovers: instantly through the
+  webhook above, otherwise within 10 minutes;
 - 3+ codes were sent in the last hour and none were verified (messages probably queued but not delivered).
 
 Setup:
@@ -68,8 +118,8 @@ Without these variables alerts are only written to the server log.
 
 ## Audit: who tried and failed
 
-Every code is recorded in the `OtpEvents` table (sent, send failed, verified, wrong code,
-expired, too many attempts). The admin panel page **WhatsApp codes** (super admin) shows the
+Every code is recorded in the `OtpEvents` table (sent, send failed, not delivered, verified,
+wrong code, expired, too many attempts). The admin panel page **WhatsApp codes** (super admin) shows the
 WhatsApp connection status, counts, a "didn't get through" list of numbers whose last code was
 never confirmed, and the full history. The same data is at
 `GET /api/v1/admin/otp/summary?hours=24` and `GET /api/v1/admin/otp/events`.
