@@ -46,7 +46,8 @@ public class OtpAlertingTests
             Hasher.Hash(Arg.Any<string>()).Returns("hash");
 
             Service = new AuthService(Db, Substitute.For<ITokenService>(), Hasher, Sender,
-                new OtpOptions { Enabled = otpEnabled }, Alerts, NullLogger<AuthService>.Instance);
+                new OtpOptions { Enabled = otpEnabled }, Alerts, Substitute.For<IFirebasePhoneVerifier>(),
+                NullLogger<AuthService>.Instance);
         }
     }
 
@@ -137,7 +138,7 @@ public class OtpAlertingTests
         var h = new AuthHarness();
         var service = new AuthService(h.Db, Substitute.For<ITokenService>(), h.Hasher, h.Sender,
             new OtpOptions { Enabled = true, CheckWhatsAppBeforeSend = false }, h.Alerts,
-            NullLogger<AuthService>.Instance);
+            Substitute.For<IFirebasePhoneVerifier>(), NullLogger<AuthService>.Instance);
 
         await service.StartRegistrationAsync(Register);
 

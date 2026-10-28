@@ -155,7 +155,7 @@
         </button>
         @if (verifyOpen()) {
           <div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:10px">
-            <yurt-otp-boxes #verifyOtpBoxes (codeChange)="verifyOtp = $event"></yurt-otp-boxes>
+            <yurt-otp-boxes #verifyOtpBoxes [length]="verifyOtpSession.codeLength()" (codeChange)="verifyOtp = $event"></yurt-otp-boxes>
             @if (verifyError()) {
               <p style="font-size:12.5px;font-weight:600;color:#ef4444;margin:-2px 2px 0">
                 {{ verifyError() }}
@@ -303,7 +303,7 @@
           <p style="font-size:12.5px;font-weight:600;color:#78716c;margin:0">
             {{ 'profile.enterCodeSentTo' | t }} {{ phoneFormatted }}
           </p>
-          <yurt-otp-boxes #phoneOtpBoxes (codeChange)="phoneOtp = $event"></yurt-otp-boxes>
+          <yurt-otp-boxes #phoneOtpBoxes [length]="phoneOtpSession.codeLength()" (codeChange)="phoneOtp = $event"></yurt-otp-boxes>
           @if (phoneError()) {
             <p style="font-size:12.5px;font-weight:600;color:#ef4444;margin:-2px 2px 0">
               {{ phoneError() }}

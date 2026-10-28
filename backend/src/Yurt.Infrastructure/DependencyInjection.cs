@@ -32,6 +32,7 @@ using Yurt.Application.Features.Loyalty;
 using Yurt.Application.Features.Loyalty.Services;
 using Yurt.Application.Features.Push;
 using Yurt.Application.Features.Push.Services;
+using Yurt.Infrastructure.Firebase;
 using Yurt.Infrastructure.Health;
 using Yurt.Infrastructure.Hubs;
 using Yurt.Infrastructure.Iiko;
@@ -105,7 +106,10 @@ public static class DependencyInjection
         // Remote push notifications (feature-flagged via Firebase:Enabled; secrets via env vars)
         services.AddSingleton(configuration.GetSection("Firebase").Get<FirebaseOptions>() ?? new FirebaseOptions());
         services.AddSingleton(configuration.GetSection("Engagement").Get<EngagementOptions>() ?? new EngagementOptions());
+        services.AddSingleton<FirebaseAppProvider>();
         services.AddSingleton<IPushNotificationSender, FcmPushNotificationSender>();
+        // Firebase Phone Auth (Otp__Provider=Firebase): checks the ID token the app sends after the SMS code
+        services.AddSingleton<IFirebasePhoneVerifier, FirebasePhoneVerifier>();
         services.AddScoped<PushNotificationService>();
         services.AddScoped<EngagementService>();
 

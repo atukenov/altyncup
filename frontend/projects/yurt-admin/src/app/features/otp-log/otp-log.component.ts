@@ -312,7 +312,7 @@ export class OtpLogComponent implements OnInit, OnDestroy {
   deliveryClass(status?: OtpDeliveryStatus | null): string {
     switch (status) {
       case 'delivered': case 'read': return 'bg-emerald-50 text-emerald-700';
-      case 'sent': return 'bg-sky-50 text-sky-700';
+      case 'sent': case 'firebase': return 'bg-sky-50 text-sky-700';
       case 'failed': case 'noAccount': case 'notInGroup': case 'sendFailed': return 'bg-red-50 text-red-700';
       default: return 'bg-slate-100 text-slate-600';
     }

@@ -42,12 +42,16 @@
         {{ 'auth.sendCode' | t }}
       </yurt-button>
     } @else {
-      <p class="text-stone-500 text-sm mb-7">{{ 'auth.verifyDesc' | t }}</p>
+      @if (verifiedProof()) {
+        <p class="text-emerald-600 text-sm font-semibold mb-7">✓ {{ 'auth.numberVerified' | t }}</p>
+      } @else {
+        <p class="text-stone-500 text-sm mb-7">{{ (otpSession.isFirebase ? 'auth.verifyDescSms' : 'auth.verifyDesc') | t }}</p>
 
-      <div class="mb-5">
-        <label class="block text-sm font-semibold text-stone-600 mb-2">{{ 'auth.enterCode' | t }}</label>
-        <yurt-otp-boxes #otpBoxes (codeChange)="otp = $event"></yurt-otp-boxes>
-      </div>
+        <div class="mb-5">
+          <label class="block text-sm font-semibold text-stone-600 mb-2">{{ 'auth.enterCode' | t }}</label>
+          <yurt-otp-boxes #otpBoxes [length]="otpSession.codeLength()" (codeChange)="otp = $event"></yurt-otp-boxes>
+        </div>
+      }
 
       <div class="mb-7">
         <label class="block text-sm font-semibold text-stone-600 mb-2">{{ 'auth.newPin' | t }}</label>

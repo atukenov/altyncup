@@ -42,6 +42,7 @@ import {
   PaymentStatusResponse,
   Promotion,
   RegistrationStartResponse,
+  OtpProofDto,
   UpdatePaymentRequest,
   UpdateStatusRequest,
   UserReport,
@@ -96,10 +97,10 @@ export class YurtApiService {
     });
   }
 
-  registerVerify(mobileNumber: string, code: string): Observable<AuthResponse> {
+  registerVerify(mobileNumber: string, proof: OtpProofDto): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.api}/auth/register/verify`, {
       mobileNumber,
-      code,
+      ...proof,
     });
   }
 
@@ -109,10 +110,10 @@ export class YurtApiService {
     });
   }
 
-  pinResetVerify(mobileNumber: string, code: string, newPin4: string): Observable<AuthResponse> {
+  pinResetVerify(mobileNumber: string, proof: OtpProofDto, newPin4: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.api}/auth/pin-reset/verify`, {
       mobileNumber,
-      code,
+      ...proof,
       newPin4,
     });
   }
@@ -137,16 +138,16 @@ export class YurtApiService {
     return this.http.post<RegistrationStartResponse>(`${this.api}/auth/me/phone/start`, { mobileNumber });
   }
 
-  changeMobileNumberVerify(mobileNumber: string, code: string): Observable<CustomerProfile> {
-    return this.http.post<CustomerProfile>(`${this.api}/auth/me/phone/verify`, { mobileNumber, code });
+  changeMobileNumberVerify(mobileNumber: string, proof: OtpProofDto): Observable<CustomerProfile> {
+    return this.http.post<CustomerProfile>(`${this.api}/auth/me/phone/verify`, { mobileNumber, ...proof });
   }
 
   verifyPhoneStart(): Observable<RegistrationStartResponse> {
     return this.http.post<RegistrationStartResponse>(`${this.api}/auth/me/verify-phone/start`, {});
   }
 
-  verifyPhoneConfirm(code: string): Observable<CustomerProfile> {
-    return this.http.post<CustomerProfile>(`${this.api}/auth/me/verify-phone/confirm`, { code });
+  verifyPhoneConfirm(proof: OtpProofDto): Observable<CustomerProfile> {
+    return this.http.post<CustomerProfile>(`${this.api}/auth/me/verify-phone/confirm`, proof);
   }
 
   refreshToken(refreshToken: string): Observable<AuthResponse> {

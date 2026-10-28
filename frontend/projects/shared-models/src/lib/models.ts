@@ -69,6 +69,16 @@ export interface RegistrationStartResponse {
   mobileNumber: string;
   expiresAt: string;
   devCode?: string | null;
+  /** 'whatsapp': the backend sent the code. 'firebase': the app sends an SMS via Firebase. */
+  provider?: 'whatsapp' | 'firebase';
+  /** Number of code boxes to show (4 for WhatsApp, 6 for Firebase). */
+  codeLength?: number;
+}
+
+/** Proof of the phone number for the verify endpoints: the WhatsApp code or a Firebase ID token. */
+export interface OtpProofDto {
+  code?: string;
+  firebaseIdToken?: string;
 }
 
 export interface CustomerProfile {
@@ -657,7 +667,9 @@ export type OtpEventType =
 
 /** WhatsApp delivery status of a sent code (Green API outgoingMessageStatus), or 'sendFailed'. */
 export type OtpDeliveryStatus =
-  | 'sent' | 'delivered' | 'read' | 'failed' | 'noAccount' | 'notInGroup' | 'sendFailed';
+  | 'sent' | 'delivered' | 'read' | 'failed' | 'noAccount' | 'notInGroup' | 'sendFailed'
+  /** The customer app sent the SMS through Firebase Phone Auth; there is no code to show or resend. */
+  | 'firebase';
 
 export type OtpPurpose = 'Registration' | 'PhoneChange' | 'PinReset' | 'PhoneVerify';
 

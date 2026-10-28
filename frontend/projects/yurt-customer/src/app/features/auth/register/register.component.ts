@@ -6,6 +6,8 @@ import { YurtApiService, AuthStateService } from 'shared-api';
 import { ButtonComponent, OtpBoxesComponent, ToastService } from 'shared-ui';
 import { TranslatePipe } from '../../../core/translate.pipe';
 import { LangService } from '../../../core/lang.service';
+import { OtpProof, PhoneOtpService, firebaseOtpError } from '../../../core/phone-otp.service';
+import { RegistrationStartResponse } from 'shared-models';
 
 @Component({
   selector: 'app-register',
@@ -20,6 +22,8 @@ export class RegisterComponent implements OnDestroy {
   private router = inject(Router);
   private toast = inject(ToastService);
   private lang = inject(LangService);
+  /** WhatsApp (4 digits) or Firebase SMS (6 digits), whichever the backend picked. */
+  readonly otpSession = inject(PhoneOtpService).session();
 
   readonly pinInputs = viewChildren<ElementRef>('pinInput');
   readonly confirmInputs = viewChildren<ElementRef>('confirmInput');
@@ -122,14 +126,11 @@ export class RegisterComponent implements OnDestroy {
       .registerStart(phone, this.pin4, this.firstName.trim(), this.lastName.trim())
       .subscribe({
         next: (res) => {
-          this.loading.set(false);
           this.pendingPhone = res.mobileNumber || phone;
-          this.otp = '';
-          this.step.set('otp');
-          this.startResendCountdown();
-          if (res.devCode) {
-            this.toast.success('Dev code: ' + res.devCode);
-          }
+          void this.deliver(res, false, () => {
+            this.otp = '';
+            this.step.set('otp');
+          });
         },
         error: (err) => {
           this.loading.set(false);
@@ -140,13 +141,45 @@ export class RegisterComponent implements OnDestroy {
 
   onVerify(): void {
     this.error.set('');
-    if (this.otp.length !== 4) {
-      this.error.set('Enter the 4-digit code.');
+    if (!this.otpSession.isComplete(this.otp)) {
+      this.error.set(`Enter the ${this.otpSession.codeLength()}-digit code.`);
       return;
     }
 
     this.loading.set(true);
-    this.api.registerVerify(this.pendingPhone, this.otp).subscribe({
+    this.otpSession.proof(this.otp).then(
+      (proof) => this.submitProof(proof),
+      (err) => {
+        this.loading.set(false);
+        this.error.set(firebaseOtpError(err, 'Incorrect code.'));
+      },
+    );
+  }
+
+  /**
+   * After a start call: send the Firebase SMS when the backend asked for it, then show the
+   * code step. On Android Firebase can verify the number instantly, so we finish right away.
+   */
+  private async deliver(res: RegistrationStartResponse, resend: boolean, onSent: () => void): Promise<void> {
+    try {
+      const instant = await this.otpSession.begin(res, resend);
+      this.loading.set(false);
+      onSent();
+      this.startResendCountdown();
+      if (res.devCode) this.toast.success('Dev code: ' + res.devCode);
+      else if (resend) this.toast.success('Code sent.');
+      if (instant) {
+        this.loading.set(true);
+        this.submitProof(instant);
+      }
+    } catch (err) {
+      this.loading.set(false);
+      this.error.set(firebaseOtpError(err, 'Could not send the SMS. Try again.'));
+    }
+  }
+
+  private submitProof(proof: OtpProof): void {
+    this.api.registerVerify(this.pendingPhone, proof).subscribe({
       next: (res) => {
         this.auth.setUser({
           accessToken: res.accessToken,
@@ -173,11 +206,7 @@ export class RegisterComponent implements OnDestroy {
       .registerStart(this.pendingPhone, this.pin4, this.firstName.trim(), this.lastName.trim())
       .subscribe({
         next: (res) => {
-          this.loading.set(false);
-          this.otpBoxes()?.clear();
-          this.startResendCountdown();
-          if (res.devCode) this.toast.success('Dev code: ' + res.devCode);
-          else this.toast.success('Code sent.');
+          void this.deliver(res, true, () => this.otpBoxes()?.clear());
         },
         error: (err) => {
           this.loading.set(false);
