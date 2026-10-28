@@ -23,6 +23,7 @@ public class PhoneVerificationConfiguration : IEntityTypeConfiguration<PhoneVeri
         builder.HasIndex(e => new { e.MobileNumber, e.Purpose }).IsUnique();
         builder.Property(e => e.MobileNumber).HasMaxLength(20).IsRequired();
         builder.Property(e => e.CodeHash).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.Code).HasMaxLength(10);
         builder.Property(e => e.PinHash).HasMaxLength(200).IsRequired();
         builder.Property(e => e.FirstName).HasMaxLength(100);
         builder.Property(e => e.LastName).HasMaxLength(100);

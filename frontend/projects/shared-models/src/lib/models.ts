@@ -678,6 +678,20 @@ export interface OtpStuckEntry {
   lastError?: string;
 }
 
+/** A code request still waiting to be confirmed. `code` is plain text (super admins only). */
+export interface OtpPendingCode {
+  id: string;
+  mobileNumber: string;
+  purpose: OtpPurpose;
+  /** Null for requests made before codes were kept in plain text; resend to get one. */
+  code?: string | null;
+  attempts: number;
+  lastSentAt: string;
+  expiresAt: string;
+  expired: boolean;
+  createdAt: string;
+}
+
 export interface OtpSummary {
   hours: number;
   /** "authorized" when WhatsApp is connected; anything else means codes are not delivered. */

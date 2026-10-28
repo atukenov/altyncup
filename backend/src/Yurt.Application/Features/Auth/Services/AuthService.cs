@@ -83,6 +83,7 @@ public class AuthService
         }
 
         pending.CodeHash = _passwordHasher.Hash(code);
+        pending.Code = code;
         pending.ExpiresAt = expiresAt;
         pending.LastSentAt = now;
         pending.Attempts = 0;
@@ -430,6 +431,7 @@ public class AuthService
         }
 
         pending.CodeHash = _passwordHasher.Hash(code);
+        pending.Code = code;
         pending.ExpiresAt = expiresAt;
         pending.LastSentAt = now;
         pending.Attempts = 0;
@@ -555,6 +557,7 @@ public class AuthService
         }
 
         pending.CodeHash = _passwordHasher.Hash(code);
+        pending.Code = code;
         pending.ExpiresAt = expiresAt;
         pending.LastSentAt = now;
         pending.Attempts = 0;
@@ -681,6 +684,7 @@ public class AuthService
         }
 
         pending.CodeHash = _passwordHasher.Hash(code);
+        pending.Code = code;
         pending.ExpiresAt = expiresAt;
         pending.LastSentAt = now;
         pending.Attempts = 0;
@@ -812,6 +816,37 @@ public class AuthService
     /// Send a freshly stored code (or log it when delivery is disabled), record the outcome
     /// in OtpEvents, and alert admins on failure. Returns false when the send failed.
     /// </summary>
+    /// <summary>
+    /// Super-admin "resend": issue a fresh code for a pending verification (new expiry,
+    /// attempts reset) and send it again. Skips the customer-facing resend cooldown,
+    /// since an admin is doing it deliberately.
+    /// </summary>
+    public async Task<Result<RegistrationStartResponseDto>> ResendCodeAsync(
+        Guid verificationId, CancellationToken ct = default)
+    {
+        var pending = await _db.PhoneVerifications.FirstOrDefaultAsync(v => v.Id == verificationId, ct);
+        if (pending == null)
+            return Result<RegistrationStartResponseDto>.NotFound(
+                "This code request no longer exists (it was confirmed or replaced).");
+
+        var now = DateTime.UtcNow;
+        var code = TokenHasher.NumericCode();
+        pending.CodeHash = _passwordHasher.Hash(code);
+        pending.Code = code;
+        pending.ExpiresAt = now.AddMinutes(_otpOptions.CodeExpiryMinutes);
+        pending.LastSentAt = now;
+        pending.Attempts = 0;
+
+        await _db.SaveChangesAsync(ct);
+
+        if (!await DeliverCodeAsync(pending.MobileNumber, pending.Purpose, code, ct))
+            return Result<RegistrationStartResponseDto>.Failure(
+                "Could not send the verification code. The new code is saved; check the WhatsApp status.", 502);
+
+        return Result<RegistrationStartResponseDto>.Success(
+            new RegistrationStartResponseDto(pending.MobileNumber, pending.ExpiresAt, code));
+    }
+
     private async Task<bool> DeliverCodeAsync(
         string mobile, VerificationPurpose purpose, string code, CancellationToken ct)
     {

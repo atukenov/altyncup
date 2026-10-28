@@ -11,6 +11,7 @@ import {
   AuditLogEntry,
   OtpEventEntry,
   OtpEventType,
+  OtpPendingCode,
   OtpSummary,
   AuthResponse,
   ConfirmApplePayRequest,
@@ -557,6 +558,17 @@ export class YurtApiService {
     if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize);
     return this.http.get<{ total: number; page: number; pageSize: number; items: OtpEventEntry[] }>(
       `${this.api}/admin/otp/events`, { params: httpParams });
+  }
+
+  getOtpCodes(mobileNumber?: string): Observable<{ items: OtpPendingCode[] }> {
+    let httpParams = new HttpParams();
+    if (mobileNumber) httpParams = httpParams.set('mobileNumber', mobileNumber);
+    return this.http.get<{ items: OtpPendingCode[] }>(`${this.api}/admin/otp/codes`, { params: httpParams });
+  }
+
+  resendOtpCode(id: string): Observable<{ mobileNumber: string; expiresAt: string; devCode?: string }> {
+    return this.http.post<{ mobileNumber: string; expiresAt: string; devCode?: string }>(
+      `${this.api}/admin/otp/codes/${id}/resend`, {});
   }
 
   sendOtpTestAlert(): Observable<{ sent: boolean }> {

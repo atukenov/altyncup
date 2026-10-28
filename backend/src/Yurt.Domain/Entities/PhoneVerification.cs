@@ -15,6 +15,11 @@ public class PhoneVerification : BaseEntity
     public string MobileNumber { get; set; } = string.Empty;
     public VerificationPurpose Purpose { get; set; } = VerificationPurpose.Registration;
     public string CodeHash { get; set; } = string.Empty;
+    /// <summary>The current code in plain text, shown only to super admins on the
+    /// "WhatsApp codes" page so they can read it out to a customer whose message
+    /// didn't arrive. Verification still checks <see cref="CodeHash"/>. The row is
+    /// deleted once the code is confirmed, so the plain code doesn't outlive it.</summary>
+    public string? Code { get; set; }
     public DateTime ExpiresAt { get; set; }
     public DateTime LastSentAt { get; set; }
     public int Attempts { get; set; }
