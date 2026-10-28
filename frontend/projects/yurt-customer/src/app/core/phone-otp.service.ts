@@ -11,10 +11,12 @@ export interface OtpProof {
 }
 
 /**
- * Firebase Phone Auth is only wired up in the native apps. The web build keeps the
+ * Firebase Phone Auth is only wired up in the native apps, and only when the native plugin
+ * is actually in the build (e.g. the iOS pod is installed). Otherwise the app keeps the
  * WhatsApp code: it never advertises Firebase, so the backend never asks it to.
  */
-export const supportsFirebaseOtp = (): boolean => Capacitor.isNativePlatform();
+export const supportsFirebaseOtp = (): boolean =>
+  Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('FirebaseAuthentication');
 
 /**
  * Tells the backend this build can send the code itself through Firebase. The backend only
