@@ -1,25 +1,45 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YurtApiService } from 'shared-api';
-import { OtpEventEntry, OtpEventType, OtpPendingCode, OtpSummary } from 'shared-models';
+import { OtpEventEntry, OtpEventType, OtpPendingCode, OtpSummary, WhatsAppInstanceInfo } from 'shared-models';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
 import { AdminLangService } from '../../core/lang.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 
 const PAGE_SIZE = 50;
+/** How often the re-link panel checks whether the phone has linked (and refreshes the QR). */
+const RELINK_POLL_MS = 5000;
+/** Stop polling after this long so an abandoned tab does not hit Green API forever. */
+const RELINK_TIMEOUT_MS = 3 * 60 * 1000;
+const KNOWN_STATES = ['authorized', 'notAuthorized', 'blocked', 'yellowCard', 'starting', 'sleepMode'];
 
-/** WhatsApp OTP health: instance status, outcome counts, pending codes (with resend), people who never got through, raw history. */
+/** WhatsApp OTP health: instance status (with QR / phone-code re-link), outcome counts, pending codes (with resend), people who never got through, raw history. */
 @Component({
   selector: 'app-otp-log',
   standalone: true,
   imports: [CommonModule, FormsModule, AdminTranslatePipe],
   templateUrl: './otp-log.component.html',
 })
-export class OtpLogComponent implements OnInit {
+export class OtpLogComponent implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
   private confirmSvc = inject(ConfirmService);
   private lang = inject(AdminLangService);
+
+  instance = signal<WhatsAppInstanceInfo | null>(null);
+  instanceLoading = signal(true);
+
+  /** Re-link panel: null when closed. */
+  relinkMode = signal<'qr' | 'phone' | null>(null);
+  qrImage = signal<string | null>(null);
+  qrError = signal<string | null>(null);
+  relinkTimedOut = signal(false);
+  relinkPhone = '';
+  authCode = signal<string | null>(null);
+  authCodeError = signal<string | null>(null);
+  authCodeLoading = signal(false);
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private pollStartedAt = 0;
 
   summary = signal<OtpSummary | null>(null);
   summaryLoading = signal(true);
@@ -55,13 +75,139 @@ export class OtpLogComponent implements OnInit {
   }
 
   get whatsappOk(): boolean {
-    return this.summary()?.whatsappState === 'authorized';
+    return this.instance()?.state === 'authorized';
+  }
+
+  get canRelink(): boolean {
+    return this.instance()?.state === 'notAuthorized';
+  }
+
+  get stateKey(): string {
+    const state = this.instance()?.state;
+    return 'wa.state.' + (state && KNOWN_STATES.includes(state) ? state : 'unknown');
   }
 
   ngOnInit(): void {
+    this.loadInstance();
     this.loadSummary();
     this.loadCodes();
     this.loadEvents();
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
+  }
+
+  loadInstance(): void {
+    this.instanceLoading.set(true);
+    this.api.getWhatsAppInstance().subscribe({
+      next: (info) => { this.applyInstance(info); this.instanceLoading.set(false); },
+      error: () => this.instanceLoading.set(false),
+    });
+  }
+
+  /** "+7 701 123 45 67" from Green API's digits-only phone. */
+  formatPhone(digits: string): string {
+    const m = /^7(\d{3})(\d{3})(\d{2})(\d{2})$/.exec(digits);
+    return m ? `+7 ${m[1]} ${m[2]} ${m[3]} ${m[4]}` : `+${digits}`;
+  }
+
+  startRelink(mode: 'qr' | 'phone' = 'qr'): void {
+    this.relinkMode.set(mode);
+    this.relinkTimedOut.set(false);
+    this.qrImage.set(null);
+    this.qrError.set(null);
+    this.authCode.set(null);
+    this.authCodeError.set(null);
+    if (mode === 'qr') this.fetchQr();
+    this.startPolling();
+  }
+
+  cancelRelink(): void {
+    this.stopPolling();
+    this.relinkMode.set(null);
+    this.loadInstance();
+  }
+
+  requestAuthCode(): void {
+    const phone = this.relinkPhone.trim();
+    if (!phone) return;
+    this.authCodeLoading.set(true);
+    this.authCode.set(null);
+    this.authCodeError.set(null);
+    this.api.getWhatsAppAuthorizationCode(phone).subscribe({
+      next: (res) => {
+        this.authCode.set(res.code);
+        this.authCodeLoading.set(false);
+        this.startPolling();
+      },
+      error: (err) => {
+        this.authCodeError.set(err?.error?.title ?? err?.message ?? '');
+        this.authCodeLoading.set(false);
+      },
+    });
+  }
+
+  private fetchQr(): void {
+    this.api.getWhatsAppQr().subscribe({
+      next: (qr) => {
+        if (qr.type === 'alreadyLogged') { this.onLinked(); return; }
+        if (qr.type === 'qrCode' && qr.image) {
+          this.qrImage.set(qr.image);
+          this.qrError.set(null);
+        } else {
+          this.qrError.set(qr.message ?? qr.type);
+        }
+      },
+      error: (err) => this.qrError.set(err?.message ?? 'error'),
+    });
+  }
+
+  private startPolling(): void {
+    this.stopPolling();
+    this.pollStartedAt = Date.now();
+    this.pollTimer = setInterval(() => this.poll(), RELINK_POLL_MS);
+  }
+
+  private stopPolling(): void {
+    if (this.pollTimer) clearInterval(this.pollTimer);
+    this.pollTimer = null;
+  }
+
+  private poll(): void {
+    if (Date.now() - this.pollStartedAt > RELINK_TIMEOUT_MS) {
+      this.stopPolling();
+      this.relinkTimedOut.set(true);
+      this.qrImage.set(null);
+      return;
+    }
+    // Green API rotates the QR about every 20s; a fresh fetch also reports "alreadyLogged" once scanned.
+    // In phone mode a new QR could cancel the pairing code, so only the state is checked.
+    if (this.relinkMode() === 'qr') {
+      this.fetchQr();
+    } else {
+      this.api.getWhatsAppInstance().subscribe({
+        next: (info) => { if (info.state === 'authorized') this.onLinked(info); },
+      });
+    }
+  }
+
+  private onLinked(info?: WhatsAppInstanceInfo): void {
+    this.stopPolling();
+    this.relinkMode.set(null);
+    this.alertMessage.set({ ok: true, key: 'wa.linked' });
+    if (info) this.applyInstance(info);
+    else this.loadInstance();
+    this.loadSummary();
+  }
+
+  private applyInstance(info: WhatsAppInstanceInfo): void {
+    this.instance.set(info);
+    // The panel only makes sense while logged out.
+    if (info.state !== 'notAuthorized' && this.relinkMode()) {
+      this.stopPolling();
+      this.relinkMode.set(null);
+    }
   }
 
   loadCodes(): void {

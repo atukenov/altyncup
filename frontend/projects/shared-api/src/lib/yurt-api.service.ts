@@ -13,6 +13,8 @@ import {
   OtpEventType,
   OtpPendingCode,
   OtpSummary,
+  WhatsAppInstanceInfo,
+  WhatsAppQr,
   AuthResponse,
   ConfirmApplePayRequest,
   CreateOrderRequest,
@@ -573,6 +575,19 @@ export class YurtApiService {
 
   sendOtpTestAlert(): Observable<{ sent: boolean }> {
     return this.http.post<{ sent: boolean }>(`${this.api}/admin/otp/alerts/test`, {});
+  }
+
+  getWhatsAppInstance(): Observable<WhatsAppInstanceInfo> {
+    return this.http.get<WhatsAppInstanceInfo>(`${this.api}/admin/otp/instance`);
+  }
+
+  getWhatsAppQr(): Observable<WhatsAppQr> {
+    return this.http.get<WhatsAppQr>(`${this.api}/admin/otp/instance/qr`);
+  }
+
+  getWhatsAppAuthorizationCode(phoneNumber: string): Observable<{ ok: boolean; code: string }> {
+    return this.http.post<{ ok: boolean; code: string }>(
+      `${this.api}/admin/otp/instance/authorization-code`, { phoneNumber });
   }
 
   // ── Group Orders ────────────────────────────────────────────────────────────

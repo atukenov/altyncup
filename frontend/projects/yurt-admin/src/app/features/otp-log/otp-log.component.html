@@ -32,6 +32,168 @@
     </div>
   }
 
+  <!-- WhatsApp instance -->
+  <div class="bg-white rounded-2xl shadow-sm border overflow-hidden"
+       [class]="instance() && !whatsappOk ? 'border-red-200' : 'border-slate-100'">
+    <div class="px-4 py-4 flex flex-wrap items-center gap-4">
+      <!-- Avatar -->
+      <div class="relative shrink-0">
+        @if (instance()?.avatar; as avatar) {
+          <img [src]="avatar" alt="" referrerpolicy="no-referrer"
+               class="w-14 h-14 rounded-full object-cover bg-slate-100" />
+        } @else {
+          <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-2xl">💬</div>
+        }
+        @if (instance()) {
+          <span class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white"
+                [class]="whatsappOk ? 'bg-emerald-500' : 'bg-red-500'"></span>
+        }
+      </div>
+
+      <!-- State and number -->
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="font-semibold text-slate-800">{{ 'otp.status' | t }}</h2>
+          @if (instance()) {
+            <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium"
+                  [class]="whatsappOk ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'">
+              {{ stateKey | t }}
+            </span>
+          } @else if (instanceLoading()) {
+            <span class="h-5 w-20 bg-slate-100 rounded-full animate-pulse"></span>
+          }
+        </div>
+        @if (instance(); as info) {
+          <p class="text-sm text-slate-700 mt-1">
+            <span class="text-slate-500 mr-1 whitespace-nowrap">{{ 'wa.linkedNumber' | t }}:</span>
+            @if (info.phone) {
+              <span class="font-medium whitespace-nowrap">{{ formatPhone(info.phone) }}</span>
+            } @else {
+              <span class="text-slate-400">{{ 'wa.noNumber' | t }}</span>
+            }
+          </p>
+          @if (info.idInstance) {
+            <p class="text-xs text-slate-400 mt-0.5">{{ 'wa.instance' | t }} {{ info.idInstance }}</p>
+          }
+        }
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-2" [class]="canRelink && !relinkMode() ? 'w-full sm:w-auto' : 'ml-auto'">
+        @if (canRelink && !relinkMode()) {
+          <button
+            (click)="startRelink()"
+            class="flex-1 sm:flex-none px-4 py-2 bg-amber-500 text-stone-900 rounded-xl font-medium text-sm hover:bg-amber-600 transition-colors whitespace-nowrap"
+          >
+            {{ 'wa.relink' | t }}
+          </button>
+        }
+        <button
+          (click)="loadInstance()"
+          [disabled]="instanceLoading()"
+          [attr.aria-label]="'wa.refresh' | t"
+          class="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+        >
+          ↻
+        </button>
+      </div>
+    </div>
+
+    @if (instance(); as info) {
+      @if (!whatsappOk && (info.hint || info.error)) {
+        <div class="px-4 py-3 bg-red-50 border-t border-red-100 text-sm text-red-700 break-words">
+          <p class="font-medium">{{ 'wa.downHint' | t }}</p>
+          <p class="text-xs mt-0.5">{{ info.hint ?? info.error }}</p>
+        </div>
+      }
+    }
+
+    <!-- Re-link panel -->
+    @if (relinkMode(); as mode) {
+      <div class="border-t border-slate-100 px-4 py-5">
+        @if (relinkTimedOut()) {
+          <div class="text-center space-y-3">
+            <p class="text-sm text-slate-600">{{ 'wa.qrTimeout' | t }}</p>
+            <button (click)="startRelink(mode)"
+                    class="px-4 py-2 bg-amber-500 text-stone-900 rounded-xl font-medium text-sm hover:bg-amber-600 transition-colors">
+              {{ 'wa.tryAgain' | t }}
+            </button>
+          </div>
+        } @else if (mode === 'qr') {
+          <div class="flex flex-col md:flex-row md:items-start gap-5">
+            <div class="mx-auto md:mx-0 shrink-0 w-64 max-w-full aspect-square rounded-xl border border-slate-200 bg-white flex items-center justify-center overflow-hidden">
+              @if (qrImage(); as img) {
+                <img [src]="'data:image/png;base64,' + img" alt="WhatsApp QR" class="w-full h-full object-contain" />
+              } @else if (qrError(); as err) {
+                <p class="p-4 text-xs text-red-600 text-center break-words">{{ err }}</p>
+              } @else {
+                <p class="text-sm text-slate-400 animate-pulse">{{ 'wa.qrLoading' | t }}</p>
+              }
+            </div>
+            <div class="space-y-3 text-sm text-slate-700 min-w-0">
+              <p>{{ 'wa.scanSteps' | t }}</p>
+              <p class="text-xs text-slate-500">{{ 'wa.qrAuto' | t }}</p>
+              <div class="flex flex-wrap gap-2 pt-1">
+                <button (click)="startRelink('phone')"
+                        class="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                  {{ 'wa.usePhone' | t }}
+                </button>
+                <button (click)="cancelRelink()"
+                        class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+                  {{ 'wa.cancel' | t }}
+                </button>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="space-y-4 max-w-md">
+            <div>
+              <label for="relink-phone" class="text-sm text-slate-600">{{ 'wa.phoneLabel' | t }}</label>
+              <div class="flex gap-2 mt-1">
+                <input
+                  id="relink-phone"
+                  [(ngModel)]="relinkPhone"
+                  (keyup.enter)="requestAuthCode()"
+                  type="tel"
+                  inputmode="tel"
+                  placeholder="+7 701 123 45 67"
+                  class="flex-1 min-w-0 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+                <button
+                  (click)="requestAuthCode()"
+                  [disabled]="authCodeLoading() || !relinkPhone.trim()"
+                  class="px-4 py-2 bg-amber-500 text-stone-900 rounded-xl font-medium text-sm hover:bg-amber-600 disabled:opacity-50 transition-colors whitespace-nowrap"
+                >
+                  {{ authCodeLoading() ? '…' : ('wa.getCode' | t) }}
+                </button>
+              </div>
+            </div>
+            @if (authCode(); as code) {
+              <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-4 text-center">
+                <p class="font-mono text-3xl font-bold tracking-[0.3em] text-slate-800 break-all">{{ code }}</p>
+                <p class="text-xs text-slate-500 mt-2">{{ 'wa.codeSteps' | t }}</p>
+                <p class="text-xs text-slate-400 mt-1 animate-pulse">{{ 'wa.waiting' | t }}</p>
+              </div>
+            }
+            @if (authCodeError() !== null) {
+              <p class="text-sm text-red-600 break-words">{{ 'wa.codeFailed' | t }} {{ authCodeError() }}</p>
+            }
+            <div class="flex flex-wrap gap-2">
+              <button (click)="startRelink('qr')"
+                      class="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                {{ 'wa.useQr' | t }}
+              </button>
+              <button (click)="cancelRelink()"
+                      class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+                {{ 'wa.cancel' | t }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
   <!-- Requested codes (plain text, super admin only) -->
   <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
     <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
@@ -142,21 +304,8 @@
     </div>
   </div>
 
-  <!-- WhatsApp status -->
+  <!-- Summary -->
   @if (summary(); as s) {
-    <div class="rounded-2xl border px-5 py-4 flex items-center gap-3"
-         [class]="whatsappOk ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'">
-      <span class="w-3 h-3 rounded-full shrink-0" [class]="whatsappOk ? 'bg-emerald-500' : 'bg-red-500'"></span>
-      <div class="min-w-0">
-        <p class="font-semibold" [class]="whatsappOk ? 'text-emerald-800' : 'text-red-800'">
-          {{ 'otp.status' | t }}: {{ (whatsappOk ? 'otp.statusOk' : 'otp.statusDown') | t }}
-        </p>
-        @if (!whatsappOk) {
-          <p class="text-xs text-red-700 mt-0.5 break-words">{{ s.whatsappState }}</p>
-        }
-      </div>
-    </div>
-
     <!-- Counts -->
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
       @for (tile of tiles; track tile.type) {

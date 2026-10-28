@@ -207,4 +207,63 @@ public class WhatsAppOtpTests
         var bad = new StubHandler(new() { ["getStateInstance"] = (HttpStatusCode.Unauthorized, "") });
         Assert.StartsWith("error: HTTP 401", await Diagnostics(bad).GetInstanceStateAsync());
     }
+
+    [Fact]
+    public async Task GetInstanceInfo_CombinesStateWithLinkedAccount()
+    {
+        var handler = new StubHandler(new()
+        {
+            ["getStateInstance"] = (HttpStatusCode.OK, """{"stateInstance":"authorized"}"""),
+            ["getWaSettings"] = (HttpStatusCode.OK, """{"avatar":"https://pps.whatsapp.net/a.jpg","phone":"77011234567","stateInstance":"authorized","deviceId":"x"}"""),
+        });
+
+        var info = await Diagnostics(handler).GetInstanceInfoAsync();
+
+        Assert.Equal("authorized", info.State);
+        Assert.Null(info.Hint);
+        Assert.Equal("77011234567", info.Phone);
+        Assert.Equal("https://pps.whatsapp.net/a.jpg", info.Avatar);
+        Assert.Null(info.Error);
+    }
+
+    [Fact]
+    public async Task GetInstanceInfo_LoggedOut_KeepsStateWhenSettingsFail()
+    {
+        var handler = new StubHandler(new()
+        {
+            ["getStateInstance"] = (HttpStatusCode.OK, """{"stateInstance":"notAuthorized"}"""),
+        });
+
+        var info = await Diagnostics(handler).GetInstanceInfoAsync();
+
+        Assert.Equal("notAuthorized", info.State);
+        Assert.Contains("QR", info.Hint);
+        Assert.Null(info.Phone);
+        Assert.Null(info.Error);
+    }
+
+    [Fact]
+    public async Task GetQr_ReturnsImage_OrAlreadyLogged()
+    {
+        var image = new string('A', 3000); // longer than the 1000-char log truncation
+        var qr = new StubHandler(new() { ["qr"] = (HttpStatusCode.OK, $$"""{"type":"qrCode","message":"{{image}}"}""") });
+        var result = await Diagnostics(qr).GetQrAsync();
+        Assert.Equal("qrCode", result.Type);
+        Assert.Equal(image, result.Image);
+
+        var logged = new StubHandler(new() { ["qr"] = (HttpStatusCode.OK, """{"type":"alreadyLogged","message":"instance account already authorized"}""") });
+        Assert.Equal("alreadyLogged", (await Diagnostics(logged).GetQrAsync()).Type);
+    }
+
+    [Fact]
+    public async Task GetAuthorizationCode_PostsDigitsAndReturnsCode()
+    {
+        var handler = new StubHandler(new() { ["getAuthorizationCode"] = (HttpStatusCode.OK, """{"status":true,"code":"WZGR9LJF"}""") });
+
+        var result = await Diagnostics(handler).GetAuthorizationCodeAsync("+7 701 123 45 67");
+
+        Assert.True(result.Ok);
+        Assert.Equal("WZGR9LJF", result.Code);
+        Assert.Contains("\"phoneNumber\":77011234567", handler.Requests.Single().Body);
+    }
 }

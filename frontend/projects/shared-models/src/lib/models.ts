@@ -700,6 +700,25 @@ export interface OtpSummary {
   notVerified: OtpStuckEntry[];
 }
 
+/** Green API instance as shown on the WhatsApp card (getStateInstance + getWaSettings). */
+export interface WhatsAppInstanceInfo {
+  /** "authorized", "notAuthorized", "blocked", "sleepMode", ...; null when Green API could not be asked. */
+  state?: string | null;
+  hint?: string | null;
+  /** Linked WhatsApp number, digits only. */
+  phone?: string | null;
+  avatar?: string | null;
+  idInstance: string;
+  error?: string | null;
+}
+
+export interface WhatsAppQr {
+  type: 'qrCode' | 'alreadyLogged' | 'error';
+  /** Base64 PNG when type is "qrCode". */
+  image?: string | null;
+  message?: string | null;
+}
+
 export interface UserReport {
   id: string;
   customerId: string;
