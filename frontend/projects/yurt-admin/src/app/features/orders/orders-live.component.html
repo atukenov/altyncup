@@ -434,6 +434,23 @@
             }
           </div>
         </div>
+
+        <!-- Delete (super admin only) -->
+        @if (canDelete) {
+          <div class="flex justify-end pt-2">
+            <div class="w-full sm:w-auto">
+              <yurt-button
+                variant="destructive"
+                size="md"
+                [fullWidth]="true"
+                [loading]="deleteLoading()"
+                (clicked)="deleteOrder(o)"
+              >
+                🗑️ {{ 'orders.delete' | t }}
+              </yurt-button>
+            </div>
+          </div>
+        }
       </div>
     }
   </div>

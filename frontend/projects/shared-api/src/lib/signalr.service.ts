@@ -13,6 +13,7 @@ export class SignalrService {
   readonly orderCreated$ = new Subject<Order>();
   readonly orderDeclined$ = new Subject<Order>();
   readonly paymentUpdated$ = new Subject<Order>();
+  readonly orderDeleted$ = new Subject<{ id: string }>();
   readonly groupCartUpdated$ = new Subject<GroupCart>();
   readonly etaReminder$ = new Subject<{ orderId: string; minutesLeft: number }>();
   readonly connected = signal(false);
@@ -37,6 +38,7 @@ export class SignalrService {
     this.hubConnection.on('OrderCreated', (order: Order) => this.orderCreated$.next(order));
     this.hubConnection.on('OrderUpdated', (order: Order) => this.orderUpdated$.next(order));
     this.hubConnection.on('OrderDeclined', (order: Order) => this.orderDeclined$.next(order));
+    this.hubConnection.on('OrderDeleted', (data: { id: string }) => this.orderDeleted$.next(data));
     this.hubConnection.on('PaymentUpdated', (order: Order) => this.paymentUpdated$.next(order));
     this.hubConnection.on('GroupCartUpdated', (dto: GroupCart) => this.groupCartUpdated$.next(dto));
     this.hubConnection.on('EtaReminder', (data: { orderId: string; minutesLeft: number }) => this.etaReminder$.next(data));

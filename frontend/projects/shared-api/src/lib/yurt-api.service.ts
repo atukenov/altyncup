@@ -392,6 +392,11 @@ export class YurtApiService {
     return this.http.post<Order>(`${this.api}/admin/orders/${id}/payment`, req);
   }
 
+  /** Super admin only: permanently deletes the order with its items and payments. */
+  deleteOrder(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.api}/admin/orders/${id}`);
+  }
+
   // ── Dashboard ──────────────────────────────────────────────────────────────
   getDashboard(): Observable<DashboardData> {
     return this.http.get<DashboardData>(`${this.api}/admin/dashboard`);

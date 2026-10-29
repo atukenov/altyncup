@@ -439,6 +439,38 @@ public class OrderService
         return Result<OrderDto>.Success(MapToDto(order));
     }
 
+    /// <summary>Super-admin hard delete. Items, toppings and payments go with it (FK
+    /// cascade). A reserved loyalty hold is released first, and an order that still owes
+    /// iiko a wallet operation is kept so the retry service can finish it.</summary>
+    public async Task<Result> DeleteOrderAsync(Guid orderId, CancellationToken ct = default)
+    {
+        var order = await LoadOrderAsync(orderId, ct);
+        if (order == null) return Result.Failure("Not found", 404);
+
+        if (order.LoyaltyHoldTransactionId != null && order.LoyaltyPendingAction == LoyaltyPendingAction.None)
+            await _loyalty.ReleaseHoldForOrderAsync(order, ct);
+
+        if (order.LoyaltyPendingAction != LoyaltyPendingAction.None)
+            return Result.Failure(
+                "Order has a loyalty points operation pending with iiko. Try again later.", 409);
+
+        // The deleted order no longer counts as a use of its discount code.
+        if (order.DiscountCode is { UsedCount: > 0 })
+            order.DiscountCode.UsedCount--;
+
+        var details = $"#{ShortId(order.Id)} · {order.CustomerUser.MobileNumber} · {order.Location.Name} · " +
+                      $"{order.Total:0.##} · {order.Status} · {order.PaymentStatus} · created {order.CreatedAt:yyyy-MM-dd HH:mm} UTC";
+
+        _db.Orders.Remove(order);
+        await _db.SaveChangesAsync(ct);
+
+        await _hub.NotifyOrderDeletedAsync(order, ct);
+        await _audit.LogAsync("OrderDeleted", "Order", orderId.ToString(), details, ct);
+        return Result.Success();
+    }
+
+    private static string ShortId(Guid id) => id.ToString("N")[..8].ToUpperInvariant();
+
     private async Task<Order?> LoadOrderAsync(Guid id, CancellationToken ct)
         => await _db.Orders
             .Include(o => o.Location)

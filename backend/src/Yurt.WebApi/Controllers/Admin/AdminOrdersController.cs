@@ -71,4 +71,14 @@ public class AdminOrdersController : ApiControllerBase
     public async Task<IActionResult> UpdatePayment(
         Guid id, [FromBody] UpdatePaymentDto dto, CancellationToken ct)
         => ToResult(await _orderService.UpdatePaymentAsync(id, dto, ct));
+
+    /// <summary>Permanently delete an order with its items and payments (super admin only).</summary>
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "SuperAdminOnly")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        var result = await _orderService.DeleteOrderAsync(id, ct);
+        if (result.Succeeded) return NoContent();
+        return StatusCode(result.StatusCode, new ProblemDetails { Status = result.StatusCode, Title = result.Error });
+    }
 }

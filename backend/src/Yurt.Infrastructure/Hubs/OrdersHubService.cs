@@ -83,6 +83,18 @@ public class OrdersHubService : IOrdersHubService
         _ => null,
     };
 
+    // Super-admin delete: live boards and the customer's history drop the order. No push.
+    public async Task NotifyOrderDeletedAsync(Order order, CancellationToken ct = default)
+    {
+        var payload = new { id = order.Id };
+        await _hubContext.Clients
+            .Group("admins")
+            .SendAsync("OrderDeleted", payload, ct);
+        await _hubContext.Clients
+            .Group($"customer:{order.CustomerUserId}")
+            .SendAsync("OrderDeleted", payload, ct);
+    }
+
     public async Task NotifyPaymentUpdatedAsync(Order order, CancellationToken ct = default)
     {
         var dto = OrderService.MapToDto(order);

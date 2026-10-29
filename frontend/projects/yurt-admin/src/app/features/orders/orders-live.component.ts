@@ -15,6 +15,8 @@ import { environment } from '../../../environments/environment';
 import { Observable, Subscription } from 'rxjs';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
 import { SoundService } from '../../core/sound.service';
+import { AdminLangService } from '../../core/lang.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 
 @Component({
   selector: 'app-orders-live',
@@ -36,6 +38,10 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
   /** iiko sync status is IT detail — shown to super admins only. */
   readonly showIikoSync = inject(AuthStateService).isSuperAdmin;
+  /** Deleting orders is super admin only (backend enforces SuperAdminOnly too). */
+  readonly canDelete = inject(AuthStateService).isSuperAdmin;
+  private lang = inject(AdminLangService);
+  private confirmSvc = inject(ConfirmService);
   private toast = inject(ToastService);
   private sound = inject(SoundService);
 
@@ -62,6 +68,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   readonly pauseOptions = [15, 30, 60, 120];
   pauseMinutes = 30;
   paymentLoading = signal(false);
+  deleteLoading = signal(false);
   showDecline = signal(false);
 
   /** Ticks every second so the prep countdown on accepted orders stays live. */
@@ -164,6 +171,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
         this.signalr.orderUpdated$.subscribe((o) => this.upsertOrder(o)),
         this.signalr.orderDeclined$.subscribe((o) => this.upsertOrder(o)),
         this.signalr.paymentUpdated$.subscribe((o) => this.upsertOrder(o)),
+        this.signalr.orderDeleted$.subscribe(({ id }) => this.removeOrder(id)),
       );
     });
   }
@@ -280,6 +288,31 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
       });
   }
 
+  async deleteOrder(order: Order): Promise<void> {
+    const ok = await this.confirmSvc.confirm(
+      this.lang.t('orders.deleteTitle'),
+      `${this.lang.t('orders.deleteMessage')} #${order.id.slice(-6).toUpperCase()}`,
+      this.lang.t('orders.delete'),
+      '🗑️',
+    );
+    if (!ok) return;
+
+    this.deleteLoading.set(true);
+    this.api.deleteOrder(order.id).subscribe({
+      next: () => {
+        this.removeOrder(order.id);
+        this.deleteLoading.set(false);
+        this.toast.success(this.lang.t('orders.deleted'));
+      },
+      error: (err) => {
+        this.deleteLoading.set(false);
+        this.toast.error(
+          this.lang.t(err?.status === 409 ? 'orders.deleteLoyaltyPending' : 'orders.deleteFailed'),
+        );
+      },
+    });
+  }
+
   canAccept(order: Order): boolean {
     return order.paymentStatus === 'Paid';
   }
@@ -306,6 +339,11 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
       default:
         return null;
     }
+  }
+
+  private removeOrder(id: string): void {
+    this.orders.update((list) => list.filter((o) => o.id !== id));
+    if (this.selectedOrder()?.id === id) this.selectedOrder.set(null);
   }
 
   private upsertOrder(updated: Order): void {
