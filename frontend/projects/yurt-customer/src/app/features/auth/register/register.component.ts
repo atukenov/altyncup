@@ -7,12 +7,13 @@ import { ButtonComponent, OtpBoxesComponent, ToastService } from 'shared-ui';
 import { TranslatePipe } from '../../../core/translate.pipe';
 import { LangService } from '../../../core/lang.service';
 import { OtpProof, PhoneOtpService, firebaseOtpError } from '../../../core/phone-otp.service';
+import { OtpStatus, OtpStatusComponent } from '../../../core/otp-status.component';
 import { RegistrationStartResponse } from 'shared-models';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, OtpBoxesComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, OtpBoxesComponent, OtpStatusComponent, TranslatePipe],
   templateUrl: './register.component.html',
   styleUrl: './register.component.css',
 })
@@ -40,12 +41,25 @@ export class RegisterComponent implements OnDestroy {
   loading = signal(false);
   error = signal('');
   resendIn = signal(0);
+  /** What the person sees under the button: sending / code sent / checking. */
+  otpStatus = signal<OtpStatus>(null);
 
   private pendingPhone = '';
   private resendTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnDestroy(): void {
     this.clearResendTimer();
+  }
+
+  /** The number the code went to, for the "code sent to …" line. */
+  get sentTo(): string {
+    return this.pendingPhone;
+  }
+
+  private startError(err: { status?: number; error?: { title?: string } }, fallback: string): string {
+    if (err.status === 422) return this.lang.t('auth.noWhatsApp');
+    if (!err.status) return this.lang.t('otp.sendFailed');
+    return err.error?.title ?? fallback;
   }
 
   get phoneDigits(): string {
@@ -122,6 +136,7 @@ export class RegisterComponent implements OnDestroy {
 
     const phone = '+7' + this.phoneDigits;
     this.loading.set(true);
+    this.otpStatus.set('sending');
     this.api
       .registerStart(phone, this.pin4, this.firstName.trim(), this.lastName.trim())
       .subscribe({
@@ -134,7 +149,8 @@ export class RegisterComponent implements OnDestroy {
         },
         error: (err) => {
           this.loading.set(false);
-          this.error.set(err.status === 422 ? this.lang.t('auth.noWhatsApp') : (err.error?.title ?? 'Registration failed.'));
+          this.otpStatus.set(null);
+          this.error.set(this.startError(err, 'Registration failed.'));
         },
       });
   }
@@ -147,10 +163,12 @@ export class RegisterComponent implements OnDestroy {
     }
 
     this.loading.set(true);
+    this.otpStatus.set('checking');
     this.otpSession.proof(this.otp).then(
       (proof) => this.submitProof(proof),
       (err) => {
         this.loading.set(false);
+        this.otpStatus.set('sent');
         this.error.set(firebaseOtpError(err, 'Incorrect code.'));
       },
     );
@@ -164,16 +182,19 @@ export class RegisterComponent implements OnDestroy {
     try {
       const instant = await this.otpSession.begin(res, resend);
       this.loading.set(false);
+      this.otpStatus.set('sent');
       onSent();
       this.startResendCountdown();
       if (res.devCode) this.toast.success('Dev code: ' + res.devCode);
       else if (resend) this.toast.success('Code sent.');
       if (instant) {
         this.loading.set(true);
+        this.otpStatus.set('checking');
         this.submitProof(instant);
       }
     } catch (err) {
       this.loading.set(false);
+      this.otpStatus.set(resend ? 'sent' : null);
       this.error.set(firebaseOtpError(err, 'Could not send the SMS. Try again.'));
     }
   }
@@ -193,15 +214,17 @@ export class RegisterComponent implements OnDestroy {
       },
       error: (err) => {
         this.loading.set(false);
+        this.otpStatus.set('sent');
         this.error.set(err.error?.title ?? 'Verification failed.');
       },
     });
   }
 
   onResend(): void {
-    if (this.resendIn() > 0) return;
+    if (this.resendIn() > 0 || this.loading()) return;
     this.error.set('');
     this.loading.set(true);
+    this.otpStatus.set('resending');
     this.api
       .registerStart(this.pendingPhone, this.pin4, this.firstName.trim(), this.lastName.trim())
       .subscribe({
@@ -210,7 +233,8 @@ export class RegisterComponent implements OnDestroy {
         },
         error: (err) => {
           this.loading.set(false);
-          this.error.set(err.status === 422 ? this.lang.t('auth.noWhatsApp') : (err.error?.title ?? 'Could not resend the code.'));
+          this.otpStatus.set('sent');
+          this.error.set(this.startError(err, 'Could not resend the code.'));
         },
       });
   }
@@ -219,6 +243,7 @@ export class RegisterComponent implements OnDestroy {
     this.error.set('');
     this.clearResendTimer();
     this.resendIn.set(0);
+    this.otpStatus.set(null);
     this.step.set('form');
   }
 

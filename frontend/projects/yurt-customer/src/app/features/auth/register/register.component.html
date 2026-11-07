@@ -112,6 +112,10 @@
       {{ 'auth.createAccount' | t }}
     </yurt-button>
 
+    @if (otpStatus() === 'sending') {
+      <app-otp-status class="mt-4" [status]="otpStatus()" />
+    }
+
     <div class="flex items-center gap-3 my-6">
       <div class="flex-1 h-px bg-stone-200"></div>
       <span class="text-stone-400 text-xs font-medium">{{ 'auth.haveAccount' | t }}</span>
@@ -127,6 +131,8 @@
     } @else {
     <h2 class="text-2xl font-bold text-stone-800 mb-1">{{ 'auth.verifyTitle' | t }}</h2>
     <p class="text-stone-500 text-sm mb-7">{{ (otpSession.isFirebase ? 'auth.verifyDescSms' : 'auth.verifyDesc') | t }}</p>
+
+    <app-otp-status class="mb-5" [status]="otpStatus()" [firebase]="otpSession.isFirebase" [phone]="sentTo" />
 
     <div class="mb-7">
       <label class="block text-sm font-semibold text-stone-600 mb-2">{{ 'auth.enterCode' | t }}</label>
@@ -153,11 +159,11 @@
 
     <button
       type="button"
-      [disabled]="resendIn() > 0"
+      [disabled]="resendIn() > 0 || loading()"
       (click)="onResend()"
       class="block w-full text-center py-3.5 mt-4 text-amber-600 font-semibold text-sm disabled:text-stone-400 disabled:cursor-not-allowed"
     >
-      {{ resendIn() > 0 ? ('auth.resendIn' | t).replace('{seconds}', resendIn().toString()) : ('auth.resendCode' | t) }}
+      {{ otpStatus() === 'resending' ? ('otp.resending' | t) : resendIn() > 0 ? ('auth.resendIn' | t).replace('{seconds}', resendIn().toString()) : ('auth.resendCode' | t) }}
     </button>
 
     <button
