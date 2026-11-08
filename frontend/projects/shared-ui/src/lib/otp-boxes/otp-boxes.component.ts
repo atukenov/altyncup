@@ -16,9 +16,10 @@ import { CommonModule } from '@angular/common';
           #box
           type="text"
           inputmode="numeric"
-          maxlength="1"
+          [attr.maxlength]="length"
           [value]="digits[i]"
           (input)="onInput(i, $event)"
+          (paste)="onPaste(i, $event)"
           (keydown)="onKeydown(i, $event)"
           autocomplete="one-time-code"
           class="pin-box"
@@ -82,10 +83,47 @@ export class OtpBoxesComponent {
     return this._length > 4;
   }
 
+  /**
+   * One typed digit moves to the next box. Several digits at once (the keyboard's SMS / WhatsApp
+   * code suggestion, iOS "From Messages", or an autofilled one-time-code) are spread over the
+   * boxes from this one on, instead of keeping only the last digit.
+   */
   onInput(index: number, event: Event): void {
-    const val = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(-1);
-    this.digits[index] = val;
-    if (val && index < this.length - 1) this.boxes()[index + 1]?.nativeElement.focus();
+    const input = event.target as HTMLInputElement;
+    const typed = input.value.replace(/\D/g, '');
+    if (typed.length > 1) {
+      // A box that already held a digit gets the new one appended; drop the old one unless
+      // the whole code arrived at once.
+      const incoming = typed.length > this.length - index ? typed : typed.slice(this.digits[index] ? 1 : 0);
+      this.fill(index, incoming, input);
+      return;
+    }
+    this.digits[index] = typed;
+    input.value = typed;
+    if (typed && index < this.length - 1) this.boxes()[index + 1]?.nativeElement.focus();
+    this.codeChange.emit(this.digits.join(''));
+  }
+
+  onPaste(index: number, event: ClipboardEvent): void {
+    const pasted = (event.clipboardData?.getData('text') ?? '').replace(/\D/g, '');
+    if (!pasted) return;
+    event.preventDefault();
+    this.fill(index, pasted, event.target as HTMLInputElement);
+  }
+
+  /** Put digits into the boxes: a full-length code always starts at the first box. */
+  private fill(index: number, digits: string, source: HTMLInputElement): void {
+    const start = digits.length >= this.length ? 0 : index;
+    const chunk = digits.slice(0, this.length - start);
+    const next = [...this.digits];
+    for (let k = 0; k < chunk.length; k++) next[start + k] = chunk[k];
+    this.digits = next;
+    // The box the text landed in holds the raw text until change detection, so set it now.
+    source.value = this.digits[index] ?? '';
+    const boxes = this.boxes();
+    boxes.forEach((b, k) => (b.nativeElement.value = this.digits[k] ?? ''));
+    const last = Math.min(start + chunk.length, this.length - 1);
+    boxes[last]?.nativeElement.focus();
     this.codeChange.emit(this.digits.join(''));
   }
 
