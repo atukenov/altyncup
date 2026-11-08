@@ -34,3 +34,31 @@
 .profile-input:focus {
   border-color: #ffdc30;
 }
+
+/* ── Phone code buttons: visible busy / disabled state ─────────────────────── */
+.otp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.otp-btn:disabled {
+  opacity: .7;
+  cursor: progress !important;
+}
+
+.btn-spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin-right: 8px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin .8s linear infinite;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}

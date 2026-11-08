@@ -7,12 +7,13 @@ import { ButtonComponent, OtpBoxesComponent, ToastService } from 'shared-ui';
 import { TranslatePipe } from '../../../core/translate.pipe';
 import { LangService } from '../../../core/lang.service';
 import { OtpProof, PhoneOtpService, firebaseOtpError } from '../../../core/phone-otp.service';
+import { OtpStatus, OtpStatusComponent } from '../../../core/otp-status.component';
 
 /** "Forgot PIN": phone → WhatsApp code or Firebase SMS code + new PIN → signed in. */
 @Component({
   selector: 'app-forgot-pin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, OtpBoxesComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, OtpBoxesComponent, OtpStatusComponent, TranslatePipe],
   templateUrl: './forgot-pin.component.html',
   styleUrl: '../login/login.component.css',
 })
@@ -37,6 +38,13 @@ export class ForgotPinComponent implements OnDestroy {
   loading = signal(false);
   error = signal('');
   resendIn = signal(0);
+  /** What the person sees around the button: sending / code sent / checking. */
+  otpStatus = signal<OtpStatus>(null);
+
+  /** The number the code went to, for the "code sent to …" line. */
+  get sentTo(): string {
+    return this.pendingPhone;
+  }
 
   private pendingPhone = '';
   private resendTimer: ReturnType<typeof setInterval> | null = null;
@@ -100,12 +108,14 @@ export class ForgotPinComponent implements OnDestroy {
   }
 
   onResend(): void {
-    if (this.resendIn() > 0) return;
+    if (this.resendIn() > 0 || this.loading()) return;
+    this.error.set('');
     this.requestCode(this.pendingPhone, () => this.otpBoxes()?.clear(), true);
   }
 
   private requestCode(phone: string, onSent: () => void, resend = false): void {
     this.loading.set(true);
+    this.otpStatus.set(resend ? 'resending' : 'sending');
     this.api.pinResetStart(phone).subscribe({
       next: (res) => {
         this.pendingPhone = res.mobileNumber || phone;
@@ -113,6 +123,7 @@ export class ForgotPinComponent implements OnDestroy {
         this.otpSession.begin(res, resend).then(
           (instant) => {
             this.loading.set(false);
+            this.otpStatus.set(instant ? null : 'sent');
             this.verifiedProof.set(instant);
             onSent();
             this.startResendCountdown();
@@ -120,13 +131,19 @@ export class ForgotPinComponent implements OnDestroy {
           },
           (err) => {
             this.loading.set(false);
+            this.otpStatus.set(resend ? 'sent' : null);
             this.error.set(firebaseOtpError(err, 'Could not send the SMS. Try again.'));
           },
         );
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err.status === 422 ? this.lang.t('auth.noWhatsApp') : (err.error?.title ?? 'Could not send the code.'));
+        this.otpStatus.set(resend ? 'sent' : null);
+        this.error.set(
+          err.status === 422 ? this.lang.t('auth.noWhatsApp')
+          : !err.status ? this.lang.t('otp.sendFailed')
+          : (err.error?.title ?? 'Could not send the code.'),
+        );
       },
     });
   }
@@ -144,10 +161,12 @@ export class ForgotPinComponent implements OnDestroy {
     }
 
     this.loading.set(true);
+    if (!verified) this.otpStatus.set('checking');
     (verified ? Promise.resolve(verified) : this.otpSession.proof(this.otp)).then(
       (proof) => this.submitProof(proof),
       (err) => {
         this.loading.set(false);
+        this.otpStatus.set('sent');
         this.error.set(firebaseOtpError(err, 'Incorrect code.'));
       },
     );
@@ -168,6 +187,7 @@ export class ForgotPinComponent implements OnDestroy {
       },
       error: (err) => {
         this.loading.set(false);
+        if (!this.verifiedProof()) this.otpStatus.set('sent');
         this.error.set(err.error?.title ?? 'Could not reset the PIN.');
       },
     });
@@ -177,6 +197,7 @@ export class ForgotPinComponent implements OnDestroy {
     this.error.set('');
     this.clearResendTimer();
     this.resendIn.set(0);
+    this.otpStatus.set(null);
     this.step.set('phone');
   }
 

@@ -8,6 +8,7 @@ import { Currency2Pipe, OtpBoxesComponent, ToastService } from 'shared-ui';
 import { LangService, Lang } from '../../core/lang.service';
 import { OtpProof, PhoneOtpService, firebaseOtpError } from '../../core/phone-otp.service';
 import { TranslatePipe } from '../../core/translate.pipe';
+import { OtpStatus, OtpStatusComponent } from '../../core/otp-status.component';
 import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
 
 @Component({
@@ -19,6 +20,7 @@ import { PullToRefreshDirective } from '../../shared/pull-to-refresh.directive';
     RouterLink,
     Currency2Pipe,
     OtpBoxesComponent,
+    OtpStatusComponent,
     TranslatePipe,
     PullToRefreshDirective,
   ],
@@ -62,6 +64,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   phoneLoading = signal(false);
   phoneError = signal('');
   phoneResendIn = signal(0);
+  phoneStatus = signal<OtpStatus>(null);
   readonly phoneOtpBoxes = viewChild<OtpBoxesComponent>('phoneOtpBoxes');
   /** WhatsApp (4 digits) or Firebase SMS (6 digits), whichever the backend picked. */
   readonly phoneOtpSession = inject(PhoneOtpService).session();
@@ -74,6 +77,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   verifyLoading = signal(false);
   verifyError = signal('');
   verifyResendIn = signal(0);
+  verifyStatus = signal<OtpStatus>(null);
   readonly verifyOtpBoxes = viewChild<OtpBoxesComponent>('verifyOtpBoxes');
   readonly verifyOtpSession = inject(PhoneOtpService).session();
   private verifyResendTimer: ReturnType<typeof setInterval> | null = null;
@@ -177,6 +181,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.showPhoneForm.set(!this.showPhoneForm());
     this.phoneError.set('');
     this.phoneStep.set('form');
+    this.phoneStatus.set(null);
     this.clearPhoneResendTimer();
     this.phoneResendIn.set(0);
   }
@@ -189,12 +194,14 @@ export class ProfileComponent implements OnInit, OnDestroy {
     }
     const newNumber = '+7' + this.phoneDigits;
     this.phoneLoading.set(true);
+    this.phoneStatus.set('sending');
     this.api.changeMobileNumberStart(newNumber).subscribe({
       next: (res) => {
         this.pendingPhoneNumber = res.mobileNumber || newNumber;
         this.phoneOtpSession.begin(res).then(
           (instant) => {
             this.phoneLoading.set(false);
+            this.phoneStatus.set('sent');
             this.phoneOtp = '';
             this.phoneStep.set('otp');
             this.startPhoneResendCountdown();
@@ -203,16 +210,19 @@ export class ProfileComponent implements OnInit, OnDestroy {
           },
           (err) => {
             this.phoneLoading.set(false);
+            this.phoneStatus.set(null);
             this.phoneError.set(firebaseOtpError(err, 'Could not send the SMS. Try again.'));
           },
         );
       },
       error: (err) => {
         this.phoneLoading.set(false);
+        this.phoneStatus.set(null);
         this.phoneError.set(
           err.status === 409 ? this.langService.t('profile.phoneInUse')
             : err.status === 422 ? this.langService.t('auth.noWhatsApp')
-            : 'Could not send the verification code.',
+            : !err.status ? this.langService.t('otp.sendFailed')
+            : (err.error?.title ?? 'Could not send the verification code.'),
         );
       },
     });
@@ -225,10 +235,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
       return;
     }
     this.phoneLoading.set(true);
+    this.phoneStatus.set('checking');
     this.phoneOtpSession.proof(this.phoneOtp).then(
       (proof) => this.submitPhoneChangeProof(proof),
       (err) => {
         this.phoneLoading.set(false);
+        this.phoneStatus.set('sent');
         this.phoneError.set(firebaseOtpError(err, 'Incorrect code.'));
       },
     );
@@ -236,6 +248,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   private submitPhoneChangeProof(proof: OtpProof): void {
     this.phoneLoading.set(true);
+    this.phoneStatus.set('checking');
     this.api.changeMobileNumberVerify(this.pendingPhoneNumber, proof).subscribe({
       next: (p) => {
         this.profile.set(p);
@@ -244,10 +257,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
         this.phoneStep.set('form');
         this.phoneFormatted = '';
         this.phoneLoading.set(false);
+        this.phoneStatus.set(null);
         this.toast.success(this.langService.t('profile.phoneChanged'));
       },
       error: (err) => {
         this.phoneLoading.set(false);
+        this.phoneStatus.set('sent');
         this.phoneError.set(
           err.status === 409 ? this.langService.t('profile.phoneInUse') : (err.error?.title ?? 'Incorrect code.'),
         );
@@ -256,14 +271,16 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   resendPhoneChangeCode(): void {
-    if (this.phoneResendIn() > 0) return;
+    if (this.phoneResendIn() > 0 || this.phoneLoading()) return;
     this.phoneError.set('');
     this.phoneLoading.set(true);
+    this.phoneStatus.set('resending');
     this.api.changeMobileNumberStart(this.pendingPhoneNumber).subscribe({
       next: (res) => {
         this.phoneOtpSession.begin(res, true).then(
           (instant) => {
             this.phoneLoading.set(false);
+            this.phoneStatus.set('sent');
             this.phoneOtpBoxes()?.clear();
             this.startPhoneResendCountdown();
             this.toast.success(res.devCode ? 'Dev code: ' + res.devCode : 'Code sent.');
@@ -271,19 +288,26 @@ export class ProfileComponent implements OnInit, OnDestroy {
           },
           (err) => {
             this.phoneLoading.set(false);
+            this.phoneStatus.set('sent');
             this.phoneError.set(firebaseOtpError(err, 'Could not resend the code.'));
           },
         );
       },
       error: (err) => {
         this.phoneLoading.set(false);
-        this.phoneError.set(err.status === 422 ? this.langService.t('auth.noWhatsApp') : (err.error?.title ?? 'Could not resend the code.'));
+        this.phoneStatus.set('sent');
+        this.phoneError.set(
+          err.status === 422 ? this.langService.t('auth.noWhatsApp')
+            : !err.status ? this.langService.t('otp.sendFailed')
+            : (err.error?.title ?? 'Could not resend the code.'),
+        );
       },
     });
   }
 
   backToPhoneForm(): void {
     this.phoneError.set('');
+    this.phoneStatus.set(null);
     this.clearPhoneResendTimer();
     this.phoneResendIn.set(0);
     this.phoneStep.set('form');
@@ -308,13 +332,16 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   sendVerifyCode(): void {
     if (this.verifyLoading() || this.verifyResendIn() > 0) return;
+    const resend = this.verifyOpen();
     this.verifyError.set('');
     this.verifyLoading.set(true);
+    this.verifyStatus.set(resend ? 'resending' : 'sending');
     this.api.verifyPhoneStart().subscribe({
       next: (res) => {
-        this.verifyOtpSession.begin(res, this.verifyOpen()).then(
+        this.verifyOtpSession.begin(res, resend).then(
           (instant) => {
             this.verifyLoading.set(false);
+            this.verifyStatus.set('sent');
             this.verifyOtp = '';
             this.verifyOtpBoxes()?.clear();
             this.verifyOpen.set(true);
@@ -324,6 +351,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
           },
           (err) => {
             this.verifyLoading.set(false);
+            this.verifyStatus.set(resend ? 'sent' : null);
             this.verifyOpen.set(true);
             this.verifyError.set(firebaseOtpError(err, 'Could not send the SMS. Try again.'));
           },
@@ -331,12 +359,17 @@ export class ProfileComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.verifyLoading.set(false);
+        this.verifyStatus.set(resend ? 'sent' : null);
         if (err.status === 409) {
           this.loadProfile();
           return;
         }
         this.verifyOpen.set(true);
-        this.verifyError.set(err.status === 422 ? this.langService.t('auth.noWhatsApp') : (err.error?.title ?? 'Could not send the verification code.'));
+        this.verifyError.set(
+          err.status === 422 ? this.langService.t('auth.noWhatsApp')
+            : !err.status ? this.langService.t('otp.sendFailed')
+            : (err.error?.title ?? 'Could not send the verification code.'),
+        );
       },
     });
   }
@@ -348,10 +381,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
       return;
     }
     this.verifyLoading.set(true);
+    this.verifyStatus.set('checking');
     this.verifyOtpSession.proof(this.verifyOtp).then(
       (proof) => this.submitVerifyProof(proof),
       (err) => {
         this.verifyLoading.set(false);
+        this.verifyStatus.set('sent');
         this.verifyError.set(firebaseOtpError(err, 'Incorrect code.'));
       },
     );
@@ -359,16 +394,19 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   private submitVerifyProof(proof: OtpProof): void {
     this.verifyLoading.set(true);
+    this.verifyStatus.set('checking');
     this.api.verifyPhoneConfirm(proof).subscribe({
       next: (p) => {
         this.profile.set(p);
         this.clearVerifyResendTimer();
         this.verifyOpen.set(false);
         this.verifyLoading.set(false);
+        this.verifyStatus.set(null);
         this.toast.success(this.langService.t('profile.phoneVerified'));
       },
       error: (err) => {
         this.verifyLoading.set(false);
+        this.verifyStatus.set('sent');
         this.verifyError.set(err.error?.title ?? 'Incorrect code.');
       },
     });
