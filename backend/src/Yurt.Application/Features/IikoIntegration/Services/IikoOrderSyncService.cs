@@ -43,7 +43,9 @@ public class IikoOrderSyncService
     /// iiko cashier screen. Fail-open and idempotent — never throws, since this must not
     /// block the status change. Orders with an unmapped item or a location with no
     /// configured terminal group are skipped (need an admin action, not a retry).
-    /// Returns the skip reason, or null when the order was pushed or queued for retry.
+    /// Never retried automatically: a failed send is marked <see cref="IikoOrderSyncStatus.Failed"/>
+    /// and waits for someone to press "Send to iiko". Returns why the order was not sent,
+    /// or null when it was pushed.
     /// </summary>
     public async Task<string?> PushOrderAsync(Order order, CancellationToken ct = default)
     {
@@ -68,27 +70,38 @@ public class IikoOrderSyncService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to push order {OrderId} to iiko; will retry", order.Id);
-            var firstFailure = order.IikoOrderSyncPendingAction != IikoOrderSyncPendingAction.Push;
-            order.IikoOrderSyncPendingAction = IikoOrderSyncPendingAction.Push;
+            _logger.LogError(ex, "Failed to push order {OrderId} to iiko", order.Id);
+            order.IikoOrderSyncStatus = IikoOrderSyncStatus.Failed;
+            order.IikoOrderSyncPendingAction = IikoOrderSyncPendingAction.None;
             await _db.SaveChangesAsync(ct);
-            // Once per failure streak (not on every background retry), so the iiko page can show why.
-            if (firstFailure)
-                await _audit.LogAsync("IikoOrderPushFailed", "Order", order.Id.ToString(), Truncate(ex.Message), ct);
+            await _audit.LogAsync("IikoOrderPushFailed", "Order", order.Id.ToString(), Truncate(ex.Message), ct);
+            return $"iiko did not accept the order ({Truncate(ex.Message)})";
         }
         return null;
     }
 
     /// <summary>
-    /// Admin "try again" for an order that was skipped as unmapped (or never pushed, e.g.
-    /// started before order-push was switched on): re-checks the mapping and pushes.
-    /// Returns the skip reason when it still can't be pushed, or null on success/queued.
+    /// Admin "Send to iiko": for an order that was skipped as unmapped, failed, or never pushed
+    /// (e.g. started before order-push was switched on) it re-checks the mapping and pushes;
+    /// for a completed order whose close failed it tries the close again.
+    /// Returns why it still can't be done, or null on success.
     /// </summary>
     public async Task<string?> RetryPushAsync(Order order, CancellationToken ct = default)
     {
         if (!_options.Enabled || !_options.PushOrdersEnabled)
             return "iiko order push is turned off (Iiko:Enabled / Iiko:PushOrdersEnabled).";
-        if (order.IikoOrderSyncStatus is not (IikoOrderSyncStatus.NotPushed or IikoOrderSyncStatus.SkippedUnmapped))
+
+        if (order.IikoOrderSyncStatus == IikoOrderSyncStatus.Pushed
+            && order.IikoOrderSyncPendingAction == IikoOrderSyncPendingAction.Close)
+        {
+            await CloseOrderAsync(order, ct);
+            return order.IikoOrderSyncStatus == IikoOrderSyncStatus.Closed
+                ? null
+                : "iiko did not accept the close (see the iiko page activity for the reason)";
+        }
+
+        if (order.IikoOrderSyncStatus is not (IikoOrderSyncStatus.NotPushed
+            or IikoOrderSyncStatus.SkippedUnmapped or IikoOrderSyncStatus.Failed))
             return null;
 
         order.IikoOrderSyncStatus = IikoOrderSyncStatus.NotPushed;
@@ -155,7 +168,7 @@ public class IikoOrderSyncService
             $"Altyncup order #{order.Id}"), null);
     }
 
-    /// <summary>Close a previously pushed order in iiko when it completes. Fail-open; never throws.</summary>
+    /// <summary>Close a previously pushed order in iiko when it completes. Fail-open; never throws, and a failed close is not retried automatically.</summary>
     public async Task CloseOrderAsync(Order order, CancellationToken ct = default)
     {
         if (!_options.Enabled || !_options.PushOrdersEnabled) return;
@@ -171,41 +184,11 @@ public class IikoOrderSyncService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to close iiko order for {OrderId}; will retry", order.Id);
-            var firstFailure = order.IikoOrderSyncPendingAction != IikoOrderSyncPendingAction.Close;
+            _logger.LogError(ex, "Failed to close iiko order for {OrderId}", order.Id);
+            // Not retried automatically; "Send to iiko" on the order tries the close again.
             order.IikoOrderSyncPendingAction = IikoOrderSyncPendingAction.Close;
             await _db.SaveChangesAsync(ct);
-            if (firstFailure)
-                await _audit.LogAsync("IikoOrderCloseFailed", "Order", order.Id.ToString(), Truncate(ex.Message), ct);
-        }
-    }
-
-    /// <summary>Background retry of push/close operations that failed while iiko was down.</summary>
-    public async Task RetryPendingAsync(CancellationToken ct = default)
-    {
-        if (!_options.Enabled || !_options.PushOrdersEnabled) return;
-
-        var pending = await _db.Orders
-            .Include(o => o.Location)
-            .Include(o => o.CustomerUser)
-            .Include(o => o.Items).ThenInclude(i => i.Toppings)
-            .Where(o => o.IikoOrderSyncPendingAction != IikoOrderSyncPendingAction.None)
-            .OrderBy(o => o.UpdatedAt)
-            .Take(50)
-            .ToListAsync(ct);
-
-        foreach (var order in pending)
-        {
-            switch (order.IikoOrderSyncPendingAction)
-            {
-                case IikoOrderSyncPendingAction.Push:
-                    order.IikoOrderSyncStatus = IikoOrderSyncStatus.NotPushed; // allow PushOrderAsync's guard to re-run
-                    await PushOrderAsync(order, ct);
-                    break;
-                case IikoOrderSyncPendingAction.Close:
-                    await CloseOrderAsync(order, ct);
-                    break;
-            }
+            await _audit.LogAsync("IikoOrderCloseFailed", "Order", order.Id.ToString(), Truncate(ex.Message), ct);
         }
     }
 

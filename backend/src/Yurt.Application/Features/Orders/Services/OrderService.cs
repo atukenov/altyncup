@@ -340,7 +340,10 @@ public class OrderService
         var order = await LoadOrderAsync(orderId, ct);
         if (order == null) return Result<OrderDto>.NotFound();
 
-        if (order.Status is not (OrderStatus.Accepted or OrderStatus.Preparing or OrderStatus.Ready))
+        // Completed orders qualify only to retry a close that failed.
+        var closePending = order.Status == OrderStatus.Completed
+            && order.IikoOrderSyncPendingAction == IikoOrderSyncPendingAction.Close;
+        if (!closePending && order.Status is not (OrderStatus.Accepted or OrderStatus.Preparing or OrderStatus.Ready))
             return Result<OrderDto>.Failure("Only accepted, preparing or ready orders can be sent to iiko.", 422);
 
         var reason = await _iikoSync.RetryPushAsync(order, ct);

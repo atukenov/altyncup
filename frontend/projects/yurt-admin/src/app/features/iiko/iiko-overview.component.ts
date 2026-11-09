@@ -25,7 +25,7 @@ const SYNC: Record<string, SyncMeta> = {
   Pushed: { label: 'In iiko', variant: 'teal', hint: 'Created in iiko. The cashier sees it on the delivery screen.' },
   Closed: { label: 'Closed in iiko', variant: 'green', hint: 'Completed and closed in iiko.' },
   SkippedUnmapped: { label: 'Not mapped', variant: 'amber', hint: 'An item or the location has no iiko mapping. Fix it, then press Send to iiko.' },
-  Failed: { label: 'Failed', variant: 'red', hint: 'iiko rejected the order.' },
+  Failed: { label: 'Failed', variant: 'red', hint: 'iiko did not accept the order. It is not retried automatically: press Send to iiko.' },
 };
 
 const EVENT_LABEL: Record<string, string> = {
@@ -171,10 +171,12 @@ export class IikoOverviewComponent implements OnInit {
   }
 
   canRetry(o: IikoOrderRow): boolean {
-    return (
-      (o.syncStatus === 'SkippedUnmapped' || o.syncStatus === 'NotPushed') &&
-      (o.status === 'Accepted' || o.status === 'Preparing' || o.status === 'Ready')
-    );
+    // Nothing is re-sent automatically; this button is the only way to try again.
+    if (o.status === 'Completed') return o.syncStatus === 'Pushed' && o.pendingAction === 'Close';
+    if (o.syncStatus === 'SkippedUnmapped' || o.syncStatus === 'Failed') {
+      return o.status === 'Accepted' || o.status === 'Preparing' || o.status === 'Ready';
+    }
+    return o.syncStatus === 'NotPushed' && (o.status === 'Preparing' || o.status === 'Ready');
   }
 
   retry(o: IikoOrderRow): void {
