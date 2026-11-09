@@ -33,8 +33,9 @@ public class AdminIikoOverviewController(IApplicationDbContext db, IikoOptions o
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToListAsync(ct);
 
-        var pendingRetries = await db.Orders.CountAsync(
-            o => o.IikoOrderSyncPendingAction != IikoOrderSyncPendingAction.None, ct);
+        // Completed orders still open in iiko because the close call failed.
+        var closePending = await db.Orders.CountAsync(
+            o => o.IikoOrderSyncPendingAction == IikoOrderSyncPendingAction.Close, ct);
 
         var locations = await db.Locations
             .OrderBy(l => l.Name)
@@ -89,7 +90,7 @@ public class AdminIikoOverviewController(IApplicationDbContext db, IikoOptions o
             {
                 days = 30,
                 byStatus = syncCounts.ToDictionary(x => x.Status.ToString(), x => x.Count),
-                pendingRetries,
+                closePending,
             },
             locations = locations.Select(l => new
             {

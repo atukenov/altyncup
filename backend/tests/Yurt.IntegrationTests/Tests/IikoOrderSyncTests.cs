@@ -260,7 +260,7 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
     // ── Retry ────────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task PushFails_MarksPendingPush_RetrySweepRecoversIt()
+    public async Task PushFails_MarksFailed_AndOnlyTheSendButtonRetriesIt()
     {
         var fake = new FakeIikoApiClient { FailPush = true };
         using var enabledFactory = factory.WithWebHostBuilder(builder =>
@@ -280,29 +280,29 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
         {
             var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
             var order = await db.Orders.FirstAsync(o => o.Id == placed.Id);
-            Assert.Equal(IikoOrderSyncStatus.NotPushed, order.IikoOrderSyncStatus);
-            Assert.Equal(IikoOrderSyncPendingAction.Push, order.IikoOrderSyncPendingAction);
+            Assert.Equal(IikoOrderSyncStatus.Failed, order.IikoOrderSyncStatus);
+            Assert.Equal(IikoOrderSyncPendingAction.None, order.IikoOrderSyncPendingAction); // nothing retries on its own
         }
 
+        // Still failing: the button reports why instead of pretending it worked.
+        var superToken = await ApiHelpers.CreateAdminTokenAsync(
+            enabledFactory.Services, client, username: "iikofailsuper", password: "Super@1234", role: AdminRole.SuperAdmin);
+        ApiHelpers.Authorize(client, superToken);
+        var stillFailing = await client.PostAsync($"/api/v1/admin/orders/{placed.Id}/iiko/push", null);
+        Assert.Equal(System.Net.HttpStatusCode.UnprocessableEntity, stillFailing.StatusCode);
+        Assert.Contains("iiko did not accept the order", await stillFailing.Content.ReadAsStringAsync());
+
         fake.FailPush = false;
-        await using (var scope = enabledFactory.Services.CreateAsyncScope())
-        {
-            var sync = scope.ServiceProvider.GetRequiredService<IikoOrderSyncService>();
-            await sync.RetryPendingAsync();
-        }
+        (await client.PostAsync($"/api/v1/admin/orders/{placed.Id}/iiko/push", null)).EnsureSuccessStatusCode();
 
         Assert.Single(fake.PushCalls);
         await using var verifyScope = enabledFactory.Services.CreateAsyncScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var verified = await verifyDb.Orders.FirstAsync(o => o.Id == placed.Id);
-        Assert.Equal(IikoOrderSyncStatus.Pushed, verified.IikoOrderSyncStatus);
-        Assert.Equal(IikoOrderSyncPendingAction.None, verified.IikoOrderSyncPendingAction);
+        Assert.Equal(IikoOrderSyncStatus.Pushed, (await verifyDb.Orders.FirstAsync(o => o.Id == placed.Id)).IikoOrderSyncStatus);
     }
 
-    // ── Close on completion ──────────────────────────────────────────────────
-
     [Fact]
-    public async Task CompletedOrder_PreviouslyPushed_ClosesIikoOrder()
+    public async Task CloseFails_StaysOpen_AndTheSendButtonClosesIt()
     {
         var fake = new FakeIikoApiClient();
         using var enabledFactory = factory.WithWebHostBuilder(builder =>
@@ -316,47 +316,27 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
         var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, Guid.NewGuid());
 
         var client = enabledFactory.CreateClient();
-        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000806", locationId, menuItemId);
+        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000813", locationId, menuItemId);
 
-        var adminToken = await ApiHelpers.CreateAdminTokenAsync(enabledFactory.Services, client);
-        ApiHelpers.Authorize(client, adminToken);
+        var superToken = await ApiHelpers.CreateAdminTokenAsync(
+            enabledFactory.Services, client, username: "iikoclosesuper", password: "Super@1234", role: AdminRole.SuperAdmin);
+        ApiHelpers.Authorize(client, superToken);
+
+        fake.FailClose = true;
         foreach (var status in new[] { "Ready", "Completed" })
             (await client.PostAsJsonAsync($"/api/v1/admin/orders/{placed.Id}/status", new { status }))
                 .EnsureSuccessStatusCode();
+        Assert.Empty(fake.CloseCalls);
 
-        Assert.Equal(fake.NextIikoOrderId, Assert.Single(fake.CloseCalls));
+        fake.FailClose = false;
+        (await client.PostAsync($"/api/v1/admin/orders/{placed.Id}/iiko/push", null)).EnsureSuccessStatusCode();
 
+        Assert.Single(fake.CloseCalls);
         await using var scope = enabledFactory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var order = await db.Orders.FirstAsync(o => o.Id == placed.Id);
         Assert.Equal(IikoOrderSyncStatus.Closed, order.IikoOrderSyncStatus);
-    }
-
-    [Fact]
-    public async Task CompletedOrder_NeverPushed_DoesNotCallClose()
-    {
-        // Unmapped item — never pushed when preparation started — must not attempt a close either.
-        var fake = new FakeIikoApiClient();
-        using var enabledFactory = factory.WithWebHostBuilder(builder =>
-            builder.ConfigureServices(services =>
-            {
-                services.AddSingleton(EnabledOptions());
-                services.AddSingleton<IIikoApiClient>(fake);
-            }));
-
-        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
-        var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, iikoProductId: null);
-
-        var client = enabledFactory.CreateClient();
-        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000807", locationId, menuItemId);
-
-        var adminToken = await ApiHelpers.CreateAdminTokenAsync(enabledFactory.Services, client);
-        ApiHelpers.Authorize(client, adminToken);
-        foreach (var status in new[] { "Ready", "Completed" })
-            (await client.PostAsJsonAsync($"/api/v1/admin/orders/{placed.Id}/status", new { status }))
-                .EnsureSuccessStatusCode();
-
-        Assert.Empty(fake.CloseCalls);
+        Assert.Equal(IikoOrderSyncPendingAction.None, order.IikoOrderSyncPendingAction);
     }
 
     // ── Webhook ──────────────────────────────────────────────────────────────

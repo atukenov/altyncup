@@ -325,14 +325,18 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
     return phone;
   }
 
-  /** Orders that were skipped for iiko can be sent again once their mapping is fixed. */
+  /** Orders that were skipped, failed or never reached iiko can be sent by hand. */
   canRetryIikoPush(order: Order): boolean {
-    return (
-      order.iikoOrderSyncStatus === IikoOrderSyncStatus.SkippedUnmapped &&
-      (order.status === OrderStatus.Accepted ||
-        order.status === OrderStatus.Preparing ||
-        order.status === OrderStatus.Ready)
-    );
+    // Nothing is re-sent automatically; this button is the only way to try again.
+    const started =
+      order.status === OrderStatus.Preparing || order.status === OrderStatus.Ready;
+    if (
+      order.iikoOrderSyncStatus === IikoOrderSyncStatus.SkippedUnmapped ||
+      order.iikoOrderSyncStatus === IikoOrderSyncStatus.Failed
+    ) {
+      return started || order.status === OrderStatus.Accepted;
+    }
+    return order.iikoOrderSyncStatus === IikoOrderSyncStatus.NotPushed && started;
   }
 
   retryIikoPush(order: Order): void {

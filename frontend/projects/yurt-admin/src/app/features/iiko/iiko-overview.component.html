@@ -62,9 +62,9 @@
     <section>
       <div class="flex items-center justify-between mb-2">
         <h2 class="font-semibold text-slate-800">Orders, last {{ ov.orders.days }} days</h2>
-        @if (ov.orders.pendingRetries > 0) {
+        @if (ov.orders.closePending > 0) {
           <span class="text-xs text-amber-700 bg-amber-50 rounded-full px-2 py-0.5">
-            {{ ov.orders.pendingRetries }} waiting to retry (iiko was unavailable)
+            {{ ov.orders.closePending }} completed but still open in iiko (press Send to iiko on them)
           </span>
         }
       </div>
@@ -134,7 +134,7 @@
                     }"
                     [title]="sync(o.syncStatus).hint">{{ sync(o.syncStatus).label }}</span>
                   @if (o.pendingAction !== 'None') {
-                    <div class="text-xs text-amber-600 mt-1">Retrying: {{ o.pendingAction === 'Push' ? 'send' : 'close' }}</div>
+                    <div class="text-xs text-amber-600 mt-1">Could not close in iiko</div>
                   }
                   @if (o.iikoOrderId) { <div class="text-[10px] font-mono text-slate-400 mt-1" [title]="o.iikoOrderId">{{ o.iikoOrderId.slice(0, 8) }}…</div> }
                 </td>

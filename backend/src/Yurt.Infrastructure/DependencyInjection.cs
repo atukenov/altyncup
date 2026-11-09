@@ -146,7 +146,6 @@ public static class DependencyInjection
         services.AddHostedService<OrderArchivalService>();
         services.AddHostedService<OrderTimerService>();
         services.AddHostedService<LoyaltyRetryService>();
-        services.AddHostedService<IikoOrderSyncRetryService>();
         services.AddHostedService<EngagementPushService>();
         services.AddHostedService<OtpMonitorService>();
 

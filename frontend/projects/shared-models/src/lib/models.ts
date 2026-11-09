@@ -330,7 +330,7 @@ export interface IikoOverview {
     externalMenuConfigured: boolean;
     earnPercent: number;
   };
-  orders: { days: number; byStatus: Record<string, number>; pendingRetries: number };
+  orders: { days: number; byStatus: Record<string, number>; closePending: number };
   locations: { id: string; name: string; isActive: boolean; terminalGroupId?: string | null }[];
   menu: {
     totalItems: number;

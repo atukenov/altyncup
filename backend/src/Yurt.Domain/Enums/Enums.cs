@@ -91,7 +91,7 @@ public enum IikoOrderSyncStatus
     SkippedUnmapped = 4
 }
 
-/// <summary>Outstanding iiko order-sync operation, retried in the background when iiko was unavailable. Mirrors LoyaltyPendingAction's retry shape.</summary>
+/// <summary>Outstanding iiko order-sync operation. Never retried automatically: only <c>Close</c> is still set (a failed close, retried by pressing "Send to iiko" on the order). <c>Push</c> is no longer written; failed pushes are <see cref="IikoOrderSyncStatus.Failed"/>.</summary>
 public enum IikoOrderSyncPendingAction
 {
     None = 0,
