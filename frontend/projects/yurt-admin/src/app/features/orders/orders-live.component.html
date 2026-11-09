@@ -192,6 +192,16 @@
             @if (showIikoSync && iikoSyncBadge(o.iikoOrderSyncStatus); as sync) {
               <yurt-badge [variant]="sync.variant" class="text-xs">{{ sync.label }}</yurt-badge>
             }
+            @if (showIikoSync && canRetryIikoPush(o)) {
+              <button
+                type="button"
+                class="text-xs font-medium text-teal-700 hover:underline disabled:opacity-50"
+                [disabled]="iikoPushLoading() === o.id"
+                (click)="retryIikoPush(o)"
+              >
+                {{ iikoPushLoading() === o.id ? 'Sending…' : 'Send to iiko' }}
+              </button>
+            }
           </div>
         </div>
 

@@ -640,6 +640,9 @@ namespace Yurt.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("IikoProductId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("IikoProductSizeId")
                         .HasColumnType("uuid");
 

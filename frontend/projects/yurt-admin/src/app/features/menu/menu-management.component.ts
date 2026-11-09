@@ -30,6 +30,7 @@ interface VariantRow {
   sortOrder: number;
   isDefault: boolean;
   iikoProductSizeId: string;
+  iikoProductId: string;
 }
 
 interface MenuItemForm {
@@ -112,10 +113,29 @@ export class MenuManagementComponent implements OnInit {
   iikoLoadError = signal('');
   iikoSearch = signal('');
   iikoPickerOpen = signal(false);
+  /** Which mapping the open picker sets: null for the item, or a size variant's row index. */
+  iikoPickerTarget = signal<number | null>(null);
   readonly iikoMaxResults = 50;
 
   selectedIikoProduct = computed(() =>
     this.iikoNomenclature().find((p) => p.productId === this.itemForm().iikoProductId));
+
+  /** Product id the open picker currently has selected (item's or the target variant's). */
+  iikoPickerSelectedId = computed(() => {
+    const target = this.iikoPickerTarget();
+    const f = this.itemForm();
+    return target === null ? f.iikoProductId : (f.variants[target]?.iikoProductId ?? '');
+  });
+
+  iikoProductById(productId: string): IikoNomenclatureProduct | undefined {
+    return productId ? this.iikoNomenclature().find((p) => p.productId === productId) : undefined;
+  }
+
+  /** iiko sizes a variant can pick from: its own product's, else the item's product's. */
+  variantIikoSizes(v: VariantRow): { productSizeId: string; name?: string | null }[] {
+    const product = v.iikoProductId ? this.iikoProductById(v.iikoProductId) : this.selectedIikoProduct();
+    return product?.sizes ?? [];
+  }
 
   /**
    * Search results for the iiko picker. Every word typed must appear in the product's
@@ -135,8 +155,11 @@ export class MenuManagementComponent implements OnInit {
     }
 
     const f = this.itemForm();
+    const target = this.iikoPickerTarget();
+    const v = target === null ? undefined : f.variants[target];
     const words = new Set(
-      normalizeForSearch(`${f.name} ${f.nameRu} ${f.nameKk}`).split(' ').filter((w) => w.length >= 3));
+      normalizeForSearch(`${f.name} ${f.nameRu} ${f.nameKk} ${v ? `${v.label} ${v.labelRu} ${v.labelKk}` : ''}`)
+        .split(' ').filter((w) => w.length >= 3 || /^\d+$/.test(w)));
     const scored = words.size === 0 ? [] : all
       .map((p) => {
         const name = normalizeForSearch(p.name);
@@ -218,7 +241,8 @@ export class MenuManagementComponent implements OnInit {
     });
   }
 
-  openIikoPicker(): void {
+  openIikoPicker(target: number | null = null): void {
+    this.iikoPickerTarget.set(target);
     this.iikoSearch.set('');
     this.iikoPickerOpen.set(true);
     // Focus the search box once it has rendered, so the admin can type straight away.
@@ -226,7 +250,9 @@ export class MenuManagementComponent implements OnInit {
   }
 
   pickIikoProduct(productId: string): void {
-    this.onIikoProductChange(productId);
+    const target = this.iikoPickerTarget();
+    if (target === null) this.onIikoProductChange(productId);
+    else this.pickVariantIikoProduct(target, productId);
     this.iikoPickerOpen.set(false);
     this.iikoSearch.set('');
   }
@@ -334,12 +360,14 @@ export class MenuManagementComponent implements OnInit {
             label: v.label, labelRu: (v as any).labelRu ?? '', labelKk: (v as any).labelKk ?? '',
             price: v.price, sortOrder: v.sortOrder, isDefault: v.isDefault,
             iikoProductSizeId: v.iikoProductSizeId ?? '',
+            iikoProductId: v.iikoProductId ?? '',
           }))
         : [],
       iikoProductId: item?.iikoProductId ?? '',
       iikoProductSizeId: item?.iikoProductSizeId ?? '',
     });
     this.iikoPickerOpen.set(false);
+    this.iikoPickerTarget.set(null);
     this.iikoSearch.set('');
     this.showItemDialog.set(true);
   }
@@ -349,23 +377,34 @@ export class MenuManagementComponent implements OnInit {
       ...f,
       variants: [
         ...f.variants,
-        { label: '', labelRu: '', labelKk: '', price: 0, sortOrder: f.variants.length, isDefault: f.variants.length === 0, iikoProductSizeId: '' },
+        { label: '', labelRu: '', labelKk: '', price: 0, sortOrder: f.variants.length, isDefault: f.variants.length === 0, iikoProductSizeId: '', iikoProductId: '' },
       ],
     }));
   }
 
   // iiko sizes belong to the item's selected product — switching product invalidates
-  // any size already picked (on the item itself, and on every variant row).
+  // any size already picked (on the item itself, and on variant rows that use it).
   onIikoProductChange(productId: string): void {
     this.itemForm.update((f) => ({
       ...f,
       iikoProductId: productId,
       iikoProductSizeId: '',
-      variants: f.variants.map((v) => ({ ...v, iikoProductSizeId: '' })),
+      variants: f.variants.map((v) => (v.iikoProductId ? v : { ...v, iikoProductSizeId: '' })),
+    }));
+  }
+
+  // A variant mapped to its own iiko product (e.g. "Americano 350"); its size, if any,
+  // now belongs to that product's scale, so the previous size is cleared.
+  pickVariantIikoProduct(index: number, productId: string): void {
+    this.itemForm.update((f) => ({
+      ...f,
+      variants: f.variants.map((v, i) =>
+        i === index ? { ...v, iikoProductId: productId, iikoProductSizeId: '' } : v),
     }));
   }
 
   removeVariantRow(index: number): void {
+    if (this.iikoPickerTarget() !== null) this.iikoPickerOpen.set(false);
     this.itemForm.update((f) => {
       const variants = f.variants.filter((_, i) => i !== index)
         .map((v, i) => ({ ...v, sortOrder: i }));
@@ -438,6 +477,7 @@ export class MenuManagementComponent implements OnInit {
             label: v.label, labelRu: v.labelRu || undefined, labelKk: v.labelKk || undefined,
             price: v.price, sortOrder: i, isDefault: v.isDefault,
             iikoProductSizeId: v.iikoProductSizeId || undefined,
+            iikoProductId: v.iikoProductId || undefined,
           }))
         : undefined,
       iikoProductId: f.iikoProductId || undefined,

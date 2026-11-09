@@ -31,8 +31,8 @@ public record MenuToppingDto(Guid Id, string Name, decimal Price, bool IsAvailab
 
 public record AdminMenuCategoryDto(Guid Id, string Name, string? NameRu, string? NameKk, int SortOrder);
 
-public record AdminMenuItemVariantDto(Guid Id, string Label, string? LabelRu, string? LabelKk, decimal Price, int SortOrder, bool IsDefault, Guid? IikoProductSizeId = null);
-public record CreateMenuItemVariantDto(string Label, string? LabelRu, string? LabelKk, decimal Price, int SortOrder, bool IsDefault, Guid? IikoProductSizeId = null);
+public record AdminMenuItemVariantDto(Guid Id, string Label, string? LabelRu, string? LabelKk, decimal Price, int SortOrder, bool IsDefault, Guid? IikoProductSizeId = null, Guid? IikoProductId = null);
+public record CreateMenuItemVariantDto(string Label, string? LabelRu, string? LabelKk, decimal Price, int SortOrder, bool IsDefault, Guid? IikoProductSizeId = null, Guid? IikoProductId = null);
 
 public record AdminMenuItemDto(
     Guid Id,

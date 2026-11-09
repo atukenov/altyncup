@@ -328,10 +328,26 @@ public class OrderService
         await _hub.NotifyOrderUpdatedAsync(order, ct);
         await _audit.LogAsync("OrderAccepted", "Order", orderId.ToString(), $"ETA: {dto.EtaMinutes} min", ct);
 
-        // iiko order push is a reporting/kitchen-routing side-channel only — fails open,
-        // never blocks acceptance, and never affects the wallet loyalty flow above.
-        await _iikoSync.PushOrderAsync(order, ct);
+        return Result<OrderDto>.Success(MapToDto(order));
+    }
 
+    /// <summary>
+    /// Super-admin "push to iiko again" for an order that was skipped as unmapped, after the
+    /// mapping was fixed. Answers 422 with the reason when it still can't be pushed.
+    /// </summary>
+    public async Task<Result<OrderDto>> RetryIikoPushAsync(Guid orderId, CancellationToken ct = default)
+    {
+        var order = await LoadOrderAsync(orderId, ct);
+        if (order == null) return Result<OrderDto>.NotFound();
+
+        if (order.Status is not (OrderStatus.Accepted or OrderStatus.Preparing or OrderStatus.Ready))
+            return Result<OrderDto>.Failure("Only accepted, preparing or ready orders can be sent to iiko.", 422);
+
+        var reason = await _iikoSync.RetryPushAsync(order, ct);
+        if (reason != null)
+            return Result<OrderDto>.Failure($"Not sent to iiko: {reason}.", 422);
+
+        await _hub.NotifyOrderUpdatedAsync(order, ct);
         return Result<OrderDto>.Success(MapToDto(order));
     }
 
@@ -409,10 +425,16 @@ public class OrderService
         await _hub.NotifyOrderUpdatedAsync(order, ct);
         await _audit.LogAsync($"OrderStatus{dto.Status}", "Order", orderId.ToString(), null, ct);
 
+        // Starting preparation is when the order goes to iiko, so the cashier sees it on
+        // the iiko screen. Fails open and never blocks the status change.
+        if (dto.Status == OrderStatus.Preparing)
+            await _iikoSync.PushOrderAsync(order, ct);
+
         // Loyalty operations are best-effort: both methods log and swallow their own
         // failures (or defer to background retry) so iiko downtime can never fail
         // order completion. Spend must finalize before earning so the earn base
         // excludes the points-paid portion.
+
         if (dto.Status == OrderStatus.Completed)
         {
             await _loyalty.FinalizeSpendForOrderAsync(order, ct);

@@ -38,6 +38,7 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
   private api = inject(YurtApiService);
   /** iiko sync status is IT detail — shown to super admins only. */
   readonly showIikoSync = inject(AuthStateService).isSuperAdmin;
+  readonly iikoPushLoading = signal<string | null>(null);
   /** Deleting orders is super admin only (backend enforces SuperAdminOnly too). */
   readonly canDelete = inject(AuthStateService).isSuperAdmin;
   private lang = inject(AdminLangService);
@@ -324,9 +325,34 @@ export class OrdersLiveComponent implements OnInit, OnDestroy {
     return phone;
   }
 
+  /** Orders that were skipped for iiko can be sent again once their mapping is fixed. */
+  canRetryIikoPush(order: Order): boolean {
+    return (
+      order.iikoOrderSyncStatus === IikoOrderSyncStatus.SkippedUnmapped &&
+      (order.status === OrderStatus.Accepted ||
+        order.status === OrderStatus.Preparing ||
+        order.status === OrderStatus.Ready)
+    );
+  }
+
+  retryIikoPush(order: Order): void {
+    this.iikoPushLoading.set(order.id);
+    this.api.retryIikoPush(order.id).subscribe({
+      next: (o) => {
+        this.upsertOrder(o);
+        this.iikoPushLoading.set(null);
+        this.toast.success('Sent to iiko');
+      },
+      error: (err) => {
+        this.iikoPushLoading.set(null);
+        this.toast.error(err?.error?.detail ?? err?.error?.title ?? 'Could not send to iiko.');
+      },
+    });
+  }
+
   // iiko order-push status badge — hidden for NotPushed (the default while the feature
-  // is off, or before an accepted order's push attempt runs) since that's the vast
-  // majority of orders and not worth surfacing.
+  // is off, or before preparation starts and the order is pushed) since that's the
+  // vast majority of orders and not worth surfacing.
   iikoSyncBadge(status?: IikoOrderSyncStatus): { label: string; variant: BadgeVariant } | null {
     switch (status) {
       case IikoOrderSyncStatus.Pushed:

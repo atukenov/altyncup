@@ -12,7 +12,10 @@ public class MenuItemVariant : BaseEntity
     public int SortOrder { get; set; }
     public bool IsDefault { get; set; }
 
-    // iiko size mapping (order-push feature) — used when the parent MenuItem has size variants.
+    // iiko mapping (order-push feature). A variant can point at its own iiko product (e.g. a
+    // separate "Americano 350" product); otherwise the parent item's product is used, with
+    // IikoProductSizeId selecting a size on that product's scale.
+    public Guid? IikoProductId { get; set; }
     public Guid? IikoProductSizeId { get; set; }
 
     public MenuItem MenuItem { get; set; } = null!;

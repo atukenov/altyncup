@@ -135,6 +135,8 @@ export interface MenuItemVariant {
   sortOrder: number;
   isDefault: boolean;
   iikoProductSizeId?: string | null;
+  /** iiko product for this size, when iiko has a separate product per size. */
+  iikoProductId?: string | null;
 }
 
 export interface MenuItem {
