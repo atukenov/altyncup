@@ -16,6 +16,7 @@ public class IikoNomenclatureTests
     private sealed class StubHandler(string menuListJson, Dictionary<string, string> menusById) : HttpMessageHandler
     {
         public List<string> Paths { get; } = [];
+        public List<string> FailingPaths { get; } = [];
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
@@ -24,9 +25,19 @@ public class IikoNomenclatureTests
             string? body = null;
             if (path.EndsWith("access_token")) body = """{"correlationId":"c1","token":"fake-token"}""";
             else if (path.EndsWith("api/2/menu")) body = menuListJson;
-            else if (path.EndsWith("api/nomenclature/v1/product/list")) body = CatalogProducts;
-            else if (path.EndsWith("api/nomenclature/v1/group/list")) body = CatalogGroups;
-            else if (path.EndsWith("api/nomenclature/v1/product-scale/list")) body = CatalogScales;
+            else if (path.Contains("api/nomenclature/v1/"))
+            {
+                // Like the live API: these list endpoints reject limit <= 0.
+                var req = await request.Content!.ReadAsStringAsync(ct);
+                if (req.Contains("\"limit\":0") || FailingPaths.Any(f => path.EndsWith(f)))
+                    return new HttpResponseMessage(HttpStatusCode.BadRequest)
+                    {
+                        Content = new StringContent("""{"message":"limit must be greater than 0"}""")
+                    };
+                if (path.EndsWith("product/list")) body = CatalogProducts;
+                else if (path.EndsWith("group/list")) body = CatalogGroups;
+                else if (path.EndsWith("product-scale/list")) body = CatalogScales;
+            }
             else if (path.EndsWith("api/menu/v3/by_id"))
             {
                 var req = await request.Content!.ReadAsStringAsync(ct);
@@ -156,5 +167,18 @@ public class IikoNomenclatureTests
         Assert.Null(water.GroupName);
         Assert.Equal("77", water.Code);
         Assert.Empty(water.Sizes);
+    }
+
+    [Fact]
+    public async Task GetNomenclatureAsync_CatalogFallback_StillReturnsProductsWhenGroupLookupFails()
+    {
+        var handler = new StubHandler("""{"externalMenus":[]}""", []);
+        handler.FailingPaths.Add("group/list");
+
+        var products = await Client(handler).GetNomenclatureAsync();
+
+        Assert.Equal(2, products.Count);
+        Assert.All(products, p => Assert.Null(p.GroupName));
+        Assert.Equal(["S", "L"], products.Single(p => p.Name == "Капучино").Sizes.Select(s => s.Name).ToArray());
     }
 }

@@ -297,6 +297,25 @@ public class IikoApiClient : IIikoApiClient
     private const int CatalogPageSize = 1000;
     private const int CatalogMaxPages = 20;
 
+    private async Task<List<T>> TryLoadCatalogPagesAsync<T>(string path, Func<int, Task<List<T>>> loadPage)
+    {
+        var all = new List<T>();
+        try
+        {
+            for (var page = 0; page < CatalogMaxPages; page++)
+            {
+                var items = await loadPage(page * CatalogPageSize);
+                all.AddRange(items);
+                if (items.Count < CatalogPageSize) break;
+            }
+        }
+        catch (IikoApiException ex)
+        {
+            _logger.LogWarning(ex, "iiko {Path} failed; continuing without it", path);
+        }
+        return all;
+    }
+
     /// <summary>
     /// Reads dishes and goods straight from the iiko nomenclature (api/nomenclature/v1/*),
     /// with group names from group/list and size names from product-scale/list. Used when
@@ -315,15 +334,19 @@ public class IikoApiClient : IIikoApiClient
             if (items.Count < CatalogPageSize || (resp.TotalCount is int total && products.Count >= total)) break;
         }
 
-        var groups = (await PostAsync<CatalogGroupPage>("api/nomenclature/v1/group/list",
-                new CatalogListRequest([], 0, 0), ct)).Groups ?? [];
+        // Group and size names only decorate the picker, so a failure there is logged and
+        // the products are still returned. Both endpoints require limit > 0, so page them.
+        var groups = await TryLoadCatalogPagesAsync("api/nomenclature/v1/group/list",
+            async offset => (await PostAsync<CatalogGroupPage>("api/nomenclature/v1/group/list",
+                new CatalogListRequest([], CatalogPageSize, offset), ct)).Groups ?? []);
         var groupNames = groups
             .Where(g => g.GroupId != null && g.IsDeleted != true)
             .GroupBy(g => g.GroupId!, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First().Name, StringComparer.OrdinalIgnoreCase);
 
-        var scales = (await PostAsync<CatalogScalePage>("api/nomenclature/v1/product-scale/list",
-                new CatalogListRequest([], 0, 0), ct)).Items ?? [];
+        var scales = await TryLoadCatalogPagesAsync("api/nomenclature/v1/product-scale/list",
+            async offset => (await PostAsync<CatalogScalePage>("api/nomenclature/v1/product-scale/list",
+                new CatalogListRequest([], CatalogPageSize, offset), ct)).Items ?? []);
         var scaleSizes = scales
             .Where(sc => sc.Id != null && sc.Deleted != true)
             .GroupBy(sc => sc.Id!, StringComparer.OrdinalIgnoreCase)
