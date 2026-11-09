@@ -73,7 +73,11 @@ public record IikoCustomerInfo(Guid Id, string? Phone, List<IikoWalletBalance> W
 
 public record IikoNomenclatureSize(Guid ProductSizeId, string? Name);
 
-public record IikoNomenclatureProduct(Guid ProductId, string Name, decimal Price, List<IikoNomenclatureSize> Sizes);
+/// <param name="Code">iiko SKU (article), searchable in the admin mapping picker.</param>
+/// <param name="GroupName">iiko menu group or category name, shown next to the product to tell look-alikes apart.</param>
+public record IikoNomenclatureProduct(
+    Guid ProductId, string Name, decimal Price, List<IikoNomenclatureSize> Sizes,
+    string? Code = null, string? GroupName = null);
 
 public record IikoPaymentType(Guid Id, string Name);
 
