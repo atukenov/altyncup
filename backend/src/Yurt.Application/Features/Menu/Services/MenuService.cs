@@ -294,6 +294,7 @@ public class MenuService
                 Price = v.Price,
                 SortOrder = v.SortOrder,
                 IsDefault = v.IsDefault,
+                IikoProductId = canEditIiko ? v.IikoProductId : null,
                 IikoProductSizeId = canEditIiko ? v.IikoProductSizeId : null
             });
 
@@ -343,11 +344,11 @@ public class MenuService
             _db.MenuItemLocations.Add(new MenuItemLocation { MenuItemId = item.Id, LocationId = locId });
 
         // Variants are recreated on every save; without iiko rights, carry each variant's existing
-        // iiko size mapping over by label so a cafe admin's edit doesn't wipe it.
-        var previousVariantIikoSizes = item.Variants
-            .Where(v => v.IikoProductSizeId != null)
+        // iiko mapping over by label so a cafe admin's edit doesn't wipe it.
+        var previousVariantIiko = item.Variants
+            .Where(v => v.IikoProductId != null || v.IikoProductSizeId != null)
             .GroupBy(v => v.Label)
-            .ToDictionary(g => g.Key, g => g.First().IikoProductSizeId);
+            .ToDictionary(g => g.Key, g => (g.First().IikoProductId, g.First().IikoProductSizeId));
 
         foreach (var v in item.Variants.ToList())
             _db.MenuItemVariants.Remove(v);
@@ -362,9 +363,12 @@ public class MenuService
                 Price = v.Price,
                 SortOrder = v.SortOrder,
                 IsDefault = v.IsDefault,
+                IikoProductId = canEditIiko
+                    ? v.IikoProductId
+                    : previousVariantIiko.GetValueOrDefault(v.Label).IikoProductId,
                 IikoProductSizeId = canEditIiko
                     ? v.IikoProductSizeId
-                    : previousVariantIikoSizes.GetValueOrDefault(v.Label)
+                    : previousVariantIiko.GetValueOrDefault(v.Label).IikoProductSizeId
             });
 
         await _db.SaveChangesAsync(ct);
@@ -535,7 +539,7 @@ public class MenuService
         var locationIds = i.MenuItemLocations?.Select(l => l.LocationId).ToList();
         var variants = i.Variants?.Count > 0
             ? i.Variants.OrderBy(v => v.SortOrder)
-                .Select(v => new AdminMenuItemVariantDto(v.Id, v.Label, v.LabelRu, v.LabelKk, v.Price, v.SortOrder, v.IsDefault, v.IikoProductSizeId)).ToList()
+                .Select(v => new AdminMenuItemVariantDto(v.Id, v.Label, v.LabelRu, v.LabelKk, v.Price, v.SortOrder, v.IsDefault, v.IikoProductSizeId, v.IikoProductId)).ToList()
             : null;
         return new(i.Id, i.CategoryId, i.Category?.Name ?? "",
                i.Name, i.NameRu, i.NameKk,

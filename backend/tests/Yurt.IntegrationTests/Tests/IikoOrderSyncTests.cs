@@ -189,6 +189,32 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
     }
 
     [Fact]
+    public async Task VariantMappedToOwnIikoProduct_PushesThatProduct_EvenWhenItemIsUnmapped()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var americano350 = Guid.NewGuid();
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
+        var (menuItemId, variantId) = await CreateTestMenuItemWithVariantAsync(
+            enabledFactory.Services, iikoProductId: null, variantLabel: "350", variantIikoProductId: americano350);
+
+        var client = enabledFactory.CreateClient();
+        await PlaceAndAcceptOrderAsync(
+            enabledFactory, client, "+77002000812", locationId, menuItemId, variantId: variantId);
+
+        var item = Assert.Single(Assert.Single(fake.PushCalls).Items);
+        Assert.Equal(americano350, item.ProductId);
+        Assert.Null(item.ProductSizeId);
+        Assert.True(item.Comment == null || !item.Comment.Contains("350"));
+    }
+
+    [Fact]
     public async Task RetryIikoPush_AfterMappingFixed_PushesSkippedOrder()
     {
         var fake = new FakeIikoApiClient();
@@ -440,7 +466,7 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
         => (await CreateTestMenuItemWithVariantAsync(services, iikoProductId, variantLabel: null)).MenuItemId;
 
     private static async Task<(Guid MenuItemId, Guid? VariantId)> CreateTestMenuItemWithVariantAsync(
-        IServiceProvider services, Guid? iikoProductId, string? variantLabel)
+        IServiceProvider services, Guid? iikoProductId, string? variantLabel, Guid? variantIikoProductId = null)
     {
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
@@ -461,6 +487,7 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
         var variant = new MenuItemVariant
         {
             MenuItemId = item.Id, Label = variantLabel, Price = 600, SortOrder = 0, IsDefault = true,
+            IikoProductId = variantIikoProductId,
         };
         db.MenuItemVariants.Add(variant);
         await db.SaveChangesAsync();

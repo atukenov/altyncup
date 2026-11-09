@@ -107,21 +107,29 @@ public class IikoOrderSyncService
         var items = new List<IikoOrderItemRequest>();
         foreach (var orderItem in order.Items)
         {
-            if (!menuItems.TryGetValue(orderItem.MenuItemId, out var menuItem) || menuItem.IikoProductId == null)
-                return (null, $"menu item \"{orderItem.MenuItemName}\" has no iiko product mapping");
-
-            // A variant's own iiko size wins; otherwise fall back to the item's size (often
-            // none, for iiko products without a size scale). Requiring a per-variant size
-            // made every sized drink "unmapped" when the iiko product had no sizes at all.
+            menuItems.TryGetValue(orderItem.MenuItemId, out var menuItem);
             var variant = orderItem.VariantId != null
-                ? menuItem.Variants.FirstOrDefault(v => v.Id == orderItem.VariantId)
+                ? menuItem?.Variants.FirstOrDefault(v => v.Id == orderItem.VariantId)
                 : null;
-            var productSizeId = variant?.IikoProductSizeId ?? menuItem.IikoProductSizeId;
+
+            // A variant mapped to its own iiko product (e.g. "Americano 350") is sent as that
+            // product, with the variant's size if it has one. Otherwise the item's product is
+            // used: the variant's iiko size wins, falling back to the item's size (often none,
+            // for iiko products without a size scale), and the size label goes in the comment.
+            var ownProduct = variant?.IikoProductId != null;
+            var productId = ownProduct ? variant!.IikoProductId : menuItem?.IikoProductId;
+            if (productId == null)
+                return (null, orderItem.VariantId != null && !string.IsNullOrWhiteSpace(orderItem.VariantLabel)
+                    ? $"menu item \"{orderItem.MenuItemName}\" ({orderItem.VariantLabel}) has no iiko product mapping"
+                    : $"menu item \"{orderItem.MenuItemName}\" has no iiko product mapping");
+            var productSizeId = ownProduct
+                ? variant!.IikoProductSizeId
+                : variant?.IikoProductSizeId ?? menuItem!.IikoProductSizeId;
 
             // Toppings/modifiers are pushed as text, not real iiko modifiers (no
             // modifier-schema mapping exists) — still useful on a printed kitchen ticket.
             var commentParts = new List<string>();
-            if (orderItem.VariantId != null && variant?.IikoProductSizeId == null && !string.IsNullOrWhiteSpace(orderItem.VariantLabel))
+            if (orderItem.VariantId != null && !ownProduct && variant?.IikoProductSizeId == null && !string.IsNullOrWhiteSpace(orderItem.VariantLabel))
                 commentParts.Add(orderItem.VariantLabel!);
             if (orderItem.Toppings.Count > 0)
                 commentParts.Add(string.Join(", ", orderItem.Toppings.Select(t => t.ToppingName)));
@@ -129,7 +137,7 @@ public class IikoOrderSyncService
                 commentParts.Add(orderItem.Notes);
 
             items.Add(new IikoOrderItemRequest(
-                menuItem.IikoProductId.Value, productSizeId, orderItem.Quantity, orderItem.UnitPrice,
+                productId.Value, productSizeId, orderItem.Quantity, orderItem.UnitPrice,
                 commentParts.Count > 0 ? string.Join(" — ", commentParts) : null));
         }
 
