@@ -80,6 +80,12 @@ export const routes: Routes = [
           import('./features/audit-log/audit-log.component').then((m) => m.AuditLogComponent),
       },
       {
+        path: 'iiko',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/iiko/iiko-overview.component').then((m) => m.IikoOverviewComponent),
+      },
+      {
         path: 'otp-log',
         canActivate: [superAdminGuard],
         loadComponent: () =>

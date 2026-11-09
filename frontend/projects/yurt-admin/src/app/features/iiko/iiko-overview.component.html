@@ -1,0 +1,272 @@
+<div class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800">iiko</h1>
+      <p class="text-slate-500 text-sm mt-0.5">Orders sent to the cafe cashier, mapping coverage and everything else iiko does for the app.</p>
+    </div>
+    <div class="flex gap-2">
+      <button type="button" (click)="checkConnection()" [disabled]="checking()"
+        class="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+        {{ checking() ? 'Checking…' : 'Check connection' }}
+      </button>
+      <button type="button" (click)="refresh()"
+        class="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">Refresh</button>
+    </div>
+  </div>
+
+  @if (overviewError()) {
+    <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ overviewError() }}</div>
+  }
+  @if (checkError()) {
+    <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      <span class="font-semibold">iiko did not answer.</span> {{ checkError() }}
+    </div>
+  }
+
+  <!-- Setup -->
+  @if (overview(); as ov) {
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-slate-800">Setup</h2>
+        @if (setupProblems() === 0) {
+          <span class="text-xs font-medium text-green-700 bg-green-50 rounded-full px-2 py-0.5">All set</span>
+        } @else {
+          <span class="text-xs font-medium text-amber-700 bg-amber-50 rounded-full px-2 py-0.5">{{ setupProblems() }} to fix</span>
+        }
+      </div>
+      <ul class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+        @for (s of setup(); track s.label) {
+          <li class="flex items-start gap-2">
+            <span class="mt-0.5 shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+              [class]="s.ok ? 'bg-green-500' : 'bg-amber-500'">{{ s.ok ? '✓' : '!' }}</span>
+            <span class="min-w-0">
+              <span class="text-slate-700">{{ s.label }}</span>
+              @if (!s.ok) { <span class="block text-xs text-slate-500">{{ s.hint }}</span> }
+            </span>
+          </li>
+        }
+      </ul>
+      <p class="text-xs text-slate-400 mt-3">
+        These are server settings; only whether each one is set is shown. Server: {{ ov.config.baseUrl }}.
+      </p>
+      @if (paymentTypes(); as pt) {
+        <p class="text-xs text-slate-500 mt-2">
+          Payment types in iiko: {{ pt.length ? '' : 'none' }}
+          @for (p of pt; track p.id; let last = $last) { {{ p.name }}{{ last ? '' : ', ' }} }
+        </p>
+      }
+    </section>
+
+    <!-- Order sync counters -->
+    <section>
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold text-slate-800">Orders, last {{ ov.orders.days }} days</h2>
+        @if (ov.orders.pendingRetries > 0) {
+          <span class="text-xs text-amber-700 bg-amber-50 rounded-full px-2 py-0.5">
+            {{ ov.orders.pendingRetries }} waiting to retry (iiko was unavailable)
+          </span>
+        }
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        @for (st of statusFilters; track st) {
+          <button type="button" (click)="filterBy(st)" [attr.aria-pressed]="syncFilter() === st"
+            class="text-left bg-white rounded-2xl border p-3 hover:border-amber-300 transition-colors"
+            [class]="syncFilter() === st ? 'border-amber-400 ring-2 ring-amber-200' : 'border-slate-100'">
+            <div class="text-2xl font-bold text-slate-800">{{ count(st) }}</div>
+            <div class="text-sm text-slate-600">{{ sync(st).label }}</div>
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Orders -->
+  <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
+      <h2 class="font-semibold text-slate-800">
+        Orders in iiko
+        @if (syncFilter()) { <span class="text-slate-400 font-normal">· {{ sync(syncFilter()).label }}</span> }
+      </h2>
+      @if (syncFilter()) {
+        <button type="button" (click)="filterBy(syncFilter())" class="text-xs font-semibold text-amber-600 hover:text-amber-700">Show all</button>
+      }
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-100">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">Order</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">Where</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">iiko</th>
+            <th class="px-4 py-3 text-left font-semibold text-slate-600">What happened</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          @if (ordersLoading() && orders().length === 0) {
+            @for (i of [1,2,3,4,5]; track i) {
+              <tr>@for (j of [1,2,3,4,5]; track j) { <td class="px-4 py-3"><div class="h-4 bg-slate-100 rounded animate-pulse w-20"></div></td> }</tr>
+            }
+          } @else if (orders().length === 0) {
+            <tr><td colspan="5" class="px-4 py-10 text-center text-slate-400">No orders here yet.</td></tr>
+          } @else {
+            @for (o of orders(); track o.id) {
+              <tr class="hover:bg-slate-50 transition-colors align-top">
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <div class="font-medium text-slate-800">#{{ shortId(o.id) }}</div>
+                  <div class="text-xs text-slate-400">{{ formatDate(o.createdAt) }}</div>
+                  <div class="text-xs text-slate-500">{{ o.status }} · {{ o.itemCount }} items · {{ o.total | currency2 }}</div>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="text-slate-700">{{ o.location }}</div>
+                  @if (!o.hasTerminalGroup) { <div class="text-xs text-amber-600">No iiko terminal group</div> }
+                  <div class="text-xs text-slate-400">{{ o.customerPhone }}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium"
+                    [class]="{
+                      'bg-teal-50 text-teal-700': sync(o.syncStatus).variant === 'teal',
+                      'bg-green-50 text-green-700': sync(o.syncStatus).variant === 'green',
+                      'bg-amber-50 text-amber-700': sync(o.syncStatus).variant === 'amber',
+                      'bg-red-50 text-red-700': sync(o.syncStatus).variant === 'red',
+                      'bg-slate-100 text-slate-600': sync(o.syncStatus).variant === 'slate'
+                    }"
+                    [title]="sync(o.syncStatus).hint">{{ sync(o.syncStatus).label }}</span>
+                  @if (o.pendingAction !== 'None') {
+                    <div class="text-xs text-amber-600 mt-1">Retrying: {{ o.pendingAction === 'Push' ? 'send' : 'close' }}</div>
+                  }
+                  @if (o.iikoOrderId) { <div class="text-[10px] font-mono text-slate-400 mt-1" [title]="o.iikoOrderId">{{ o.iikoOrderId.slice(0, 8) }}…</div> }
+                </td>
+                <td class="px-4 py-3 max-w-md">
+                  @if (o.lastEvent) {
+                    <div class="text-slate-700">{{ eventLabel(o.lastEvent) }}</div>
+                    @if (o.lastEventDetails) { <div class="text-xs text-slate-500 break-words">{{ o.lastEventDetails }}</div> }
+                    <div class="text-xs text-slate-400">{{ formatDate(o.lastEventAt) }}</div>
+                  } @else {
+                    <span class="text-slate-400">–</span>
+                  }
+                </td>
+                <td class="px-4 py-3 text-right whitespace-nowrap">
+                  @if (canRetry(o)) {
+                    <button type="button" (click)="retry(o)" [disabled]="retrying() === o.id"
+                      class="text-xs font-semibold text-amber-600 hover:text-amber-700 disabled:opacity-50">
+                      {{ retrying() === o.id ? 'Sending…' : 'Send to iiko' }}
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (ordersTotalPages() > 1) {
+      <div class="px-4 py-3 border-t border-slate-100 flex items-center justify-between text-sm text-slate-600">
+        <span>{{ ordersTotal() }} orders</span>
+        <div class="flex items-center gap-2">
+          <button type="button" (click)="goToOrdersPage(ordersPage() - 1)" [disabled]="ordersPage() <= 1"
+            class="px-3 py-1 rounded-lg border border-slate-200 disabled:opacity-40">Previous</button>
+          <span>{{ ordersPage() }} / {{ ordersTotalPages() }}</span>
+          <button type="button" (click)="goToOrdersPage(ordersPage() + 1)" [disabled]="ordersPage() >= ordersTotalPages()"
+            class="px-3 py-1 rounded-lg border border-slate-200 disabled:opacity-40">Next</button>
+        </div>
+      </div>
+    }
+  </section>
+
+  @if (overview(); as ov) {
+    <div class="grid lg:grid-cols-2 gap-6">
+      <!-- Locations -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-semibold text-slate-800">Locations</h2>
+          <a routerLink="/locations" class="text-xs font-semibold text-amber-600 hover:text-amber-700">Edit locations</a>
+        </div>
+        <p class="text-xs text-slate-500 mb-3">Each cafe needs an iiko terminal group, which says which cash register gets its orders.</p>
+        <ul class="divide-y divide-slate-50 text-sm">
+          @for (l of ov.locations; track l.id) {
+            <li class="py-2 flex items-center justify-between gap-3">
+              <span class="min-w-0">
+                <span class="text-slate-800">{{ l.name }}</span>
+                @if (!l.isActive) { <span class="text-xs text-slate-400"> · inactive</span> }
+              </span>
+              @if (l.terminalGroupId) {
+                <span class="text-xs text-teal-700 bg-teal-50 rounded-full px-2 py-0.5 truncate max-w-[55%]" [title]="l.terminalGroupId">
+                  {{ terminalGroupName(l.terminalGroupId) }}
+                </span>
+              } @else {
+                <span class="text-xs text-amber-700 bg-amber-50 rounded-full px-2 py-0.5">Not set</span>
+              }
+            </li>
+          } @empty {
+            <li class="py-2 text-slate-400">No locations.</li>
+          }
+        </ul>
+      </section>
+
+      <!-- Menu mapping -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-semibold text-slate-800">Menu mapping</h2>
+          <a routerLink="/menu" class="text-xs font-semibold text-amber-600 hover:text-amber-700">Open menu</a>
+        </div>
+        <p class="text-sm text-slate-600 mb-1">
+          <span class="font-semibold text-slate-800">{{ ov.menu.totalItems - ov.menu.unmappedItemCount }}</span> of
+          {{ ov.menu.totalItems }} items ready for iiko.
+        </p>
+        @if (ov.menu.variantsTotal > 0) {
+          <p class="text-xs text-slate-500 mb-2">{{ ov.menu.variantsOwnProduct }} of {{ ov.menu.variantsTotal }} sizes have their own iiko product.</p>
+        }
+        @if (ov.menu.unmappedItems.length > 0) {
+          <p class="text-xs font-medium text-slate-500 mt-3 mb-1">Not mapped yet</p>
+          <ul class="divide-y divide-slate-50 text-sm max-h-64 overflow-y-auto">
+            @for (i of ov.menu.unmappedItems; track i.id) {
+              <li class="py-1.5 flex items-center justify-between gap-3">
+                <span class="min-w-0 truncate text-slate-700">{{ i.name }}<span class="text-xs text-slate-400"> · {{ i.category }}</span></span>
+                @if (i.sizes > 0) {
+                  <span class="shrink-0 text-xs text-slate-500">{{ i.unmappedSizes }} of {{ i.sizes }} sizes</span>
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="text-sm text-green-700 mt-3">Every item is mapped.</p>
+        }
+      </section>
+    </div>
+
+    <!-- Loyalty -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 text-sm text-slate-600">
+      <h2 class="font-semibold text-slate-800 mb-1">Bonus points</h2>
+      {{ ov.loyalty.customersWithIiko }} of {{ ov.loyalty.customersTotal }} customers are linked to an iiko loyalty account
+      ({{ ov.config.earnPercent }}% of each completed order is credited as points).
+    </section>
+  }
+
+  <!-- Activity -->
+  <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100">
+      <h2 class="font-semibold text-slate-800">Activity</h2>
+      <p class="text-xs text-slate-500">Every send, skip, close and problem report from iiko, newest first.</p>
+    </div>
+    <ul class="divide-y divide-slate-50 text-sm">
+      @for (a of activity(); track a.id) {
+        <li class="px-4 py-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+          <span class="text-xs text-slate-400 whitespace-nowrap">{{ formatDate(a.createdAt) }}</span>
+          <span class="font-medium text-slate-700">{{ eventLabel(a.action) }}</span>
+          @if (a.entityType === 'Order' && a.entityId) { <span class="text-xs text-slate-500">#{{ shortId(a.entityId) }}</span> }
+          @if (a.details) { <span class="text-xs text-slate-500 break-words min-w-0">{{ a.details }}</span> }
+        </li>
+      } @empty {
+        <li class="px-4 py-8 text-center text-slate-400">{{ activityLoading() ? 'Loading…' : 'Nothing has happened with iiko yet.' }}</li>
+      }
+    </ul>
+    @if (activityHasMore()) {
+      <div class="px-4 py-3 border-t border-slate-100 text-center">
+        <button type="button" (click)="loadMoreActivity()" [disabled]="activityLoading()"
+          class="text-sm font-semibold text-amber-600 hover:text-amber-700 disabled:opacity-50">Load more</button>
+      </div>
+    }
+  </section>
+</div>
