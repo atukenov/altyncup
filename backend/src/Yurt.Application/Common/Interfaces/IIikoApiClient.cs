@@ -79,7 +79,13 @@ public record IikoNomenclatureProduct(
     Guid ProductId, string Name, decimal Price, List<IikoNomenclatureSize> Sizes,
     string? Code = null, string? GroupName = null);
 
-public record IikoPaymentType(Guid Id, string Name);
+/// <summary>
+/// A payment type configured in iiko. <c>Kind</c> is iiko's category (Cash, Card, External...);
+/// orders pushed from the app need an "External" one, available on the cafe's terminal group.
+/// </summary>
+public record IikoPaymentType(
+    Guid Id, string Name, string? Kind = null, string? Code = null,
+    List<IikoTerminalGroup>? TerminalGroups = null);
 
 public record IikoTerminalGroup(Guid Id, string Name);
 
