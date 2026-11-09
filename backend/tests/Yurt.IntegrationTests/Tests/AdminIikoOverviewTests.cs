@@ -14,6 +14,7 @@ public class AdminIikoOverviewTests(YurtWebAppFactory factory)
         "/api/v1/admin/iiko/overview",
         "/api/v1/admin/iiko/orders",
         "/api/v1/admin/iiko/activity",
+        "/api/v1/admin/iiko/status",
     ];
 
     [Fact]
@@ -30,6 +31,8 @@ public class AdminIikoOverviewTests(YurtWebAppFactory factory)
         var overview = await client.GetFromJsonAsync<JsonElement>("/api/v1/admin/iiko/overview");
         Assert.False(overview.GetProperty("config").GetProperty("enabled").GetBoolean());
         Assert.True(overview.GetProperty("menu").GetProperty("totalItems").GetInt32() >= 0);
+        var status = await client.GetFromJsonAsync<JsonElement>("/api/v1/admin/iiko/status");
+        Assert.False(status.GetProperty("enabled").GetBoolean());
         // Secrets must never be part of the response.
         var raw = overview.GetRawText();
         Assert.DoesNotContain("apiKey", raw, StringComparison.OrdinalIgnoreCase);
