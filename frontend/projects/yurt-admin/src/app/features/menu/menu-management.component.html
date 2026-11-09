@@ -203,6 +203,9 @@
               <th class="hidden sm:table-cell text-left px-3 md:px-6 py-3">{{ 'label.category' | t }}</th>
               <th class="text-right px-3 md:px-6 py-3">{{ 'label.price' | t }}</th>
               <th class="text-center px-3 md:px-6 py-3">{{ 'label.available' | t }}</th>
+              @if (iikoEnabled()) {
+                <th class="text-center px-3 md:px-6 py-3">iiko</th>
+              }
               <th class="px-3 md:px-6 py-3"></th>
             </tr>
           </thead>
@@ -254,6 +257,16 @@
                     >{{ item.isAvailable ? ('label.yes' | t) : ('label.no' | t) }}</span
                   >
                 </td>
+                @if (iikoEnabled()) {
+                  <td class="px-3 md:px-6 py-3 text-center">
+                    @let m = iikoMapState(item);
+                    <span
+                      class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
+                      [class]="m.kind === 'mapped' ? 'bg-green-100 text-green-700' : m.kind === 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'"
+                      >{{ m.label }}</span
+                    >
+                  </td>
+                }
                 <td class="px-3 md:px-6 py-3 text-right">
                   <div class="flex justify-end gap-2">
                     <button

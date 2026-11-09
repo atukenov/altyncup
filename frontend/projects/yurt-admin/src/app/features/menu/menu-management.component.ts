@@ -107,6 +107,23 @@ export class MenuManagementComponent implements OnInit {
     iikoProductId: '', iikoProductSizeId: '',
   });
 
+  /** True once the server says Iiko:Enabled; the list's mapping column is hidden otherwise. */
+  iikoEnabled = signal(false);
+
+  /** Mapping state of a menu item: every size needs its own iiko product or the item's. */
+  iikoMapState(item: MenuItem): { kind: 'mapped' | 'partial' | 'none'; label: string } {
+    const variants = item.variants ?? [];
+    if (variants.length === 0) {
+      return item.iikoProductId
+        ? { kind: 'mapped', label: 'Mapped' }
+        : { kind: 'none', label: 'Not mapped' };
+    }
+    const mapped = variants.filter((v) => v.iikoProductId || item.iikoProductId).length;
+    if (mapped === variants.length) return { kind: 'mapped', label: 'Mapped' };
+    if (mapped === 0) return { kind: 'none', label: 'Not mapped' };
+    return { kind: 'partial', label: `${mapped}/${variants.length} sizes` };
+  }
+
   // iiko product catalog for the mapping picker (Phase 3 order-push feature).
   iikoNomenclature = signal<IikoNomenclatureProduct[]>([]);
   iikoLoadState = signal<'idle' | 'loading' | 'ready' | 'error'>('idle');
@@ -217,7 +234,13 @@ export class MenuManagementComponent implements OnInit {
     });
     this.api.adminGetToppings().subscribe((toppings) => this.toppings.set(toppings));
     this.api.getAdminLocations().subscribe((locs) => this.locations.set(locs));
-    if (this.canEditIiko) this.loadIikoNomenclature();
+    if (this.canEditIiko) {
+      this.api.getIikoStatus().subscribe({
+        next: (s) => this.iikoEnabled.set(s.enabled),
+        error: () => this.iikoEnabled.set(false),
+      });
+      this.loadIikoNomenclature();
+    }
   }
 
   loadIikoNomenclature(): void {

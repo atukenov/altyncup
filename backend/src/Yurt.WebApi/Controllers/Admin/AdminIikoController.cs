@@ -29,6 +29,10 @@ public class AdminIikoController : ApiControllerBase
         _options = options;
     }
 
+    /// <summary>Whether the iiko integration is switched on; lets the admin UI hide iiko-only hints.</summary>
+    [HttpGet("status")]
+    public IActionResult GetStatus() => Ok(new { enabled = _options.Enabled });
+
     [HttpGet("nomenclature")]
     public Task<IActionResult> GetNomenclature(CancellationToken ct)
         => LookupAsync(() => _iiko.GetNomenclatureAsync(ct));

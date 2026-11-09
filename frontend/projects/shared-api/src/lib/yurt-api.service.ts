@@ -640,6 +640,10 @@ export class YurtApiService {
   }
 
   // ── iiko (admin reference lookups for the menu-mapping / location pickers) ───
+  getIikoStatus(): Observable<{ enabled: boolean }> {
+    return this.http.get<{ enabled: boolean }>(`${this.api}/admin/iiko/status`);
+  }
+
   getIikoNomenclature(): Observable<IikoNomenclatureProduct[]> {
     return this.http.get<IikoNomenclatureProduct[]>(`${this.api}/admin/iiko/nomenclature`);
   }
