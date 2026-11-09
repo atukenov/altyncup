@@ -207,11 +207,16 @@ public class IikoApiClient : IIikoApiClient
     // ── Order push (reporting/kitchen-routing side-channel) ─────────────────────
 
     private record NomenclatureRequest(Guid OrganizationId);
-    private record NomenclatureSizePriceDto(Guid? SizeId, NomenclaturePriceDto Price);
-    private record NomenclaturePriceDto(decimal CurrentPrice);
-    private record NomenclatureProductDto(Guid Id, string? Name, string? Type, bool IsDeleted, List<NomenclatureSizePriceDto>? SizePrices);
+    private record NomenclatureSizePriceDto(Guid? SizeId, NomenclaturePriceDto? Price);
+    private record NomenclaturePriceDto(decimal? CurrentPrice);
+    private record NomenclatureProductDto(
+        Guid Id, string? Name, string? Code, string? Type, bool IsDeleted,
+        Guid? ParentGroup, Guid? ProductCategoryId, List<NomenclatureSizePriceDto>? SizePrices);
     private record NomenclatureSizeDto(Guid Id, string? Name);
-    private record NomenclatureResponse(List<NomenclatureProductDto>? Products, List<NomenclatureSizeDto>? Sizes);
+    private record NomenclatureNamedDto(Guid Id, string? Name);
+    private record NomenclatureResponse(
+        List<NomenclatureProductDto>? Products, List<NomenclatureSizeDto>? Sizes,
+        List<NomenclatureNamedDto>? Groups, List<NomenclatureNamedDto>? ProductCategories);
 
     public async Task<List<IikoNomenclatureProduct>> GetNomenclatureAsync(CancellationToken ct = default)
     {
@@ -220,10 +225,16 @@ public class IikoApiClient : IIikoApiClient
         var resp = await PostAsync<NomenclatureResponse>(
             "api/1/nomenclature", new NomenclatureRequest(_options.OrganizationId), ct);
 
-        var sizeNames = (resp.Sizes ?? []).ToDictionary(s => s.Id, s => s.Name);
+        var sizeNames = (resp.Sizes ?? []).GroupBy(s => s.Id).ToDictionary(g => g.Key, g => g.First().Name);
+        var groupNames = (resp.Groups ?? []).GroupBy(g => g.Id).ToDictionary(g => g.Key, g => g.First().Name);
+        var categoryNames = (resp.ProductCategories ?? []).GroupBy(c => c.Id).ToDictionary(g => g.Key, g => g.First().Name);
 
         return (resp.Products ?? [])
-            .Where(p => !p.IsDeleted && p.Type is "dish" or "good")
+            // iiko's docs say "dish | good | modifier" but the live API answers "Dish" /
+            // "Good" / "Modifier" — compare case-insensitively, and only drop modifiers
+            // (they can't be ordered on their own), so a capitalisation change never
+            // empties the whole catalog again.
+            .Where(p => !p.IsDeleted && !string.Equals(p.Type, "modifier", StringComparison.OrdinalIgnoreCase))
             .Select(p =>
             {
                 var sizes = (p.SizePrices ?? [])
@@ -231,9 +242,16 @@ public class IikoApiClient : IIikoApiClient
                     .Select(sp => new IikoNomenclatureSize(
                         sp.SizeId!.Value, sizeNames.GetValueOrDefault(sp.SizeId.Value)))
                     .ToList();
-                var price = p.SizePrices?.FirstOrDefault()?.Price.CurrentPrice ?? 0m;
-                return new IikoNomenclatureProduct(p.Id, p.Name ?? "", price, sizes);
+                var price = p.SizePrices?.FirstOrDefault()?.Price?.CurrentPrice ?? 0m;
+                var groupName =
+                    (p.ParentGroup is Guid g ? groupNames.GetValueOrDefault(g) : null)
+                    ?? (p.ProductCategoryId is Guid c ? categoryNames.GetValueOrDefault(c) : null);
+                return new IikoNomenclatureProduct(
+                    p.Id, p.Name ?? "", price, sizes,
+                    string.IsNullOrWhiteSpace(p.Code) ? null : p.Code, groupName);
             })
+            .OrderBy(p => p.GroupName ?? "\uffff", StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
     }
 

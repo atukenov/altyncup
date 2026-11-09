@@ -443,33 +443,123 @@
           <div>
             <label class="block text-xs font-medium text-slate-600 mb-1">iiko product mapping (optional)</label>
             <p class="text-xs text-slate-400 mb-2">Maps this item to iiko's catalog so accepted orders can be pushed to iiko as real orders. Leave unmapped to skip iiko for this item.</p>
-            <div class="grid grid-cols-2 gap-2">
+            @if (iikoLoadState() === 'error') {
+              <div class="mb-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 flex items-start justify-between gap-2">
+                <span>Couldn't load iiko products. {{ iikoLoadError() }}</span>
+                <button type="button" (click)="loadIikoNomenclature()" class="shrink-0 font-semibold text-red-700 underline">Retry</button>
+              </div>
+            } @else if (iikoLoadState() === 'ready' && iikoNomenclature().length === 0) {
+              <div class="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 flex items-start justify-between gap-2">
+                <span>iiko returned no products for this organization. Check Iiko:OrganizationId and that the API key has menu access.</span>
+                <button type="button" (click)="loadIikoNomenclature()" class="shrink-0 font-semibold underline">Retry</button>
+              </div>
+            }
+
+            <!-- Selected product / searchable picker -->
+            @if (!iikoPickerOpen()) {
+              <div class="flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                @if (itemForm().iikoProductId) {
+                  @if (selectedIikoProduct(); as sp) {
+                    <div class="min-w-0 flex-1">
+                      <div class="font-medium text-slate-800 truncate">{{ sp.name }}</div>
+                      <div class="text-xs text-slate-400 truncate">
+                        @if (sp.groupName) { {{ sp.groupName }} · }
+                        @if (sp.code) { SKU {{ sp.code }} · }
+                        {{ sp.price | currency2 }}
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="min-w-0 flex-1 text-xs text-slate-500 truncate">
+                      {{ iikoLoadState() === 'loading' ? 'Loading iiko products…' : 'Mapped to an iiko product not in the current catalog' }}
+                      <span class="font-mono">({{ itemForm().iikoProductId }})</span>
+                    </div>
+                  }
+                  <button type="button" (click)="openIikoPicker()" class="shrink-0 text-xs font-semibold text-amber-600 hover:text-amber-700">Change</button>
+                  <button type="button" (click)="pickIikoProduct('')" class="shrink-0 text-xs font-semibold text-slate-400 hover:text-red-600">Clear</button>
+                } @else {
+                  <span class="flex-1 text-slate-400">Not mapped</span>
+                  <button type="button" (click)="openIikoPicker()"
+                    [disabled]="iikoLoadState() !== 'ready' || iikoNomenclature().length === 0"
+                    class="shrink-0 text-xs font-semibold text-amber-600 hover:text-amber-700 disabled:text-slate-300">
+                    {{ iikoLoadState() === 'loading' ? 'Loading…' : 'Choose iiko product' }}
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="border border-amber-300 rounded-xl overflow-hidden">
+                <div class="flex items-center gap-2 px-3 py-2 border-b border-slate-100">
+                  <input
+                    id="iiko-product-search"
+                    type="search"
+                    aria-label="Search iiko products"
+                    placeholder="Search by name, SKU or group"
+                    [ngModel]="iikoSearch()"
+                    (ngModelChange)="iikoSearch.set($event)"
+                    (keydown.escape)="iikoPickerOpen.set(false)"
+                    class="flex-1 min-w-0 text-sm outline-none"
+                  />
+                  <span class="shrink-0 text-xs text-slate-400">{{ iikoNomenclature().length }} in iiko</span>
+                  <button type="button" (click)="iikoPickerOpen.set(false)" class="shrink-0 text-xs font-semibold text-slate-500 hover:text-slate-700">Cancel</button>
+                </div>
+                <ul class="max-h-64 overflow-y-auto text-sm" role="listbox" aria-label="iiko products">
+                  @if (iikoResults().suggested.length) {
+                    <li class="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-amber-600">Best matches for this item</li>
+                    @for (p of iikoResults().suggested; track p.productId) {
+                      <li>
+                        <button type="button" role="option" (click)="pickIikoProduct(p.productId)"
+                          [attr.aria-selected]="p.productId === itemForm().iikoProductId"
+                          class="w-full text-left px-3 py-2 hover:bg-amber-50 flex items-center gap-2"
+                          [class.bg-amber-50]="p.productId === itemForm().iikoProductId">
+                          <span class="min-w-0 flex-1">
+                            <span class="block truncate text-slate-800">{{ p.name }}</span>
+                            <span class="block truncate text-xs text-slate-400">{{ p.groupName || 'No group' }}@if (p.code) { · SKU {{ p.code }} }@if (p.sizes.length) { · {{ p.sizes.length }} sizes }</span>
+                          </span>
+                          <span class="shrink-0 text-xs text-slate-500">{{ p.price | currency2 }}</span>
+                        </button>
+                      </li>
+                    }
+                    <li class="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">All products</li>
+                  }
+                  @for (p of iikoResults().matches.slice(0, iikoMaxResults); track p.productId) {
+                    <li>
+                      <button type="button" role="option" (click)="pickIikoProduct(p.productId)"
+                        [attr.aria-selected]="p.productId === itemForm().iikoProductId"
+                        class="w-full text-left px-3 py-2 hover:bg-amber-50 flex items-center gap-2"
+                        [class.bg-amber-50]="p.productId === itemForm().iikoProductId">
+                        <span class="min-w-0 flex-1">
+                          <span class="block truncate text-slate-800">{{ p.name }}</span>
+                          <span class="block truncate text-xs text-slate-400">{{ p.groupName || 'No group' }}@if (p.code) { · SKU {{ p.code }} }@if (p.sizes.length) { · {{ p.sizes.length }} sizes }</span>
+                        </span>
+                        <span class="shrink-0 text-xs text-slate-500">{{ p.price | currency2 }}</span>
+                      </button>
+                    </li>
+                  } @empty {
+                    @if (!iikoResults().suggested.length) {
+                      <li class="px-3 py-4 text-center text-xs text-slate-400">No iiko products match “{{ iikoSearch() }}”.</li>
+                    }
+                  }
+                  @if (iikoResults().matches.length > iikoMaxResults) {
+                    <li class="px-3 py-2 text-center text-xs text-slate-400">
+                      Showing {{ iikoMaxResults }} of {{ iikoResults().matches.length }}. Type more to narrow it down.
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (itemForm().variants.length === 0 && selectedIikoProduct()?.sizes?.length) {
               <select
-                aria-label="iiko product mapping"
-                [ngModel]="itemForm().iikoProductId"
-                (ngModelChange)="onIikoProductChange($event)"
-                class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+                aria-label="iiko product size mapping"
+                [ngModel]="itemForm().iikoProductSizeId"
+                (ngModelChange)="patchItemForm('iikoProductSizeId', $event)"
+                class="mt-2 w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
               >
-                <option value="">Not mapped</option>
-                @for (p of iikoNomenclature(); track p.productId) {
-                  <option [value]="p.productId">{{ p.name }}</option>
+                <option value="">Select iiko size</option>
+                @for (s of selectedIikoProduct()?.sizes ?? []; track s.productSizeId) {
+                  <option [value]="s.productSizeId">{{ s.name || s.productSizeId }}</option>
                 }
               </select>
-              @if (itemForm().variants.length === 0) {
-                <select
-                  aria-label="iiko product size mapping"
-                  [ngModel]="itemForm().iikoProductSizeId"
-                  (ngModelChange)="patchItemForm('iikoProductSizeId', $event)"
-                  [disabled]="!selectedIikoProduct()?.sizes?.length"
-                  class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none disabled:bg-slate-50 disabled:text-slate-400"
-                >
-                  <option value="">{{ selectedIikoProduct()?.sizes?.length ? 'Select size' : 'No sizes' }}</option>
-                  @for (s of selectedIikoProduct()?.sizes ?? []; track s.productSizeId) {
-                    <option [value]="s.productSizeId">{{ s.name || s.productSizeId }}</option>
-                  }
-                </select>
-              }
-            </div>
+            }
           </div>
         }
         <!-- Size Variants -->

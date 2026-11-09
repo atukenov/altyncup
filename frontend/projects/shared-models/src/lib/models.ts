@@ -173,6 +173,10 @@ export interface IikoNomenclatureProduct {
   name: string;
   price: number;
   sizes: IikoNomenclatureSize[];
+  /** iiko SKU (article). */
+  code?: string | null;
+  /** iiko menu group or category name. */
+  groupName?: string | null;
 }
 
 export interface IikoPaymentType {

@@ -9,6 +9,19 @@ import { AdminLangService } from '../../core/lang.service';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 
+/** Lower-cases, folds ё→е and collapses punctuation so "Капучино 0,3" matches "капучино 0.3". */
+function normalizeForSearch(text: string): string {
+  return (text ?? '')
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+}
+
+function iikoSearchText(p: IikoNomenclatureProduct): string {
+  return normalizeForSearch(`${p.name} ${p.code ?? ''} ${p.groupName ?? ''}`);
+}
+
 interface VariantRow {
   label: string;
   labelRu: string;
@@ -93,11 +106,51 @@ export class MenuManagementComponent implements OnInit {
     iikoProductId: '', iikoProductSizeId: '',
   });
 
-  // iiko product catalog for the mapping dropdowns (Phase 3 order-push feature).
+  // iiko product catalog for the mapping picker (Phase 3 order-push feature).
   iikoNomenclature = signal<IikoNomenclatureProduct[]>([]);
+  iikoLoadState = signal<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  iikoLoadError = signal('');
+  iikoSearch = signal('');
+  iikoPickerOpen = signal(false);
+  readonly iikoMaxResults = 50;
 
   selectedIikoProduct = computed(() =>
     this.iikoNomenclature().find((p) => p.productId === this.itemForm().iikoProductId));
+
+  /**
+   * Search results for the iiko picker. Every word typed must appear in the product's
+   * name, SKU or group. With an empty search, products whose names share words with the
+   * item being edited (in any of its three languages) come first, so the likely match
+   * is usually at the top without typing anything.
+   */
+  iikoResults = computed(() => {
+    const all = this.iikoNomenclature();
+    const terms = normalizeForSearch(this.iikoSearch()).split(' ').filter(Boolean);
+    if (terms.length > 0) {
+      const matches = all.filter((p) => {
+        const hay = iikoSearchText(p);
+        return terms.every((t) => hay.includes(t));
+      });
+      return { suggested: [] as IikoNomenclatureProduct[], matches };
+    }
+
+    const f = this.itemForm();
+    const words = new Set(
+      normalizeForSearch(`${f.name} ${f.nameRu} ${f.nameKk}`).split(' ').filter((w) => w.length >= 3));
+    const scored = words.size === 0 ? [] : all
+      .map((p) => {
+        const name = normalizeForSearch(p.name);
+        let score = 0;
+        for (const w of words) if (name.includes(w)) score++;
+        return { p, score };
+      })
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map((x) => x.p);
+    const suggestedIds = new Set(scored.map((p) => p.productId));
+    return { suggested: scored, matches: all.filter((p) => !suggestedIds.has(p.productId)) };
+  });
 
   toppingForm = signal<ToppingForm>({
     name: '', nameRu: '', nameKk: '',
@@ -141,12 +194,41 @@ export class MenuManagementComponent implements OnInit {
     });
     this.api.adminGetToppings().subscribe((toppings) => this.toppings.set(toppings));
     this.api.getAdminLocations().subscribe((locs) => this.locations.set(locs));
-    if (this.canEditIiko) {
-      this.api.getIikoNomenclature().subscribe({
-        next: (products) => this.iikoNomenclature.set(products),
-        error: () => this.iikoNomenclature.set([]), // iiko disabled/unreachable — mapping picker just stays empty
-      });
-    }
+    if (this.canEditIiko) this.loadIikoNomenclature();
+  }
+
+  loadIikoNomenclature(): void {
+    this.iikoLoadState.set('loading');
+    this.iikoLoadError.set('');
+    this.api.getIikoNomenclature().subscribe({
+      next: (products) => {
+        this.iikoNomenclature.set(products);
+        this.iikoLoadState.set('ready');
+      },
+      // Show why the catalog is missing (integration off, bad credentials, iiko down)
+      // instead of an empty picker that looks like iiko has no products.
+      error: (err) => {
+        this.iikoNomenclature.set([]);
+        const body = err?.error;
+        const reason = [body?.title, body?.detail].filter(Boolean).join(' ')
+          || (err?.status ? `Server answered ${err.status}.` : 'Could not reach the server.');
+        this.iikoLoadError.set(reason);
+        this.iikoLoadState.set('error');
+      },
+    });
+  }
+
+  openIikoPicker(): void {
+    this.iikoSearch.set('');
+    this.iikoPickerOpen.set(true);
+    // Focus the search box once it has rendered, so the admin can type straight away.
+    setTimeout(() => document.getElementById('iiko-product-search')?.focus());
+  }
+
+  pickIikoProduct(productId: string): void {
+    this.onIikoProductChange(productId);
+    this.iikoPickerOpen.set(false);
+    this.iikoSearch.set('');
   }
 
   localizedCatName(cat: MenuCategory): string {
@@ -257,6 +339,8 @@ export class MenuManagementComponent implements OnInit {
       iikoProductId: item?.iikoProductId ?? '',
       iikoProductSizeId: item?.iikoProductSizeId ?? '',
     });
+    this.iikoPickerOpen.set(false);
+    this.iikoSearch.set('');
     this.showItemDialog.set(true);
   }
 

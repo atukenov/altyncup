@@ -30,16 +30,64 @@ public class AdminIikoController : ApiControllerBase
     }
 
     [HttpGet("nomenclature")]
-    public async Task<IActionResult> GetNomenclature(CancellationToken ct)
-        => Ok(await _iiko.GetNomenclatureAsync(ct));
+    public Task<IActionResult> GetNomenclature(CancellationToken ct)
+        => LookupAsync(() => _iiko.GetNomenclatureAsync(ct));
 
     [HttpGet("payment-types")]
-    public async Task<IActionResult> GetPaymentTypes(CancellationToken ct)
-        => Ok(await _iiko.GetPaymentTypesAsync(ct));
+    public Task<IActionResult> GetPaymentTypes(CancellationToken ct)
+        => LookupAsync(() => _iiko.GetPaymentTypesAsync(ct));
 
     [HttpGet("terminal-groups")]
-    public async Task<IActionResult> GetTerminalGroups(CancellationToken ct)
-        => Ok(await _iiko.GetTerminalGroupsAsync(ct));
+    public Task<IActionResult> GetTerminalGroups(CancellationToken ct)
+        => LookupAsync(() => _iiko.GetTerminalGroupsAsync(ct));
+
+    /// <summary>
+    /// Runs a reference lookup and turns the two common failures into a readable
+    /// message for the admin picker, instead of a bare 500 the UI can only show as
+    /// an empty list: the integration being switched off, and iiko rejecting the call
+    /// (bad credentials, missing API scope, wrong organization id, iiko down).
+    /// </summary>
+    private async Task<IActionResult> LookupAsync<T>(Func<Task<T>> lookup)
+    {
+        if (!_options.Enabled)
+            return Conflict(new ProblemDetails
+            {
+                Status = 409,
+                Title = "iiko integration is turned off. Set Iiko:Enabled=true and the iiko credentials on the server.",
+            });
+
+        try
+        {
+            return Ok(await lookup());
+        }
+        catch (IikoApiException ex)
+        {
+            return StatusCode(502, new ProblemDetails
+            {
+                Status = 502,
+                Title = "iiko rejected the request.",
+                Detail = ex.Message,
+            });
+        }
+        catch (TaskCanceledException ex) when (!HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            return StatusCode(504, new ProblemDetails
+            {
+                Status = 504,
+                Title = "iiko did not answer in time.",
+                Detail = ex.Message,
+            });
+        }
+        catch (HttpRequestException ex)
+        {
+            return StatusCode(502, new ProblemDetails
+            {
+                Status = 502,
+                Title = "Could not reach iiko.",
+                Detail = ex.Message,
+            });
+        }
+    }
 
     /// <summary>
     /// Registers this backend's public URL with iiko as the delivery-order webhook
