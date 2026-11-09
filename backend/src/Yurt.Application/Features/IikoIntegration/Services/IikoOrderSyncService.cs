@@ -8,7 +8,7 @@ using Yurt.Domain.Enums;
 namespace Yurt.Application.Features.IikoIntegration.Services;
 
 /// <summary>
-/// Pushes accepted orders into iiko as real delivery orders — a pure side-channel for
+/// Pushes orders into iiko when preparation starts as real delivery orders — a pure side-channel for
 /// iiko-side sales/inventory reporting and kitchen routing. Runs alongside (never
 /// replaces) <see cref="Yurt.Application.Features.Loyalty.Services.LoyaltyService"/>'s
 /// wallet hold/chargeoff flow, which stays the sole source of bonus math; the pushed
@@ -39,73 +39,23 @@ public class IikoOrderSyncService
     }
 
     /// <summary>
-    /// Push a just-accepted order to iiko. Fail-open and idempotent — never throws, since
-    /// this must not block order acceptance. Orders with an unmapped item or a location
-    /// with no configured terminal group are skipped (need an admin action, not a retry).
+    /// Push an order to iiko once staff start preparing it, so it shows up on the cafe's
+    /// iiko cashier screen. Fail-open and idempotent — never throws, since this must not
+    /// block the status change. Orders with an unmapped item or a location with no
+    /// configured terminal group are skipped (need an admin action, not a retry).
+    /// Returns the skip reason, or null when the order was pushed or queued for retry.
     /// </summary>
-    public async Task PushOrderAsync(Order order, CancellationToken ct = default)
+    public async Task<string?> PushOrderAsync(Order order, CancellationToken ct = default)
     {
-        if (!_options.Enabled || !_options.PushOrdersEnabled) return;
-        if (order.IikoOrderSyncStatus != IikoOrderSyncStatus.NotPushed) return; // already handled
+        if (!_options.Enabled || !_options.PushOrdersEnabled) return null;
+        if (order.IikoOrderSyncStatus != IikoOrderSyncStatus.NotPushed) return null; // already handled
 
-        var terminalGroupId = order.Location?.IikoTerminalGroupId;
-        if (terminalGroupId == null)
+        var (request, reason) = await BuildCreateRequestAsync(order, ct);
+        if (request == null)
         {
-            await SkipUnmappedAsync(order,
-                $"location {order.LocationId} has no iiko terminal group configured", ct);
-            return;
+            await SkipUnmappedAsync(order, reason!, ct);
+            return reason;
         }
-
-        var menuItemIds = order.Items.Select(i => i.MenuItemId).Distinct().ToList();
-        var menuItems = await _db.MenuItems
-            .Include(m => m.Variants)
-            .Where(m => menuItemIds.Contains(m.Id))
-            .ToDictionaryAsync(m => m.Id, ct);
-
-        var items = new List<IikoOrderItemRequest>();
-        foreach (var orderItem in order.Items)
-        {
-            if (!menuItems.TryGetValue(orderItem.MenuItemId, out var menuItem) || menuItem.IikoProductId == null)
-            {
-                await SkipUnmappedAsync(order,
-                    $"menu item \"{orderItem.MenuItemName}\" ({orderItem.MenuItemId}) has no iiko product mapping", ct);
-                return;
-            }
-
-            Guid? productSizeId = menuItem.IikoProductSizeId;
-            if (orderItem.VariantId != null)
-            {
-                var variant = menuItem.Variants.FirstOrDefault(v => v.Id == orderItem.VariantId);
-                if (variant?.IikoProductSizeId == null)
-                {
-                    await SkipUnmappedAsync(order,
-                        $"variant \"{orderItem.VariantLabel}\" of \"{orderItem.MenuItemName}\" has no iiko size mapping", ct);
-                    return;
-                }
-                productSizeId = variant.IikoProductSizeId;
-            }
-
-            // Toppings/modifiers are pushed as text, not real iiko modifiers (no
-            // modifier-schema mapping exists) — still useful on a printed kitchen ticket.
-            var commentParts = new List<string>();
-            if (orderItem.Toppings.Count > 0)
-                commentParts.Add(string.Join(", ", orderItem.Toppings.Select(t => t.ToppingName)));
-            if (!string.IsNullOrWhiteSpace(orderItem.Notes))
-                commentParts.Add(orderItem.Notes);
-
-            items.Add(new IikoOrderItemRequest(
-                menuItem.IikoProductId.Value, productSizeId, orderItem.Quantity, orderItem.UnitPrice,
-                commentParts.Count > 0 ? string.Join(" — ", commentParts) : null));
-        }
-
-        var customer = order.CustomerUser;
-        var request = new IikoCreateOrderRequest(
-            terminalGroupId.Value,
-            customer?.MobileNumber ?? "",
-            $"{customer?.FirstName} {customer?.LastName}".Trim(),
-            items,
-            order.Total,
-            $"Altyncup order #{order.Id}");
 
         try
         {
@@ -122,6 +72,75 @@ public class IikoOrderSyncService
             order.IikoOrderSyncPendingAction = IikoOrderSyncPendingAction.Push;
             await _db.SaveChangesAsync(ct);
         }
+        return null;
+    }
+
+    /// <summary>
+    /// Admin "try again" for an order that was skipped as unmapped (or never pushed, e.g.
+    /// started before order-push was switched on): re-checks the mapping and pushes.
+    /// Returns the skip reason when it still can't be pushed, or null on success/queued.
+    /// </summary>
+    public async Task<string?> RetryPushAsync(Order order, CancellationToken ct = default)
+    {
+        if (!_options.Enabled || !_options.PushOrdersEnabled)
+            return "iiko order push is turned off (Iiko:Enabled / Iiko:PushOrdersEnabled).";
+        if (order.IikoOrderSyncStatus is not (IikoOrderSyncStatus.NotPushed or IikoOrderSyncStatus.SkippedUnmapped))
+            return null;
+
+        order.IikoOrderSyncStatus = IikoOrderSyncStatus.NotPushed;
+        return await PushOrderAsync(order, ct);
+    }
+
+    private async Task<(IikoCreateOrderRequest? Request, string? Reason)> BuildCreateRequestAsync(
+        Order order, CancellationToken ct)
+    {
+        var terminalGroupId = order.Location?.IikoTerminalGroupId;
+        if (terminalGroupId == null)
+            return (null, $"location \"{order.Location?.Name}\" has no iiko terminal group set (Locations → edit → iiko terminal group)");
+
+        var menuItemIds = order.Items.Select(i => i.MenuItemId).Distinct().ToList();
+        var menuItems = await _db.MenuItems
+            .Include(m => m.Variants)
+            .Where(m => menuItemIds.Contains(m.Id))
+            .ToDictionaryAsync(m => m.Id, ct);
+
+        var items = new List<IikoOrderItemRequest>();
+        foreach (var orderItem in order.Items)
+        {
+            if (!menuItems.TryGetValue(orderItem.MenuItemId, out var menuItem) || menuItem.IikoProductId == null)
+                return (null, $"menu item \"{orderItem.MenuItemName}\" has no iiko product mapping");
+
+            // A variant's own iiko size wins; otherwise fall back to the item's size (often
+            // none, for iiko products without a size scale). Requiring a per-variant size
+            // made every sized drink "unmapped" when the iiko product had no sizes at all.
+            var variant = orderItem.VariantId != null
+                ? menuItem.Variants.FirstOrDefault(v => v.Id == orderItem.VariantId)
+                : null;
+            var productSizeId = variant?.IikoProductSizeId ?? menuItem.IikoProductSizeId;
+
+            // Toppings/modifiers are pushed as text, not real iiko modifiers (no
+            // modifier-schema mapping exists) — still useful on a printed kitchen ticket.
+            var commentParts = new List<string>();
+            if (orderItem.VariantId != null && variant?.IikoProductSizeId == null && !string.IsNullOrWhiteSpace(orderItem.VariantLabel))
+                commentParts.Add(orderItem.VariantLabel!);
+            if (orderItem.Toppings.Count > 0)
+                commentParts.Add(string.Join(", ", orderItem.Toppings.Select(t => t.ToppingName)));
+            if (!string.IsNullOrWhiteSpace(orderItem.Notes))
+                commentParts.Add(orderItem.Notes);
+
+            items.Add(new IikoOrderItemRequest(
+                menuItem.IikoProductId.Value, productSizeId, orderItem.Quantity, orderItem.UnitPrice,
+                commentParts.Count > 0 ? string.Join(" — ", commentParts) : null));
+        }
+
+        var customer = order.CustomerUser;
+        return (new IikoCreateOrderRequest(
+            terminalGroupId.Value,
+            customer?.MobileNumber ?? "",
+            $"{customer?.FirstName} {customer?.LastName}".Trim(),
+            items,
+            order.Total,
+            $"Altyncup order #{order.Id}"), null);
     }
 
     /// <summary>Close a previously pushed order in iiko when it completes. Fail-open; never throws.</summary>

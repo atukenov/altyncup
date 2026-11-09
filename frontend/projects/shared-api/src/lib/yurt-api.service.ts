@@ -647,4 +647,9 @@ export class YurtApiService {
   getIikoTerminalGroups(): Observable<IikoTerminalGroup[]> {
     return this.http.get<IikoTerminalGroup[]>(`${this.api}/admin/iiko/terminal-groups`);
   }
+
+  /** Super admin: send an order that was skipped (e.g. unmapped items) to iiko again. */
+  retryIikoPush(orderId: string): Observable<Order> {
+    return this.http.post<Order>(`${this.api}/admin/orders/${orderId}/iiko/push`, {});
+  }
 }

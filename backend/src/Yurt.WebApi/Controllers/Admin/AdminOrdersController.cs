@@ -50,6 +50,12 @@ public class AdminOrdersController : ApiControllerBase
         return ToResult(await _orderService.AcceptOrderAsync(id, dto, ct));
     }
 
+    /// <summary>Push an order to iiko again after fixing its mapping (super admin only).</summary>
+    [HttpPost("{id:guid}/iiko/push")]
+    [Authorize(Policy = "SuperAdminOnly")]
+    public async Task<IActionResult> RetryIikoPush(Guid id, CancellationToken ct)
+        => ToResult(await _orderService.RetryIikoPushAsync(id, ct));
+
     /// <summary>Decline an order with reason.</summary>
     [HttpPost("{id:guid}/decline")]
     public async Task<IActionResult> Decline(

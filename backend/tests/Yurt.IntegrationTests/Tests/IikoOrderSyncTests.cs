@@ -22,10 +22,10 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
 {
     private record PlacedOrder(Guid Id, string CustomerToken);
 
-    // ── Push on accept ───────────────────────────────────────────────────────
+    // ── Push when preparation starts ───────────────────────────────────────────────────────
 
     [Fact]
-    public async Task MappedItem_OnAccept_PushesOrderToIikoAndRecordsId()
+    public async Task MappedItem_OnStartPreparing_PushesOrderToIikoAndRecordsId()
     {
         var fake = new FakeIikoApiClient();
         var terminalGroupId = Guid.NewGuid();
@@ -56,7 +56,7 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
     }
 
     [Fact]
-    public async Task PushOrdersDisabled_OnAccept_NeverCallsIiko()
+    public async Task PushOrdersDisabled_OnStartPreparing_NeverCallsIiko()
     {
         var fake = new FakeIikoApiClient();
         var options = EnabledOptions();
@@ -78,7 +78,7 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UnmappedMenuItem_OnAccept_SkipsPushAndLogsAudit()
+    public async Task UnmappedMenuItem_OnStartPreparing_SkipsPushAndLogsAudit()
     {
         var fake = new FakeIikoApiClient();
         using var enabledFactory = factory.WithWebHostBuilder(builder =>
@@ -107,7 +107,7 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
     }
 
     [Fact]
-    public async Task LocationWithNoTerminalGroup_OnAccept_SkipsPush()
+    public async Task LocationWithNoTerminalGroup_OnStartPreparing_SkipsPush()
     {
         var fake = new FakeIikoApiClient();
         using var enabledFactory = factory.WithWebHostBuilder(builder =>
@@ -129,6 +129,106 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var order = await db.Orders.FirstAsync(o => o.Id == placed.Id);
         Assert.Equal(IikoOrderSyncStatus.SkippedUnmapped, order.IikoOrderSyncStatus);
+    }
+
+    [Fact]
+    public async Task AcceptOnly_DoesNotPushUntilPreparationStarts()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
+        var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, Guid.NewGuid());
+
+        var client = enabledFactory.CreateClient();
+        var placed = await PlaceAndAcceptOrderAsync(
+            enabledFactory, client, "+77002000809", locationId, menuItemId, startPreparing: false);
+        Assert.Empty(fake.PushCalls);
+
+        var adminToken = await ApiHelpers.CreateAdminTokenAsync(enabledFactory.Services, client);
+        ApiHelpers.Authorize(client, adminToken);
+        (await client.PostAsJsonAsync($"/api/v1/admin/orders/{placed.Id}/status", new { status = "Preparing" }))
+            .EnsureSuccessStatusCode();
+
+        Assert.Single(fake.PushCalls);
+    }
+
+    [Fact]
+    public async Task VariantWithoutIikoSize_PushesProductWithoutSize_AndNamesSizeInComment()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var iikoProductId = Guid.NewGuid();
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
+        var (menuItemId, variantId) = await CreateTestMenuItemWithVariantAsync(
+            enabledFactory.Services, iikoProductId, variantLabel: "350ml");
+
+        var client = enabledFactory.CreateClient();
+        var placed = await PlaceAndAcceptOrderAsync(
+            enabledFactory, client, "+77002000810", locationId, menuItemId, variantId: variantId);
+
+        var item = Assert.Single(Assert.Single(fake.PushCalls).Items);
+        Assert.Equal(iikoProductId, item.ProductId);
+        Assert.Null(item.ProductSizeId);
+        Assert.Contains("350ml", item.Comment);
+
+        await using var scope = enabledFactory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        Assert.Equal(IikoOrderSyncStatus.Pushed, (await db.Orders.FirstAsync(o => o.Id == placed.Id)).IikoOrderSyncStatus);
+    }
+
+    [Fact]
+    public async Task RetryIikoPush_AfterMappingFixed_PushesSkippedOrder()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
+        var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, iikoProductId: null);
+
+        var client = enabledFactory.CreateClient();
+        var placed = await PlaceAndAcceptOrderAsync(enabledFactory, client, "+77002000811", locationId, menuItemId);
+        Assert.Empty(fake.PushCalls);
+
+        var superToken = await ApiHelpers.CreateAdminTokenAsync(
+            enabledFactory.Services, client, username: "iikoretrysuper", password: "Super@1234", role: AdminRole.SuperAdmin);
+        ApiHelpers.Authorize(client, superToken);
+
+        // Still unmapped: 422 with the reason.
+        var stillUnmapped = await client.PostAsync($"/api/v1/admin/orders/{placed.Id}/iiko/push", null);
+        Assert.Equal(System.Net.HttpStatusCode.UnprocessableEntity, stillUnmapped.StatusCode);
+        Assert.Contains("no iiko product mapping", await stillUnmapped.Content.ReadAsStringAsync());
+
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var item = await db.MenuItems.FirstAsync(m => m.Id == menuItemId);
+            item.IikoProductId = Guid.NewGuid();
+            await db.SaveChangesAsync();
+        }
+
+        (await client.PostAsync($"/api/v1/admin/orders/{placed.Id}/iiko/push", null)).EnsureSuccessStatusCode();
+        Assert.Single(fake.PushCalls);
+
+        await using var verifyScope = enabledFactory.Services.CreateAsyncScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        Assert.Equal(IikoOrderSyncStatus.Pushed, (await verifyDb.Orders.FirstAsync(o => o.Id == placed.Id)).IikoOrderSyncStatus);
     }
 
     // ── Retry ────────────────────────────────────────────────────────────────
@@ -194,7 +294,7 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
 
         var adminToken = await ApiHelpers.CreateAdminTokenAsync(enabledFactory.Services, client);
         ApiHelpers.Authorize(client, adminToken);
-        foreach (var status in new[] { "Preparing", "Ready", "Completed" })
+        foreach (var status in new[] { "Ready", "Completed" })
             (await client.PostAsJsonAsync($"/api/v1/admin/orders/{placed.Id}/status", new { status }))
                 .EnsureSuccessStatusCode();
 
@@ -209,7 +309,7 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
     [Fact]
     public async Task CompletedOrder_NeverPushed_DoesNotCallClose()
     {
-        // Unmapped item — never pushed at accept time — must not attempt a close either.
+        // Unmapped item — never pushed when preparation started — must not attempt a close either.
         var fake = new FakeIikoApiClient();
         using var enabledFactory = factory.WithWebHostBuilder(builder =>
             builder.ConfigureServices(services =>
@@ -226,7 +326,7 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
 
         var adminToken = await ApiHelpers.CreateAdminTokenAsync(enabledFactory.Services, client);
         ApiHelpers.Authorize(client, adminToken);
-        foreach (var status in new[] { "Preparing", "Ready", "Completed" })
+        foreach (var status in new[] { "Ready", "Completed" })
             (await client.PostAsJsonAsync($"/api/v1/admin/orders/{placed.Id}/status", new { status }))
                 .EnsureSuccessStatusCode();
 
@@ -337,6 +437,10 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
     // Dedicated MenuItem per test — never reuse/mutate the shared seeded "Cappuccino"
     // item, for the same reason as CreateTestLocationAsync above.
     private static async Task<Guid> CreateTestMenuItemAsync(IServiceProvider services, Guid? iikoProductId)
+        => (await CreateTestMenuItemWithVariantAsync(services, iikoProductId, variantLabel: null)).MenuItemId;
+
+    private static async Task<(Guid MenuItemId, Guid? VariantId)> CreateTestMenuItemWithVariantAsync(
+        IServiceProvider services, Guid? iikoProductId, string? variantLabel)
     {
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
@@ -352,12 +456,20 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
         };
         db.MenuItems.Add(item);
         await db.SaveChangesAsync();
-        return item.Id;
+        if (variantLabel == null) return (item.Id, null);
+
+        var variant = new MenuItemVariant
+        {
+            MenuItemId = item.Id, Label = variantLabel, Price = 600, SortOrder = 0, IsDefault = true,
+        };
+        db.MenuItemVariants.Add(variant);
+        await db.SaveChangesAsync();
+        return (item.Id, variant.Id);
     }
 
     private static async Task<PlacedOrder> PlaceAndAcceptOrderAsync(
         WebApplicationFactory<Program> appFactory, HttpClient client, string phone,
-        Guid locationId, Guid menuItemId)
+        Guid locationId, Guid menuItemId, bool startPreparing = true, Guid? variantId = null)
     {
         var (customerToken, _) = await ApiHelpers.CreateCustomerAsync(client, phone);
         ApiHelpers.Authorize(client, customerToken);
@@ -366,7 +478,7 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
         {
             locationId,
             paymentMethod = "Cash",
-            items         = new[] { new { menuItemId, quantity = 1 } }
+            items         = new[] { new { menuItemId, quantity = 1, variantId } }
         });
         resp.EnsureSuccessStatusCode();
         var order = await resp.Content.ReadFromJsonAsync<ApiHelpers.OrderResult>(ApiHelpers.JsonOpts);
@@ -379,6 +491,9 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
             .EnsureSuccessStatusCode();
         (await client.PostAsJsonAsync($"/api/v1/admin/orders/{order.Id}/accept", new { etaMinutes = 10 }))
             .EnsureSuccessStatusCode();
+        if (startPreparing)
+            (await client.PostAsJsonAsync($"/api/v1/admin/orders/{order.Id}/status", new { status = "Preparing" }))
+                .EnsureSuccessStatusCode();
 
         ApiHelpers.ClearAuth(client);
         return new PlacedOrder(order.Id, customerToken);
