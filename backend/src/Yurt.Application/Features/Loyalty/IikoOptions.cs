@@ -46,6 +46,16 @@ public class IikoOptions
     /// </summary>
     public Guid PaymentTypeId { get; set; }
 
+    /// <summary>
+    /// iiko external menu (built in iikoWeb → Menu → External menus) that the admin
+    /// mapping picker lists products from. Optional: when empty, every external menu on
+    /// the account is loaded and merged.
+    /// </summary>
+    public string ExternalMenuId { get; set; } = string.Empty;
+
+    /// <summary>Optional price category for the external menu; empty uses the menu's default prices.</summary>
+    public Guid PriceCategoryId { get; set; }
+
     /// <summary>Shared secret registered with iiko's webhooks/update_settings; checked on incoming webhook calls.</summary>
     public string WebhookAuthToken { get; set; } = string.Empty;
 

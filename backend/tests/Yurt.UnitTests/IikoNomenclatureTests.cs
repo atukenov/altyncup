@@ -1,80 +1,119 @@
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
+using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.Loyalty;
 using Yurt.Infrastructure.Iiko;
 
 namespace Yurt.UnitTests;
 
 /// <summary>
-/// Regression coverage for the empty iiko mapping picker: the live iiko API sends
-/// product types capitalised ("Dish", "Good", "Modifier") while its docs show them in
-/// lower case. Filtering on the lower-case spelling dropped every product.
+/// iiko discontinued api/1/nomenclature (410 METHOD_DISCONTINUED), so the admin mapping
+/// picker reads the catalog from external menus: api/2/menu lists them and
+/// api/menu/v3/by_id returns each menu's groups and items.
 /// </summary>
 public class IikoNomenclatureTests
 {
-    private sealed class StubHandler(string nomenclatureJson) : HttpMessageHandler
+    private sealed class StubHandler(string menuListJson, Dictionary<string, string> menusById) : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        public List<string> Paths { get; } = [];
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             var path = request.RequestUri!.AbsolutePath;
-            var body = path.EndsWith("access_token")
-                ? """{"correlationId":"c1","token":"fake-token"}"""
-                : path.EndsWith("api/1/nomenclature") ? nomenclatureJson : null;
-            return Task.FromResult(body == null
+            Paths.Add(path);
+            string? body = null;
+            if (path.EndsWith("access_token")) body = """{"correlationId":"c1","token":"fake-token"}""";
+            else if (path.EndsWith("api/2/menu")) body = menuListJson;
+            else if (path.EndsWith("api/menu/v3/by_id"))
+            {
+                var req = await request.Content!.ReadAsStringAsync(ct);
+                body = menusById.FirstOrDefault(kv => req.Contains($"\"externalMenuId\":\"{kv.Key}\"")).Value;
+            }
+            return body == null
                 ? new HttpResponseMessage(HttpStatusCode.NotFound)
-                : new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(body, Encoding.UTF8, "application/json")
-                });
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
         }
     }
 
-    private const string Payload = """
+    private const string CoffeeMenu = """
     {
-      "correlationId": "c1",
-      "revision": 1,
-      "groups": [ { "id": "aaaaaaaa-0000-0000-0000-000000000001", "name": "Coffee" } ],
-      "productCategories": [ { "id": "bbbbbbbb-0000-0000-0000-000000000001", "name": "Bakery" } ],
-      "sizes": [ { "id": "cccccccc-0000-0000-0000-000000000001", "name": "L" } ],
-      "products": [
-        { "id": "11111111-0000-0000-0000-000000000001", "name": "Latte", "code": "00042", "type": "Dish",
-          "isDeleted": false, "parentGroup": "aaaaaaaa-0000-0000-0000-000000000001",
-          "sizePrices": [ { "sizeId": "cccccccc-0000-0000-0000-000000000001", "price": { "currentPrice": 1500 } } ] },
-        { "id": "11111111-0000-0000-0000-000000000002", "name": "Croissant", "code": "", "type": "Good",
-          "isDeleted": false, "productCategoryId": "bbbbbbbb-0000-0000-0000-000000000001",
-          "sizePrices": [ { "sizeId": null, "price": null } ] },
-        { "id": "11111111-0000-0000-0000-000000000003", "name": "Extra shot", "type": "Modifier", "isDeleted": false },
-        { "id": "11111111-0000-0000-0000-000000000004", "name": "Old latte", "type": "Dish", "isDeleted": true }
+      "id": "101", "name": "App",
+      "products": [ { "id": "11111111-0000-0000-0000-000000000001", "sku": "00042", "type": "DISH" } ],
+      "itemsGroups": [
+        { "id": "g1", "name": "Coffee", "items": [
+          { "productId": "11111111-0000-0000-0000-000000000001", "name": "Latte",
+            "sizePrices": [
+              { "sizeId": "cccccccc-0000-0000-0000-000000000001", "sizeName": "S", "price": 1200 },
+              { "sizeId": "cccccccc-0000-0000-0000-000000000002", "sizeName": "L", "price": 1500, "isDefault": true } ] },
+          { "name": "Breakfast combo", "itemType": "COMBO", "comboId": "x" }
+        ] }
       ]
     }
     """;
 
-    [Fact]
-    public async Task GetNomenclatureAsync_KeepsCapitalisedDishesAndGoods_DropsModifiersAndDeleted()
+    private const string BakeryMenu = """
     {
-        var options = new IikoOptions
+      "id": "102", "name": "Bakery",
+      "itemsGroups": [
+        { "id": "g2", "name": "Bakery", "items": [
+          { "productId": "11111111-0000-0000-0000-000000000002", "name": "Croissant",
+            "sizePrices": [ { "sizeId": null, "price": 900 } ] },
+          { "productId": "11111111-0000-0000-0000-000000000001", "name": "Latte (duplicate)" }
+        ] }
+      ]
+    }
+    """;
+
+    private static IikoApiClient Client(StubHandler handler, string externalMenuId = "") =>
+        new(new HttpClient(handler), new IikoOptions
         {
             Enabled = true, BaseUrl = "https://iiko.test", ApiKey = "k", AppId = "a", ClientSecret = "s",
-            OrganizationId = Guid.NewGuid(),
-        };
-        var client = new IikoApiClient(
-            new HttpClient(new StubHandler(Payload)), options, new IikoTokenStore(), NullLogger<IikoApiClient>.Instance);
+            OrganizationId = Guid.NewGuid(), ExternalMenuId = externalMenuId,
+        }, new IikoTokenStore(), NullLogger<IikoApiClient>.Instance);
 
-        var products = await client.GetNomenclatureAsync();
+    [Fact]
+    public async Task GetNomenclatureAsync_MergesAllExternalMenus_SkipsCombosAndDuplicates()
+    {
+        var handler = new StubHandler(
+            """{"correlationId":"c","externalMenus":[{"id":"101","name":"App"},{"id":"102","name":"Bakery"}]}""",
+            new() { ["101"] = CoffeeMenu, ["102"] = BakeryMenu });
 
+        var products = await Client(handler).GetNomenclatureAsync();
+
+        Assert.DoesNotContain(handler.Paths, p => p.EndsWith("api/1/nomenclature"));
         Assert.Equal(["Croissant", "Latte"], products.Select(p => p.Name).ToArray());
 
         var latte = products.Single(p => p.Name == "Latte");
         Assert.Equal("00042", latte.Code);
         Assert.Equal("Coffee", latte.GroupName);
-        Assert.Equal(1500m, latte.Price);
-        Assert.Equal("L", Assert.Single(latte.Sizes).Name);
+        Assert.Equal(1500m, latte.Price); // the default size's price
+        Assert.Equal(["S", "L"], latte.Sizes.Select(s => s.Name).ToArray());
 
         var croissant = products.Single(p => p.Name == "Croissant");
         Assert.Null(croissant.Code);
-        Assert.Equal("Bakery", croissant.GroupName); // falls back to the RMS category
-        Assert.Equal(0m, croissant.Price);
+        Assert.Equal(900m, croissant.Price);
         Assert.Empty(croissant.Sizes);
+    }
+
+    [Fact]
+    public async Task GetNomenclatureAsync_UsesConfiguredMenuOnly()
+    {
+        var handler = new StubHandler("""{"externalMenus":[]}""", new() { ["101"] = CoffeeMenu, ["102"] = BakeryMenu });
+
+        var products = await Client(handler, externalMenuId: "102").GetNomenclatureAsync();
+
+        Assert.DoesNotContain(handler.Paths, p => p.EndsWith("api/2/menu"));
+        Assert.Equal(["Croissant", "Latte (duplicate)"], products.Select(p => p.Name).ToArray());
+    }
+
+    [Fact]
+    public async Task GetNomenclatureAsync_NoExternalMenus_ExplainsWhatToCreate()
+    {
+        var handler = new StubHandler("""{"externalMenus":[]}""", []);
+
+        var ex = await Assert.ThrowsAsync<IikoApiException>(() => Client(handler).GetNomenclatureAsync());
+
+        Assert.Contains("External menus", ex.Message);
     }
 }

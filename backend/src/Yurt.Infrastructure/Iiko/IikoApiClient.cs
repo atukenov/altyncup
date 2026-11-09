@@ -206,50 +206,71 @@ public class IikoApiClient : IIikoApiClient
 
     // ── Order push (reporting/kitchen-routing side-channel) ─────────────────────
 
-    private record NomenclatureRequest(Guid OrganizationId);
-    private record NomenclatureSizePriceDto(Guid? SizeId, NomenclaturePriceDto? Price);
-    private record NomenclaturePriceDto(decimal? CurrentPrice);
-    private record NomenclatureProductDto(
-        Guid Id, string? Name, string? Code, string? Type, bool IsDeleted,
-        Guid? ParentGroup, Guid? ProductCategoryId, List<NomenclatureSizePriceDto>? SizePrices);
-    private record NomenclatureSizeDto(Guid Id, string? Name);
-    private record NomenclatureNamedDto(Guid Id, string? Name);
-    private record NomenclatureResponse(
-        List<NomenclatureProductDto>? Products, List<NomenclatureSizeDto>? Sizes,
-        List<NomenclatureNamedDto>? Groups, List<NomenclatureNamedDto>? ProductCategories);
+    // iiko switched off api/1/nomenclature (410 METHOD_DISCONTINUED). The catalog now comes
+    // from the external menus built in iikoWeb: api/2/menu lists them, and
+    // api/menu/v3/by_id returns one menu's groups and items. Item productIds are the
+    // same nomenclature product ids that deliveries/create expects.
+    private record ExternalMenuListResponse(List<ExternalMenuDto>? ExternalMenus);
+    private record ExternalMenuDto(string Id, string? Name);
+    private record MenuV3Request(string ExternalMenuId, Guid OrganizationId, Guid? PriceCategoryId);
+    private record MenuV3SizePriceDto(string? SizeId, string? SizeName, bool? IsDefault, decimal? Price, bool? IsHidden, string? Sku);
+    private record MenuV3ItemDto(string? ProductId, string? Name, bool? IsHidden, string? ItemType, List<MenuV3SizePriceDto>? SizePrices);
+    private record MenuV3GroupDto(string? Name, bool? IsHidden, List<MenuV3ItemDto>? Items);
+    private record MenuV3ProductDto(string? Id, string? Sku);
+    private record MenuV3Response(List<MenuV3GroupDto>? ItemsGroups, List<MenuV3ProductDto>? Products);
 
     public async Task<List<IikoNomenclatureProduct>> GetNomenclatureAsync(CancellationToken ct = default)
     {
-        // Deprecated but still the endpoint deliveries/create's productId docs point to;
-        // startRevision omitted (null) always fetches the full current catalog.
-        var resp = await PostAsync<NomenclatureResponse>(
-            "api/1/nomenclature", new NomenclatureRequest(_options.OrganizationId), ct);
+        List<string> menuIds;
+        if (!string.IsNullOrWhiteSpace(_options.ExternalMenuId))
+        {
+            menuIds = [_options.ExternalMenuId.Trim()];
+        }
+        else
+        {
+            var list = await PostAsync<ExternalMenuListResponse>("api/2/menu", new { }, ct);
+            menuIds = (list.ExternalMenus ?? []).Select(m => m.Id).Where(id => !string.IsNullOrWhiteSpace(id)).ToList();
+            if (menuIds.Count == 0)
+                throw new IikoApiException(
+                    "iiko has no external menus for this account. Create one in iikoWeb (Menu → External menus), " +
+                    "add your drinks and food to it, and try again.");
+        }
 
-        var sizeNames = (resp.Sizes ?? []).GroupBy(s => s.Id).ToDictionary(g => g.Key, g => g.First().Name);
-        var groupNames = (resp.Groups ?? []).GroupBy(g => g.Id).ToDictionary(g => g.Key, g => g.First().Name);
-        var categoryNames = (resp.ProductCategories ?? []).GroupBy(c => c.Id).ToDictionary(g => g.Key, g => g.First().Name);
+        var priceCategoryId = _options.PriceCategoryId == Guid.Empty ? (Guid?)null : _options.PriceCategoryId;
+        var byId = new Dictionary<Guid, IikoNomenclatureProduct>();
+        foreach (var menuId in menuIds)
+        {
+            var menu = await PostAsync<MenuV3Response>(
+                "api/menu/v3/by_id", new MenuV3Request(menuId, _options.OrganizationId, priceCategoryId), ct);
 
-        return (resp.Products ?? [])
-            // iiko's docs say "dish | good | modifier" but the live API answers "Dish" /
-            // "Good" / "Modifier" — compare case-insensitively, and only drop modifiers
-            // (they can't be ordered on their own), so a capitalisation change never
-            // empties the whole catalog again.
-            .Where(p => !p.IsDeleted && !string.Equals(p.Type, "modifier", StringComparison.OrdinalIgnoreCase))
-            .Select(p =>
+            var skus = (menu.Products ?? [])
+                .Where(p => p.Id != null)
+                .GroupBy(p => p.Id!, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().Sku, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var group in menu.ItemsGroups ?? [])
+            foreach (var item in group.Items ?? [])
             {
-                var sizes = (p.SizePrices ?? [])
-                    .Where(sp => sp.SizeId.HasValue)
-                    .Select(sp => new IikoNomenclatureSize(
-                        sp.SizeId!.Value, sizeNames.GetValueOrDefault(sp.SizeId.Value)))
+                // Combos have no productId and can't be pushed as a single order line.
+                if (item.ItemType != null && !string.Equals(item.ItemType, "PRODUCT", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!Guid.TryParse(item.ProductId, out var productId) || byId.ContainsKey(productId)) continue;
+
+                var prices = item.SizePrices ?? [];
+                var sizes = prices
+                    .Where(sp => Guid.TryParse(sp.SizeId, out _))
+                    .Select(sp => new IikoNomenclatureSize(Guid.Parse(sp.SizeId!), sp.SizeName))
                     .ToList();
-                var price = p.SizePrices?.FirstOrDefault()?.Price?.CurrentPrice ?? 0m;
-                var groupName =
-                    (p.ParentGroup is Guid g ? groupNames.GetValueOrDefault(g) : null)
-                    ?? (p.ProductCategoryId is Guid c ? categoryNames.GetValueOrDefault(c) : null);
-                return new IikoNomenclatureProduct(
-                    p.Id, p.Name ?? "", price, sizes,
-                    string.IsNullOrWhiteSpace(p.Code) ? null : p.Code, groupName);
-            })
+                var price = (prices.FirstOrDefault(sp => sp.IsDefault == true) ?? prices.FirstOrDefault())?.Price ?? 0m;
+                var code = skus.GetValueOrDefault(item.ProductId!);
+
+                byId[productId] = new IikoNomenclatureProduct(
+                    productId, item.Name ?? "", price, sizes,
+                    string.IsNullOrWhiteSpace(code) ? null : code,
+                    string.IsNullOrWhiteSpace(group.Name) ? null : group.Name);
+            }
+        }
+
+        return byId.Values
             .OrderBy(p => p.GroupName ?? "\uffff", StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
