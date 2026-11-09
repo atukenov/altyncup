@@ -315,6 +315,76 @@ export enum IikoOrderSyncStatus {
   SkippedUnmapped = 'SkippedUnmapped',
 }
 
+// ── iiko overview (super admin) ──────────────────────────────────────────────
+
+export interface IikoOverview {
+  config: {
+    enabled: boolean;
+    pushOrdersEnabled: boolean;
+    baseUrl: string;
+    organizationConfigured: boolean;
+    credentialsConfigured: boolean;
+    paymentTypeConfigured: boolean;
+    programConfigured: boolean;
+    webhookTokenConfigured: boolean;
+    externalMenuConfigured: boolean;
+    earnPercent: number;
+  };
+  orders: { days: number; byStatus: Record<string, number>; pendingRetries: number };
+  locations: { id: string; name: string; isActive: boolean; terminalGroupId?: string | null }[];
+  menu: {
+    totalItems: number;
+    unmappedItemCount: number;
+    variantsTotal: number;
+    variantsOwnProduct: number;
+    unmappedItems: {
+      id: string;
+      name: string;
+      category: string;
+      isAvailable: boolean;
+      sizes: number;
+      unmappedSizes: number;
+    }[];
+  };
+  loyalty: { customersTotal: number; customersWithIiko: number };
+}
+
+export interface IikoOrderRow {
+  id: string;
+  createdAt: string;
+  status: string;
+  total: number;
+  paymentStatus: string;
+  locationId: string;
+  location: string;
+  hasTerminalGroup: boolean;
+  customerPhone: string;
+  itemCount: number;
+  syncStatus: string;
+  pendingAction: string;
+  iikoOrderId?: string | null;
+  lastEvent?: string | null;
+  lastEventDetails?: string | null;
+  lastEventAt?: string | null;
+}
+
+export interface IikoActivityEntry {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  details?: string | null;
+  performedByUsername: string;
+  createdAt: string;
+}
+
+export interface IikoPage<T> {
+  total: number;
+  page: number;
+  pageSize: number;
+  items: T[];
+}
+
 // ── Favorites ────────────────────────────────────────────────────────────────
 
 export interface Favorite extends MenuItem {}

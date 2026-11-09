@@ -30,6 +30,10 @@ import {
   IikoNomenclatureProduct,
   IikoPaymentType,
   IikoTerminalGroup,
+  IikoOverview,
+  IikoOrderRow,
+  IikoActivityEntry,
+  IikoPage,
   Location,
   LoyaltyBalance,
   LoyaltyHistory,
@@ -646,6 +650,24 @@ export class YurtApiService {
 
   getIikoTerminalGroups(): Observable<IikoTerminalGroup[]> {
     return this.http.get<IikoTerminalGroup[]>(`${this.api}/admin/iiko/terminal-groups`);
+  }
+
+  getIikoOverview(): Observable<IikoOverview> {
+    return this.http.get<IikoOverview>(`${this.api}/admin/iiko/overview`);
+  }
+
+  getIikoOrders(params: { syncStatus?: string; page?: number; pageSize?: number }): Observable<IikoPage<IikoOrderRow>> {
+    let p = new HttpParams();
+    if (params.syncStatus) p = p.set('syncStatus', params.syncStatus);
+    if (params.page) p = p.set('page', params.page);
+    if (params.pageSize) p = p.set('pageSize', params.pageSize);
+    return this.http.get<IikoPage<IikoOrderRow>>(`${this.api}/admin/iiko/orders`, { params: p });
+  }
+
+  getIikoActivity(page = 1, pageSize = 30): Observable<IikoPage<IikoActivityEntry>> {
+    return this.http.get<IikoPage<IikoActivityEntry>>(`${this.api}/admin/iiko/activity`, {
+      params: new HttpParams().set('page', page).set('pageSize', pageSize),
+    });
   }
 
   /** Super admin: send an order that was skipped (e.g. unmapped items) to iiko again. */

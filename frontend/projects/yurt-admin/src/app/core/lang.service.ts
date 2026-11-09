@@ -7,7 +7,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     // Navigation
     'nav.dashboard': 'Dashboard', 'nav.orders': 'Live Orders', 'nav.menu': 'Menu Management',
     'nav.locations': 'Locations', 'nav.analytics': 'Analytics', 'nav.promotions': 'Promotions',
-    'nav.customers': 'Customers', 'nav.workers': 'Workers', 'nav.auditLog': 'Audit Log',
+    'nav.customers': 'Customers', 'nav.workers': 'Workers', 'nav.auditLog': 'Audit Log', 'nav.iiko': 'iiko',
     'nav.signOut': 'Sign out', 'nav.console': 'Management Console',
     'auditLog.title': 'Audit Log', 'auditLog.timestamp': 'Timestamp', 'auditLog.admin': 'Admin',
     'auditLog.action': 'Action', 'auditLog.entity': 'Entity', 'auditLog.details': 'Details',
@@ -181,7 +181,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     // Navigation
     'nav.dashboard': 'Дашборд', 'nav.orders': 'Заказы (Live)', 'nav.menu': 'Управление меню',
     'nav.locations': 'Локации', 'nav.analytics': 'Аналитика', 'nav.promotions': 'Акции',
-    'nav.customers': 'Клиенты', 'nav.workers': 'Сотрудники', 'nav.auditLog': 'Журнал аудита',
+    'nav.customers': 'Клиенты', 'nav.workers': 'Сотрудники', 'nav.auditLog': 'Журнал аудита', 'nav.iiko': 'iiko',
     'nav.signOut': 'Выйти', 'nav.console': 'Консоль управления',
     'auditLog.title': 'Журнал аудита', 'auditLog.timestamp': 'Время', 'auditLog.admin': 'Администратор',
     'auditLog.action': 'Действие', 'auditLog.entity': 'Объект', 'auditLog.details': 'Детали',
@@ -356,7 +356,7 @@ const T: Record<AdminLang, Record<string, string>> = {
     // Navigation
     'nav.dashboard': 'Дашборд', 'nav.orders': 'Тапсырыстар (Live)', 'nav.menu': 'Мәзір басқару',
     'nav.locations': 'Мекендер', 'nav.analytics': 'Аналитика', 'nav.promotions': 'Акциялар',
-    'nav.customers': 'Клиенттер', 'nav.workers': 'Қызметкерлер', 'nav.auditLog': 'Аудит журналы',
+    'nav.customers': 'Клиенттер', 'nav.workers': 'Қызметкерлер', 'nav.auditLog': 'Аудит журналы', 'nav.iiko': 'iiko',
     'nav.signOut': 'Шығу', 'nav.console': 'Басқару консолі',
     'auditLog.title': 'Аудит журналы', 'auditLog.timestamp': 'Уақыт', 'auditLog.admin': 'Әкімші',
     'auditLog.action': 'Әрекет', 'auditLog.entity': 'Нысан', 'auditLog.details': 'Мәліметтер',

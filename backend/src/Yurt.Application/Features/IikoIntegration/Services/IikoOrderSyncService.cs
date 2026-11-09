@@ -69,8 +69,12 @@ public class IikoOrderSyncService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to push order {OrderId} to iiko; will retry", order.Id);
+            var firstFailure = order.IikoOrderSyncPendingAction != IikoOrderSyncPendingAction.Push;
             order.IikoOrderSyncPendingAction = IikoOrderSyncPendingAction.Push;
             await _db.SaveChangesAsync(ct);
+            // Once per failure streak (not on every background retry), so the iiko page can show why.
+            if (firstFailure)
+                await _audit.LogAsync("IikoOrderPushFailed", "Order", order.Id.ToString(), Truncate(ex.Message), ct);
         }
         return null;
     }
@@ -168,8 +172,11 @@ public class IikoOrderSyncService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to close iiko order for {OrderId}; will retry", order.Id);
+            var firstFailure = order.IikoOrderSyncPendingAction != IikoOrderSyncPendingAction.Close;
             order.IikoOrderSyncPendingAction = IikoOrderSyncPendingAction.Close;
             await _db.SaveChangesAsync(ct);
+            if (firstFailure)
+                await _audit.LogAsync("IikoOrderCloseFailed", "Order", order.Id.ToString(), Truncate(ex.Message), ct);
         }
     }
 
@@ -201,6 +208,8 @@ public class IikoOrderSyncService
             }
         }
     }
+
+    private static string Truncate(string message) => message.Length <= 500 ? message : message[..500];
 
     private async Task SkipUnmappedAsync(Order order, string reason, CancellationToken ct)
     {
