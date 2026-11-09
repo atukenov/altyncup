@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.Loyalty;
@@ -230,10 +231,9 @@ public class IikoApiClient : IIikoApiClient
         {
             var list = await PostAsync<ExternalMenuListResponse>("api/2/menu", new { }, ct);
             menuIds = (list.ExternalMenus ?? []).Select(m => m.Id).Where(id => !string.IsNullOrWhiteSpace(id)).ToList();
+            // No external menu built in iikoWeb: fall back to the full nomenclature.
             if (menuIds.Count == 0)
-                throw new IikoApiException(
-                    "iiko has no external menus for this account. Create one in iikoWeb (Menu → External menus), " +
-                    "add your drinks and food to it, and try again.");
+                return await GetNomenclatureFromCatalogAsync(ct);
         }
 
         var priceCategoryId = _options.PriceCategoryId == Guid.Empty ? (Guid?)null : _options.PriceCategoryId;
@@ -271,7 +271,90 @@ public class IikoApiClient : IIikoApiClient
         }
 
         return byId.Values
-            .OrderBy(p => p.GroupName ?? "\uffff", StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(p => p.GroupName == null) // ungrouped products last
+            .ThenBy(p => p.GroupName ?? "", StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
+
+    // ── Nomenclature v1 fallback (no external menu configured in iikoWeb) ─────────
+
+    private record CatalogFilter(
+        string Field, string Op,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] object? Value = null,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] List<string>? Values = null);
+    private record CatalogListRequest(List<CatalogFilter> Filters, int Limit, int Offset);
+    private record CatalogProductDto(
+        string? ProductId, string? Name, string? Type, bool? Deleted, string? ProductArticle, string? Code,
+        string? ParentGroupId, string? ProductScaleId, List<string>? DisabledProductSizeIds, decimal? DefaultSalePrice);
+    private record CatalogProductPage(List<CatalogProductDto>? Items, int? TotalCount);
+    private record CatalogGroupDto(string? GroupId, string? Name, bool? IsDeleted);
+    private record CatalogGroupPage(List<CatalogGroupDto>? Groups);
+    private record CatalogSizeDto(string? Id, string? Name, bool? Deleted, int? Priority);
+    private record CatalogScaleDto(string? Id, bool? Deleted, List<CatalogSizeDto>? ProductSizes);
+    private record CatalogScalePage(List<CatalogScaleDto>? Items);
+
+    private const int CatalogPageSize = 1000;
+    private const int CatalogMaxPages = 20;
+
+    /// <summary>
+    /// Reads dishes and goods straight from the iiko nomenclature (api/nomenclature/v1/*),
+    /// with group names from group/list and size names from product-scale/list. Used when
+    /// the account has no external menu, so the mapping picker still works.
+    /// </summary>
+    private async Task<List<IikoNomenclatureProduct>> GetNomenclatureFromCatalogAsync(CancellationToken ct)
+    {
+        var typeFilter = new CatalogFilter("type", "in", Values: ["DISH", "GOODS"]);
+        var products = new List<CatalogProductDto>();
+        for (var page = 0; page < CatalogMaxPages; page++)
+        {
+            var resp = await PostAsync<CatalogProductPage>("api/nomenclature/v1/product/list",
+                new CatalogListRequest([typeFilter], CatalogPageSize, page * CatalogPageSize), ct);
+            var items = resp.Items ?? [];
+            products.AddRange(items);
+            if (items.Count < CatalogPageSize || (resp.TotalCount is int total && products.Count >= total)) break;
+        }
+
+        var groups = (await PostAsync<CatalogGroupPage>("api/nomenclature/v1/group/list",
+                new CatalogListRequest([], 0, 0), ct)).Groups ?? [];
+        var groupNames = groups
+            .Where(g => g.GroupId != null && g.IsDeleted != true)
+            .GroupBy(g => g.GroupId!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Name, StringComparer.OrdinalIgnoreCase);
+
+        var scales = (await PostAsync<CatalogScalePage>("api/nomenclature/v1/product-scale/list",
+                new CatalogListRequest([], 0, 0), ct)).Items ?? [];
+        var scaleSizes = scales
+            .Where(sc => sc.Id != null && sc.Deleted != true)
+            .GroupBy(sc => sc.Id!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().ProductSizes ?? [], StringComparer.OrdinalIgnoreCase);
+
+        return products
+            .Where(p => p.Deleted != true
+                && (string.Equals(p.Type, "DISH", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(p.Type, "GOODS", StringComparison.OrdinalIgnoreCase)))
+            .Where(p => Guid.TryParse(p.ProductId, out _))
+            .GroupBy(p => Guid.Parse(p.ProductId!))
+            .Select(g =>
+            {
+                var p = g.First();
+                var disabled = new HashSet<string>(p.DisabledProductSizeIds ?? [], StringComparer.OrdinalIgnoreCase);
+                List<CatalogSizeDto> sizes =
+                    p.ProductScaleId != null && scaleSizes.TryGetValue(p.ProductScaleId, out var scaleList) ? scaleList : [];
+                var sizeList = sizes
+                    .Where(sz => sz.Deleted != true && sz.Id != null && !disabled.Contains(sz.Id) && Guid.TryParse(sz.Id, out _))
+                    .OrderBy(sz => sz.Priority ?? int.MaxValue)
+                    .Select(sz => new IikoNomenclatureSize(Guid.Parse(sz.Id!), sz.Name))
+                    .ToList();
+                var code = string.IsNullOrWhiteSpace(p.ProductArticle) ? p.Code : p.ProductArticle;
+                var groupName = p.ParentGroupId != null ? groupNames.GetValueOrDefault(p.ParentGroupId) : null;
+                return new IikoNomenclatureProduct(
+                    g.Key, p.Name ?? "", p.DefaultSalePrice ?? 0m, sizeList,
+                    string.IsNullOrWhiteSpace(code) ? null : code,
+                    string.IsNullOrWhiteSpace(groupName) ? null : groupName);
+            })
+            .OrderBy(p => p.GroupName == null) // ungrouped products last
+            .ThenBy(p => p.GroupName ?? "", StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
     }

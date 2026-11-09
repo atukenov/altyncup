@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
-using Yurt.Application.Common.Interfaces;
 using Yurt.Application.Features.Loyalty;
 using Yurt.Infrastructure.Iiko;
 
@@ -25,6 +24,9 @@ public class IikoNomenclatureTests
             string? body = null;
             if (path.EndsWith("access_token")) body = """{"correlationId":"c1","token":"fake-token"}""";
             else if (path.EndsWith("api/2/menu")) body = menuListJson;
+            else if (path.EndsWith("api/nomenclature/v1/product/list")) body = CatalogProducts;
+            else if (path.EndsWith("api/nomenclature/v1/group/list")) body = CatalogGroups;
+            else if (path.EndsWith("api/nomenclature/v1/product-scale/list")) body = CatalogScales;
             else if (path.EndsWith("api/menu/v3/by_id"))
             {
                 var req = await request.Content!.ReadAsStringAsync(ct);
@@ -107,13 +109,52 @@ public class IikoNomenclatureTests
         Assert.Equal(["Croissant", "Latte (duplicate)"], products.Select(p => p.Name).ToArray());
     }
 
+    private const string CatalogProducts = """
+    {
+      "totalCount": 4,
+      "items": [
+        { "productId": "22222222-0000-0000-0000-000000000001", "name": "Капучино", "type": "DISH", "deleted": false,
+          "productArticle": "00101", "parentGroupId": "gggggggg-1", "productScaleId": "ssssssss-1",
+          "disabledProductSizeIds": [ "dddddddd-0000-0000-0000-000000000003" ], "defaultSalePrice": 1400 },
+        { "productId": "22222222-0000-0000-0000-000000000002", "name": "Вода", "type": "GOODS", "deleted": false,
+          "code": "77", "defaultSalePrice": 400 },
+        { "productId": "22222222-0000-0000-0000-000000000003", "name": "Сироп", "type": "MODIFIER", "deleted": false },
+        { "productId": "22222222-0000-0000-0000-000000000004", "name": "Старый латте", "type": "DISH", "deleted": true }
+      ]
+    }
+    """;
+
+    private const string CatalogGroups = """
+    { "groups": [ { "groupId": "gggggggg-1", "name": "Кофе" } ] }
+    """;
+
+    private const string CatalogScales = """
+    { "items": [ { "id": "ssssssss-1", "productSizes": [
+        { "id": "dddddddd-0000-0000-0000-000000000002", "name": "L", "priority": 2 },
+        { "id": "dddddddd-0000-0000-0000-000000000001", "name": "S", "priority": 1 },
+        { "id": "dddddddd-0000-0000-0000-000000000003", "name": "XL", "priority": 3 },
+        { "id": "dddddddd-0000-0000-0000-000000000004", "name": "Old", "priority": 4, "deleted": true } ] } ] }
+    """;
+
     [Fact]
-    public async Task GetNomenclatureAsync_NoExternalMenus_ExplainsWhatToCreate()
+    public async Task GetNomenclatureAsync_NoExternalMenus_FallsBackToNomenclatureCatalog()
     {
         var handler = new StubHandler("""{"externalMenus":[]}""", []);
 
-        var ex = await Assert.ThrowsAsync<IikoApiException>(() => Client(handler).GetNomenclatureAsync());
+        var products = await Client(handler).GetNomenclatureAsync();
 
-        Assert.Contains("External menus", ex.Message);
+        Assert.Contains(handler.Paths, p => p.EndsWith("api/nomenclature/v1/product/list"));
+        Assert.Equal(["Капучино", "Вода"], products.Select(p => p.Name).ToArray()); // grouped first, ungrouped last
+
+        var cappuccino = products[0];
+        Assert.Equal("Кофе", cappuccino.GroupName);
+        Assert.Equal("00101", cappuccino.Code);
+        Assert.Equal(1400m, cappuccino.Price);
+        Assert.Equal(["S", "L"], cappuccino.Sizes.Select(s => s.Name).ToArray()); // disabled + deleted sizes dropped
+
+        var water = products[1];
+        Assert.Null(water.GroupName);
+        Assert.Equal("77", water.Code);
+        Assert.Empty(water.Sizes);
     }
 }
