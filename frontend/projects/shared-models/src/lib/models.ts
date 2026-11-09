@@ -184,6 +184,11 @@ export interface IikoNomenclatureProduct {
 export interface IikoPaymentType {
   id: string;
   name: string;
+  /** iiko's category: Cash, Card, External, ... Orders from the app need External. */
+  kind?: string | null;
+  code?: string | null;
+  /** Terminal groups where this payment type can be used. */
+  terminalGroups?: { id: string; name: string }[] | null;
 }
 
 export interface IikoTerminalGroup {

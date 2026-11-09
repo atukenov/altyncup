@@ -383,7 +383,10 @@ public class IikoApiClient : IIikoApiClient
     }
 
     private record PaymentTypesRequest(List<Guid> OrganizationIds);
-    private record PaymentTypeDto(Guid? Id, string? Name);
+    private record PaymentTypeTerminalGroupDto(Guid? Id, string? Name);
+    private record PaymentTypeDto(
+        Guid? Id, string? Name, string? Code, string? PaymentTypeKind, bool? IsDeleted,
+        List<PaymentTypeTerminalGroupDto>? TerminalGroups);
     private record PaymentTypesResponse(List<PaymentTypeDto>? PaymentTypes);
 
     public async Task<List<IikoPaymentType>> GetPaymentTypesAsync(CancellationToken ct = default)
@@ -392,8 +395,13 @@ public class IikoApiClient : IIikoApiClient
             "api/1/payment_types", new PaymentTypesRequest([_options.OrganizationId]), ct);
 
         return (resp.PaymentTypes ?? [])
-            .Where(p => p.Id.HasValue)
-            .Select(p => new IikoPaymentType(p.Id!.Value, p.Name ?? ""))
+            .Where(p => p.Id.HasValue && p.IsDeleted != true)
+            .Select(p => new IikoPaymentType(
+                p.Id!.Value, p.Name ?? "", p.PaymentTypeKind, p.Code,
+                (p.TerminalGroups ?? [])
+                    .Where(g => g.Id.HasValue)
+                    .Select(g => new IikoTerminalGroup(g.Id!.Value, g.Name ?? ""))
+                    .ToList()))
             .ToList();
     }
 

@@ -221,6 +221,29 @@ export class IikoOverviewComponent implements OnInit {
     this.checkError.set([e?.title, e?.detail].filter(Boolean).join(' ') || 'Could not reach iiko.');
   }
 
+  /** External payment types first (the ones the app can use), then the rest by name. */
+  readonly sortedPaymentTypes = computed(() =>
+    [...(this.paymentTypes() ?? [])].sort(
+      (a, b) =>
+        Number(b.kind === 'External') - Number(a.kind === 'External') || a.name.localeCompare(b.name),
+    ));
+
+  /** Whether a payment type can be used at every cafe that has an iiko terminal group. */
+  availableEverywhere(p: IikoPaymentType): boolean {
+    const ids = new Set((p.terminalGroups ?? []).map((g) => g.id));
+    const needed = (this.overview()?.locations ?? [])
+      .map((l) => l.terminalGroupId)
+      .filter((id): id is string => !!id);
+    return needed.length > 0 && needed.every((id) => ids.has(id));
+  }
+
+  copy(text: string): void {
+    navigator.clipboard.writeText(text).then(
+      () => this.toast.success('Copied'),
+      () => this.toast.error('Could not copy. Select the text and copy it by hand.'),
+    );
+  }
+
   terminalGroupName(id?: string | null): string {
     if (!id) return '';
     return this.terminalGroups()?.find((g) => g.id === id)?.name ?? id;

@@ -50,13 +50,44 @@
       <p class="text-xs text-slate-400 mt-3">
         These are server settings; only whether each one is set is shown. Server: {{ ov.config.baseUrl }}.
       </p>
-      @if (paymentTypes(); as pt) {
-        <p class="text-xs text-slate-500 mt-2">
-          Payment types in iiko: {{ pt.length ? '' : 'none' }}
-          @for (p of pt; track p.id; let last = $last) { {{ p.name }}{{ last ? '' : ', ' }} }
-        </p>
-      }
     </section>
+
+    <!-- Payment types read from iiko (after Check connection) -->
+    @if (paymentTypes()) {
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+        <h2 class="font-semibold text-slate-800">Payment types in iiko</h2>
+        <p class="text-xs text-slate-500 mt-1 mb-3">
+          Orders from the app are sent as already paid with one payment type. Copy the ID of an
+          <span class="font-semibold">External</span> type that is available on your cafe's terminal group into the server
+          setting <span class="font-mono">Iiko:PaymentTypeId</span>, then restart the backend.
+          @if (!ov.config.paymentTypeConfigured) { <span class="text-amber-700 font-medium">It is not set yet.</span> }
+        </p>
+        <ul class="divide-y divide-slate-50 text-sm">
+          @for (p of sortedPaymentTypes(); track p.id) {
+            <li class="py-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span class="min-w-0 flex-1">
+                <span class="text-slate-800">{{ p.name }}</span>
+                @if (p.code) { <span class="text-xs text-slate-400"> · {{ p.code }}</span> }
+                <span class="block font-mono text-xs text-slate-500 break-all">{{ p.id }}</span>
+              </span>
+              <span class="text-xs rounded-full px-2 py-0.5"
+                [class]="p.kind === 'External' ? 'bg-teal-50 text-teal-700' : 'bg-slate-100 text-slate-600'">{{ p.kind || 'Unknown' }}</span>
+              @if (p.kind === 'External') {
+                <span class="text-xs rounded-full px-2 py-0.5"
+                  [class]="availableEverywhere(p) ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'"
+                  [title]="(p.terminalGroups ?? []).map(g => g.name).join(', ')">
+                  {{ availableEverywhere(p) ? 'Available at your cafes' : 'Not on all your terminal groups' }}
+                </span>
+              }
+              <button type="button" (click)="copy(p.id)"
+                class="text-xs font-semibold text-amber-600 hover:text-amber-700">Copy ID</button>
+            </li>
+          } @empty {
+            <li class="py-3 text-slate-400">iiko returned no payment types. Create an External one in iiko first.</li>
+          }
+        </ul>
+      </section>
+    }
 
     <!-- Order sync counters -->
     <section>
