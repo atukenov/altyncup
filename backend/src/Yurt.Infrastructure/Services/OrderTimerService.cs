@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Yurt.Application.Common.Interfaces;
+using Yurt.Application.Features.IikoIntegration.Services;
 using Yurt.Domain.Enums;
 
 namespace Yurt.Infrastructure.Services;
@@ -48,6 +49,14 @@ public class OrderTimerService : BackgroundService
 
         if (toStart.Count > 0) await db.SaveChangesAsync(ct);
         foreach (var order in toStart) await hub.NotifyOrderUpdatedAsync(order, ct);
+
+        // Auto-started orders go to iiko too, so the cashier sees them (once; a failure waits
+        // for the "Send to iiko" button, nothing is retried automatically).
+        if (toStart.Count > 0)
+        {
+            var iikoSync = scope.ServiceProvider.GetRequiredService<IikoOrderSyncService>();
+            foreach (var order in toStart) await iikoSync.PushOrderByIdAsync(order.Id, ct);
+        }
 
         // Load active Preparing orders for timer passes (in-memory filtering avoids EF date-arithmetic translation)
         var preparing = await db.Orders

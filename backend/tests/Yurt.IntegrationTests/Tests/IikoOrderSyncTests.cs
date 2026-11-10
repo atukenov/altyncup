@@ -215,6 +215,79 @@ public class IikoOrderSyncTests(YurtWebAppFactory factory)
     }
 
     [Fact]
+    public async Task SizeWithoutOwnProduct_WhenOtherSizesAreMapped_IsSkippedNotSentAsItemProduct()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
+        // Item product set (the 250ml one); 250 has its own product, 350 does not.
+        var (menuItemId, _) = await CreateTestMenuItemWithVariantAsync(
+            enabledFactory.Services, Guid.NewGuid(), variantLabel: "250", variantIikoProductId: Guid.NewGuid());
+        Guid unmappedVariantId;
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var v = new MenuItemVariant { MenuItemId = menuItemId, Label = "350", Price = 700, SortOrder = 1, IsDefault = false };
+            db.MenuItemVariants.Add(v);
+            await db.SaveChangesAsync();
+            unmappedVariantId = v.Id;
+        }
+
+        var client = enabledFactory.CreateClient();
+        var placed = await PlaceAndAcceptOrderAsync(
+            enabledFactory, client, "+77002000820", locationId, menuItemId, variantId: unmappedVariantId);
+
+        Assert.Empty(fake.PushCalls);
+        await using var scope2 = enabledFactory.Services.CreateAsyncScope();
+        var db2 = scope2.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        Assert.Equal(IikoOrderSyncStatus.SkippedUnmapped, (await db2.Orders.FirstAsync(o => o.Id == placed.Id)).IikoOrderSyncStatus);
+    }
+
+    [Fact]
+    public async Task PushOrderById_ForAnOrderAutoStartedToPreparing_PushesToIiko()
+    {
+        var fake = new FakeIikoApiClient();
+        using var enabledFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton(EnabledOptions());
+                services.AddSingleton<IIikoApiClient>(fake);
+            }));
+
+        var locationId = await CreateTestLocationAsync(enabledFactory.Services, Guid.NewGuid());
+        var menuItemId = await CreateTestMenuItemAsync(enabledFactory.Services, Guid.NewGuid());
+
+        var client = enabledFactory.CreateClient();
+        var placed = await PlaceAndAcceptOrderAsync(
+            enabledFactory, client, "+77002000821", locationId, menuItemId, startPreparing: false);
+        Assert.Empty(fake.PushCalls);
+
+        // What the 2-minute timer / an online payment does: Preparing without the admin action.
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var order = await db.Orders.FirstAsync(o => o.Id == placed.Id);
+            order.Status = OrderStatus.Preparing;
+            await db.SaveChangesAsync();
+        }
+        await using (var scope = enabledFactory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<IikoOrderSyncService>().PushOrderByIdAsync(placed.Id);
+        }
+
+        Assert.Single(fake.PushCalls);
+        await using var scope3 = enabledFactory.Services.CreateAsyncScope();
+        var db3 = scope3.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        Assert.Equal(IikoOrderSyncStatus.Pushed, (await db3.Orders.FirstAsync(o => o.Id == placed.Id)).IikoOrderSyncStatus);
+    }
+
+    [Fact]
     public async Task RetryIikoPush_AfterMappingFixed_PushesSkippedOrder()
     {
         var fake = new FakeIikoApiClient();

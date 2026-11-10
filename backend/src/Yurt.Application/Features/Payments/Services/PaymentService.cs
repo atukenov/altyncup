@@ -1,3 +1,4 @@
+using Yurt.Application.Features.IikoIntegration.Services;
 using System.Collections.Generic;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ public class PaymentService
   private readonly IPaymentWebhookValidator _webhookValidator;
   private readonly FreedomPayOptions _freedomPayOptions;
   private readonly ILogger<PaymentService> _logger;
+  private readonly IikoOrderSyncService? _iikoSync;
 
   public PaymentService(
       IApplicationDbContext db,
@@ -25,8 +27,10 @@ public class PaymentService
       IPaymentProviderFactory providerFactory,
       IPaymentWebhookValidator webhookValidator,
       FreedomPayOptions freedomPayOptions,
-      ILogger<PaymentService> logger)
+      ILogger<PaymentService> logger,
+      IikoOrderSyncService? iikoSync = null)
   {
+    _iikoSync = iikoSync;
     _db = db;
     _ordersHub = ordersHub;
     _providerFactory = providerFactory;
@@ -160,9 +164,12 @@ public class PaymentService
     payment.RawResponse = JsonSerializer.Serialize(new { freedomPaymentId = dto.FreedomPaymentId });
     payment.UpdatedAt = DateTime.UtcNow;
     payment.Order.PaymentStatus = PaymentStatus.Paid;
-    if (payment.Order.Status == OrderStatus.Created) payment.Order.Status = OrderStatus.Preparing;
+    var startedPreparing = payment.Order.Status == OrderStatus.Created;
+    if (startedPreparing) payment.Order.Status = OrderStatus.Preparing;
 
     await _db.SaveChangesAsync(cancellationToken);
+    if (startedPreparing && _iikoSync != null)
+      await _iikoSync.PushOrderByIdAsync(payment.Order.Id, cancellationToken);
 
     await _ordersHub.NotifyPaymentUpdatedAsync(payment.Order, cancellationToken);
     await _ordersHub.NotifyPaymentSucceededAsync(payment.Order, cancellationToken);
@@ -228,15 +235,21 @@ public class PaymentService
     payment.RawResponse = rawBody;
     payment.UpdatedAt = DateTime.UtcNow;
 
+    var startedPreparing = false;
     if (targetStatus == PaymentRecordStatus.Paid)
     {
       payment.Order.PaymentStatus = PaymentStatus.Paid;
       if (payment.Order.Status == OrderStatus.Created)
+      {
         payment.Order.Status = OrderStatus.Preparing;
+        startedPreparing = true;
+      }
     }
 
     logEntry.Processed = true;
     await _db.SaveChangesAsync(cancellationToken);
+    if (startedPreparing && _iikoSync != null)
+      await _iikoSync.PushOrderByIdAsync(payment.Order.Id, cancellationToken);
 
     await _ordersHub.NotifyPaymentUpdatedAsync(payment.Order, cancellationToken);
 

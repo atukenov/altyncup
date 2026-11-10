@@ -81,6 +81,30 @@ public class IikoOrderSyncService
     }
 
     /// <summary>
+    /// For paths that start preparation without going through the admin status action (the
+    /// 2-minute auto-start timer, an online payment that completes): loads the order with
+    /// what the push needs and pushes it. Fail-open; never throws.
+    /// </summary>
+    public async Task PushOrderByIdAsync(Guid orderId, CancellationToken ct = default)
+    {
+        if (!_options.Enabled || !_options.PushOrdersEnabled) return;
+        try
+        {
+            var order = await _db.Orders
+                .Include(o => o.Location)
+                .Include(o => o.CustomerUser)
+                .Include(o => o.Items).ThenInclude(i => i.Toppings)
+                .FirstOrDefaultAsync(o => o.Id == orderId, ct);
+            if (order == null || order.Status != OrderStatus.Preparing) return;
+            await PushOrderAsync(order, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to push auto-started order {OrderId} to iiko", orderId);
+        }
+    }
+
+    /// <summary>
     /// Admin "Send to iiko": for an order that was skipped as unmapped, failed, or never pushed
     /// (e.g. started before order-push was switched on) it re-checks the mapping and pushes;
     /// for a completed order whose close failed it tries the close again.
@@ -134,6 +158,14 @@ public class IikoOrderSyncService
             // used: the variant's iiko size wins, falling back to the item's size (often none,
             // for iiko products without a size scale), and the size label goes in the comment.
             var ownProduct = variant?.IikoProductId != null;
+
+            // When a drink maps its sizes to separate iiko products, a size without one must
+            // not silently fall back to the item's product (that would ring up, say, the 250ml
+            // product for a 350ml order). Treat it as unmapped so an admin fixes the mapping.
+            if (variant != null && !ownProduct
+                && menuItem != null && menuItem.Variants.Any(v => v.IikoProductId != null))
+                return (null, $"menu item \"{orderItem.MenuItemName}\" size \"{variant.Label}\" has no iiko product mapping (other sizes of this drink are mapped to their own iiko products)");
+
             var productId = ownProduct ? variant!.IikoProductId : menuItem?.IikoProductId;
             if (productId == null)
                 return (null, orderItem.VariantId != null && !string.IsNullOrWhiteSpace(orderItem.VariantLabel)
