@@ -428,11 +428,12 @@ public class IikoApiClient : IIikoApiClient
         string Phone, string OrderServiceType, CreateOrderCustomer Customer,
         List<CreateOrderItem> Items, List<CreateOrderPayment> Payments, string? Comment);
     private record CreateDeliveryOrderRequest(Guid OrganizationId, Guid TerminalGroupId, CreateDeliveryOrder Order);
-    private record CreationErrorDto(string? Message);
+    private record CreationErrorDto(
+        JsonElement? Code, string? Message, string? Description, string? ErrorReason, JsonElement? AdditionalData);
     private record CreateOrderInfoDto(Guid Id, string CreationStatus, CreationErrorDto? ErrorInfo);
     private record CreateDeliveryOrderResponse(Guid CorrelationId, CreateOrderInfoDto OrderInfo);
     private record CommandStatusRequest(Guid OrganizationId, Guid CorrelationId);
-    private record CommandStatusResponse(string State);
+    private record CommandStatusResponse(string State, JsonElement? Exception, string? ErrorReason);
 
     public async Task<Guid> CreateDeliveryOrderAsync(IikoCreateOrderRequest request, CancellationToken ct = default)
     {
@@ -458,10 +459,41 @@ public class IikoApiClient : IIikoApiClient
 
         if (info.CreationStatus != "Success")
             throw new IikoApiException(
-                $"iiko deliveries/create did not succeed: {info.CreationStatus} — {info.ErrorInfo?.Message}");
+                $"iiko deliveries/create did not succeed: {info.CreationStatus} — {DescribeCreationError(info.ErrorInfo)}");
 
         return info.Id;
     }
+
+    /// <summary>
+    /// Joins everything iiko tells us about a failed order creation (error code, message,
+    /// reason, extra data) so the admin sees the real cause instead of an empty message.
+    /// </summary>
+    internal static string DescribeCreationError(JsonElement? code, string? message, string? description,
+        string? reason, JsonElement? additionalData)
+    {
+        static string? Text(JsonElement? e) =>
+            e is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) } v
+                ? (v.ValueKind == JsonValueKind.String ? v.GetString() : v.GetRawText())
+                : null;
+
+        var parts = new List<string>();
+        void Add(string label, string? value)
+        {
+            if (!string.IsNullOrWhiteSpace(value) && !parts.Any(p => p.EndsWith(value)))
+                parts.Add(label.Length == 0 ? value : $"{label}: {value}");
+        }
+        Add("code", Text(code));
+        Add("", message);
+        Add("", description);
+        Add("reason", reason);
+        Add("details", Text(additionalData));
+        return parts.Count == 0
+            ? "iiko gave no error details (check the cafe terminal, payment type and product mapping in iiko)"
+            : Truncate(string.Join("; ", parts));
+    }
+
+    private static string DescribeCreationError(CreationErrorDto? e) =>
+        DescribeCreationError(e?.Code, e?.Message, e?.Description, e?.ErrorReason, e?.AdditionalData);
 
     private async Task<CreateOrderInfoDto> PollCommandStatusAsync(
         Guid correlationId, CreateOrderInfoDto lastKnown, CancellationToken ct)
@@ -473,7 +505,17 @@ public class IikoApiClient : IIikoApiClient
                 "api/1/commands/status",
                 new CommandStatusRequest(_options.OrganizationId, correlationId), ct);
             if (status.State != "InProgress")
-                return lastKnown with { CreationStatus = status.State };
+            {
+                // The failure reason of an async order lives in the status call
+                // (exception / errorReason), not in the first create response.
+                var error = status.State == "Success"
+                    ? lastKnown.ErrorInfo
+                    : new CreationErrorDto(null, null, null, status.ErrorReason, status.Exception ??
+                        (lastKnown.ErrorInfo?.AdditionalData));
+                if (status.State != "Success" && lastKnown.ErrorInfo is { } prior)
+                    error = error! with { Code = prior.Code, Message = prior.Message, Description = prior.Description };
+                return lastKnown with { CreationStatus = status.State, ErrorInfo = error };
+            }
         }
         return lastKnown; // still InProgress after the bounded wait — caller treats as failure/retry
     }
