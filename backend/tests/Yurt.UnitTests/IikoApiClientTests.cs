@@ -163,4 +163,50 @@ public class IikoApiClientTests
         Assert.Equal(250m, tx.BalanceAfter);
         Assert.Null(tx.Comment);
     }
+
+    private sealed class CreateOrderErrorHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken ct)
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            object body = path switch
+            {
+                var x when x.EndsWith("access_token") => new { correlationId = "c1", token = "fake-token" },
+                var x when x.EndsWith("deliveries/create") => new
+                {
+                    correlationId = Guid.NewGuid(),
+                    orderInfo = new { id = Guid.NewGuid(), creationStatus = "InProgress" },
+                },
+                var x when x.EndsWith("commands/status") => new
+                {
+                    state = "Error",
+                    errorReason = "Payment type not found",
+                    exception = new { message = "Entity not found: IPaymentType" },
+                },
+                _ => new { },
+            };
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(body) });
+        }
+    }
+
+    [Fact]
+    public async Task CreateDeliveryOrderAsync_AsyncFailure_SurfacesIikoErrorDetails()
+    {
+        var options = new IikoOptions
+        {
+            Enabled = true, BaseUrl = "https://iiko.test", ApiKey = "key", AppId = "app",
+            ClientSecret = "secret", OrganizationId = Guid.NewGuid(), PaymentTypeId = Guid.NewGuid(),
+        };
+        var client = new IikoApiClient(
+            new HttpClient(new CreateOrderErrorHandler()), options, new IikoTokenStore(),
+            NullLogger<IikoApiClient>.Instance);
+
+        var ex = await Assert.ThrowsAsync<Yurt.Application.Common.Interfaces.IikoApiException>(() =>
+            client.CreateDeliveryOrderAsync(new Yurt.Application.Common.Interfaces.IikoCreateOrderRequest(
+                Guid.NewGuid(), "+77001234567", "Test", [], 100m, null)));
+
+        Assert.Contains("Payment type not found", ex.Message);
+        Assert.Contains("Entity not found: IPaymentType", ex.Message);
+    }
 }
