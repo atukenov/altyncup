@@ -435,6 +435,33 @@ public class IikoApiClient : IIikoApiClient
     private record CommandStatusRequest(Guid OrganizationId, Guid CorrelationId);
     private record CommandStatusResponse(string State, JsonElement? Exception, string? ErrorReason);
 
+    /// <summary>
+    /// iiko rejects an order whose payment line kind differs from the kind of the payment type
+    /// it points at (a Card type must be sent as a "Card" payment, and so on). Look the kind up
+    /// so any configured type works; fall back to "External" if it cannot be determined.
+    /// </summary>
+    private async Task<string> ResolvePaymentKindAsync(CancellationToken ct)
+    {
+        try
+        {
+            var types = await GetPaymentTypesAsync(ct);
+            var kind = types.FirstOrDefault(t => t.Id == _options.PaymentTypeId)?.Kind;
+            return MapPaymentKind(kind);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "Could not look up the iiko payment type kind; sending an External payment");
+            return "External";
+        }
+    }
+
+    internal static string MapPaymentKind(string? iikoTypeKind) => iikoTypeKind switch
+    {
+        "Cash" => "Cash",
+        "Card" => "Card",
+        _ => "External",
+    };
+
     public async Task<Guid> CreateDeliveryOrderAsync(IikoCreateOrderRequest request, CancellationToken ct = default)
     {
         var order = new CreateDeliveryOrder(
@@ -446,7 +473,8 @@ public class IikoApiClient : IIikoApiClient
             Customer: new CreateOrderCustomer("one-time", request.CustomerName ?? request.CustomerPhone),
             Items: request.Items.Select(i => new CreateOrderItem(
                 "Product", i.Amount, i.ProductId, i.ProductSizeId, i.Price, i.Comment)).ToList(),
-            Payments: [new CreateOrderPayment("External", request.PaymentSum, _options.PaymentTypeId, true)],
+            Payments: [new CreateOrderPayment(
+                await ResolvePaymentKindAsync(ct), request.PaymentSum, _options.PaymentTypeId, true)],
             Comment: request.Comment);
 
         var resp = await PostAsync<CreateDeliveryOrderResponse>(
