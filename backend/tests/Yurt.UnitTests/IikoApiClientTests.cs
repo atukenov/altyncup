@@ -209,4 +209,58 @@ public class IikoApiClientTests
         Assert.Contains("Payment type not found", ex.Message);
         Assert.Contains("Entity not found: IPaymentType", ex.Message);
     }
+
+    private sealed class PaymentKindHandler(Guid paymentTypeId, string kind) : HttpMessageHandler
+    {
+        public string? SentKind { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken ct)
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            object body;
+            if (path.EndsWith("access_token"))
+                body = new { correlationId = "c1", token = "fake-token" };
+            else if (path.EndsWith("payment_types"))
+                body = new { paymentTypes = new[] { new { id = paymentTypeId, name = "Kaspi", paymentTypeKind = kind } } };
+            else if (path.EndsWith("deliveries/create"))
+            {
+                var json = await request.Content!.ReadAsStringAsync(ct);
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                SentKind = doc.RootElement.GetProperty("order").GetProperty("payments")[0]
+                    .GetProperty("paymentTypeKind").GetString();
+                body = new
+                {
+                    correlationId = Guid.NewGuid(),
+                    orderInfo = new { id = Guid.NewGuid(), creationStatus = "Success" },
+                };
+            }
+            else
+                body = new { };
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(body) };
+        }
+    }
+
+    [Theory]
+    [InlineData("Card", "Card")]
+    [InlineData("Cash", "Cash")]
+    [InlineData("External", "External")]
+    [InlineData("Voucher", "External")]
+    public async Task CreateDeliveryOrderAsync_SendsPaymentKindMatchingTheConfiguredType(string typeKind, string expected)
+    {
+        var typeId = Guid.NewGuid();
+        var handler = new PaymentKindHandler(typeId, typeKind);
+        var options = new IikoOptions
+        {
+            Enabled = true, BaseUrl = "https://iiko.test", ApiKey = "key", AppId = "app",
+            ClientSecret = "secret", OrganizationId = Guid.NewGuid(), PaymentTypeId = typeId,
+        };
+        var client = new IikoApiClient(
+            new HttpClient(handler), options, new IikoTokenStore(), NullLogger<IikoApiClient>.Instance);
+
+        await client.CreateDeliveryOrderAsync(new Yurt.Application.Common.Interfaces.IikoCreateOrderRequest(
+            Guid.NewGuid(), "+77001234567", "Test", [], 100m, null));
+
+        Assert.Equal(expected, handler.SentKind);
+    }
 }
