@@ -130,6 +130,7 @@ public static class DependencyInjection
         services.AddScoped<AuthService>();
         services.AddScoped<LocationService>();
         services.AddScoped<AppReleaseService>();
+        services.AddScoped<Yurt.Application.Features.Images.ImageService>();
         services.AddScoped<MenuService>();
         services.AddScoped<RecommendationService>();
         services.AddScoped<OrderService>();

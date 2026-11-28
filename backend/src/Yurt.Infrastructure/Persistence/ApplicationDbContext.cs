@@ -36,6 +36,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<UserReport> UserReports => Set<UserReport>();
     public DbSet<AppRelease> AppReleases => Set<AppRelease>();
     public DbSet<CustomerDeviceToken> CustomerDeviceTokens => Set<CustomerDeviceToken>();
+    public DbSet<StoredImage> StoredImages => Set<StoredImage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

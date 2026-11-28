@@ -593,13 +593,11 @@
         </div>
 
         <div>
-          <label for="item-image-url" class="block text-xs font-medium text-slate-600 mb-1">{{ 'label.imageUrl' | t }}</label>
-          <input
-            id="item-image-url"
-            type="text"
-            [ngModel]="itemForm().imageUrl"
-            (ngModelChange)="patchItemForm('imageUrl', $event)"
-            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+          <label for="item-image-url" class="block text-xs font-medium text-slate-600 mb-1">{{ 'label.image' | t }}</label>
+          <admin-image-upload-field
+            inputId="item-image-url"
+            [value]="itemForm().imageUrl"
+            (valueChange)="patchItemForm('imageUrl', $event)"
           />
         </div>
         <div>

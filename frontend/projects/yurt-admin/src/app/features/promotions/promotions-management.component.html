@@ -127,14 +127,11 @@
             ></textarea>
           </div>
           <div>
-            <label for="promo-image-url" class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.imageUrlOpt' | t }}</label>
-            <input
-              id="promo-image-url"
-              type="text"
-              [ngModel]="form().imageUrl"
-              (ngModelChange)="patch('imageUrl', $event)"
-              class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
-              placeholder="https://..."
+            <label for="promo-image-url" class="text-xs font-medium text-slate-600 mb-1 block">{{ 'promotions.imageOpt' | t }}</label>
+            <admin-image-upload-field
+              inputId="promo-image-url"
+              [value]="form().imageUrl"
+              (valueChange)="patch('imageUrl', $event)"
             />
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

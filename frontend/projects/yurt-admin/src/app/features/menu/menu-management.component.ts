@@ -8,6 +8,7 @@ import { ButtonComponent, ToastService, Currency2Pipe } from 'shared-ui';
 import { AdminLangService } from '../../core/lang.service';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { ImageUploadFieldComponent } from '../../shared/image-upload/image-upload-field.component';
 
 /** Lower-cases, folds ё→е and collapses punctuation so "Капучино 0,3" matches "капучино 0.3". */
 function normalizeForSearch(text: string): string {
@@ -73,7 +74,7 @@ interface CatInput {
 @Component({
   selector: 'app-menu-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, CdkDropList, CdkDrag, CdkDragHandle, ButtonComponent, Currency2Pipe, AdminTranslatePipe],
+  imports: [CommonModule, FormsModule, CdkDropList, CdkDrag, CdkDragHandle, ButtonComponent, Currency2Pipe, AdminTranslatePipe, ImageUploadFieldComponent],
   templateUrl: './menu-management.component.html',
   styleUrl: './menu-management.component.css',
 })

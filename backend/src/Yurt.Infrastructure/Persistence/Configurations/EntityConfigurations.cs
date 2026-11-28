@@ -343,3 +343,13 @@ public class OtpEventConfiguration : IEntityTypeConfiguration<OtpEvent>
         builder.HasIndex(e => e.ProviderMessageId);
     }
 }
+
+public class StoredImageConfiguration : IEntityTypeConfiguration<StoredImage>
+{
+    public void Configure(EntityTypeBuilder<StoredImage> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.ContentType).HasMaxLength(50).IsRequired();
+        builder.Property(e => e.Data).HasColumnType("bytea").IsRequired();
+    }
+}

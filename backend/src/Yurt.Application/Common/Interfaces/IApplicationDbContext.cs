@@ -31,6 +31,7 @@ public interface IApplicationDbContext
     DbSet<MenuItemVariant> MenuItemVariants { get; }
     DbSet<UserReport> UserReports { get; }
     DbSet<AppRelease> AppReleases { get; }
+    DbSet<StoredImage> StoredImages { get; }
     DbSet<CustomerDeviceToken> CustomerDeviceTokens { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

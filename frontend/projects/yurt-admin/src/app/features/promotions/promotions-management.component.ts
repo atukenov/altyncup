@@ -6,6 +6,7 @@ import { Promotion } from 'shared-models';
 import { ToastService } from 'shared-ui';
 import { AdminTranslatePipe } from '../../core/translate.pipe';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { ImageUploadFieldComponent } from '../../shared/image-upload/image-upload-field.component';
 
 interface PromotionForm {
   id?: string;
@@ -21,7 +22,7 @@ interface PromotionForm {
 @Component({
   selector: 'app-promotions-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminTranslatePipe],
+  imports: [CommonModule, FormsModule, AdminTranslatePipe, ImageUploadFieldComponent],
   templateUrl: './promotions-management.component.html',
   styleUrl: './promotions-management.component.css',
 })
