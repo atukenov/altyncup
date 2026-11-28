@@ -260,6 +260,13 @@ export class YurtApiService {
     return this.http.put<MenuItem>(`${this.api}/admin/menu/items/${id}`, data);
   }
 
+  /** Upload a menu/promotion picture. Returns the public URL to store in imageUrl. */
+  adminUploadImage(file: Blob, fileName = 'image.jpg'): Observable<{ id: string; url: string }> {
+    const form = new FormData();
+    form.append('file', file, fileName);
+    return this.http.post<{ id: string; url: string }>(`${this.api}/admin/images`, form);
+  }
+
   adminDeleteMenuItem(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/admin/menu/items/${id}`);
   }
